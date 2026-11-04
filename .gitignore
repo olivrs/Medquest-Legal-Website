@@ -1,0 +1,4 @@
+# Ignore generated local email outbox files
+mail_outbox/*.html
+.DS_Store
+Thumbs.db

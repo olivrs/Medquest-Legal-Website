@@ -1,0 +1,608 @@
+/* ============================================================================
+   MEDQUEST LAC - ULTRA COMPACT & MINIMALIST DASHBOARD
+   Proportional small typography (12px-13px) — Fits on 1 screen without scrolling
+   ============================================================================ */
+
+:root {
+    --mq-sidebar-bg: #0d1f44;
+    --mq-sidebar-darker: #081530;
+    --mq-sidebar-active: #38bdf8;
+    --mq-blue-primary: #1d4ed8;
+    --mq-bg-main: #f3f5f9;
+    --mq-text-dark: #0f172a;
+    --mq-text-muted: #64748b;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--mq-bg-main);
+    color: var(--mq-text-dark);
+    font-size: 12.5px;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* ============================================================================
+   COMPACT SIDEBAR (205px) & SLIM TOPBAR (48px)
+   ============================================================================ */
+.mq-app-wrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.mq-sidebar {
+    width: 205px;
+    background: linear-gradient(180deg, var(--mq-sidebar-bg) 0%, var(--mq-sidebar-darker) 100%);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1030;
+    overflow-y: auto;
+}
+
+.mq-sidebar-brand {
+    height: 48px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    text-decoration: none;
+}
+
+.mq-sidebar-brand .brand-logo-box {
+    background: #ffffff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.mq-sidebar-brand .brand-logo-box img {
+    height: 16px;
+    width: auto;
+}
+
+.mq-sidebar-brand .brand-text {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #ffffff;
+}
+
+.mq-sidebar-section {
+    padding: 12px 14px 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #64748b;
+}
+
+.mq-sidebar-nav {
+    list-style: none;
+    padding: 0 8px;
+    margin: 0;
+}
+
+.mq-sidebar-item {
+    margin-bottom: 2px;
+}
+
+.mq-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.mq-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff;
+}
+
+.mq-sidebar-link.active {
+    background: rgba(56, 189, 248, 0.14);
+    color: var(--mq-sidebar-active);
+    font-weight: 600;
+}
+
+.mq-sidebar-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.07);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    color: var(--mq-sidebar-active);
+    flex-shrink: 0;
+}
+
+.mq-sidebar-link.active .mq-sidebar-icon {
+    background: var(--mq-sidebar-active);
+    color: #081530;
+}
+
+/* Sidebar Collapsible Submenu */
+.mq-sidebar-submenu {
+    list-style: none;
+    padding: 2px 0 4px 32px;
+    margin: 0;
+}
+
+.mq-sidebar-sublink {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-radius: 5px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.74rem;
+    transition: all 0.12s ease;
+}
+
+.mq-sidebar-sublink:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mq-sidebar-sublink.active {
+    color: var(--mq-sidebar-active);
+    font-weight: 700;
+}
+
+.mq-sidebar-link .dropdown-arrow {
+    margin-left: auto;
+    font-size: 0.62rem;
+    transition: transform 0.2s ease;
+    opacity: 0.7;
+}
+
+.mq-sidebar-link[aria-expanded="true"] .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.mq-sidebar-cta {
+    padding: 10px 12px;
+}
+
+.mq-sidebar-cta .btn-cta {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.76rem;
+    border-radius: 6px;
+    padding: 7px 10px;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+}
+
+.mq-sidebar-cta .btn-cta:hover {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.mq-sidebar-footer {
+    margin-top: auto;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mq-sidebar-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.mq-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.68rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ============================================================================
+   MAIN PANEL & SLIM TOPBAR (48px)
+   ============================================================================ */
+.mq-main-panel {
+    flex: 1;
+    margin-left: 205px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.mq-topbar {
+    height: 48px;
+    background: #ffffff;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.mq-topbar-search {
+    flex: 1;
+    max-width: 320px;
+    position: relative;
+}
+
+.mq-topbar-search input {
+    width: 100%;
+    background: #f1f5f9;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 5px 10px 5px 30px;
+    font-size: 0.76rem;
+    color: #1e293b;
+}
+
+.mq-topbar-search input:focus {
+    outline: none;
+    background: #ffffff;
+    border-color: #cbd5e1;
+}
+
+.mq-topbar-search .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.74rem;
+}
+
+.mq-content-area {
+    padding: 14px 18px 24px;
+    flex: 1;
+}
+
+/* ============================================================================
+   MINIMALIST HEADER & TABS
+   ============================================================================ */
+.cp-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.cp-page-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.cp-pill-group {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    padding: 2px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.cp-pill-link {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.cp-pill-link:hover,
+.cp-pill-link.active {
+    color: #0f172a;
+    font-weight: 700;
+    background: #f1f5f9;
+}
+
+/* Underline Tabs */
+.cp-underline-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cp-tab-link {
+    padding: 5px 2px 7px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.cp-tab-link:hover {
+    color: #1e40af;
+}
+
+.cp-tab-link.active {
+    color: #0f172a;
+    font-weight: 700;
+    border-bottom-color: #2563eb;
+}
+
+.cp-tab-badge {
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0 5px;
+    border-radius: 99px;
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.cp-tab-link.active .cp-tab-badge {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* ============================================================================
+   COMPACT 4 CIRCULAR STAT CARDS (Slim height so no scrolling needed!)
+   ============================================================================ */
+.cp-stat-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.cp-stat-card:hover {
+    border-color: #93c5fd;
+    color: inherit;
+}
+
+.cp-stat-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.cp-stat-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+.cp-circle-gauge {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cp-circle-inner {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.cp-stat-sublabel {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    margin-top: 3px;
+}
+
+/* ============================================================================
+   COMPACT MINIMALIST TABLE CARD
+   ============================================================================ */
+.cp-table-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1px solid #e2e8f0;
+    margin-top: 12px;
+}
+
+.cp-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cp-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cp-table tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    font-size: 0.76rem;
+}
+
+.cp-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.cp-table tbody tr.row-expired td:first-child { border-left: 3px solid #ef4444; }
+.cp-table tbody tr.row-urgent td:first-child  { border-left: 3px solid #f97316; }
+.cp-table tbody tr.row-warning td:first-child,
+.cp-table tbody tr.row-warning-soft td:first-child { border-left: 3px solid #eab308; }
+.cp-table tbody tr.row-active td:first-child  { border-left: 3px solid #10b981; }
+
+/* Compact Horizontal Deadline Strip */
+.dl-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 3px;
+}
+
+.dl-pill-item {
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.65rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.dl-pill-item strong {
+    color: #1e40af;
+}
+
+.dl-pill-item.dl-today {
+    background: #fef08a;
+    border-color: #eab308;
+    color: #854d0e;
+}
+
+.dl-pill-item.dl-passed {
+    background: #f8fafc;
+    color: #94a3b8;
+}
+
+.dl-pill-item.dl-upcoming {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e3a8a;
+}
+
+/* Status Badges */
+.expiry-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 0.66rem;
+    font-weight: 700;
+}
+
+.badge-expired { background: #fee2e2; color: #b91c1c; }
+.badge-h3      { background: #dc2626; color: #ffffff; }
+.badge-h7      { background: #ea580c; color: #ffffff; }
+.badge-h14     { background: #d97706; color: #ffffff; }
+.badge-h30     { background: #fef08a; color: #854d0e; }
+.badge-h60     { background: #e0f2fe; color: #0369a1; }
+.badge-h90     { background: #e0e7ff; color: #3730a3; }
+.badge-active  { background: #dcfce7; color: #15803d; }
+
+/* Form controls compact */
+.form-label {
+    font-size: 0.76rem;
+    margin-bottom: 3px;
+}
+
+.form-control, .form-select {
+    font-size: 0.78rem;
+    padding: 5px 10px;
+}
+
+/* Auth Wrapper */
+.auth-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #081530 0%, #1e3a8a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+}
+
+.auth-card-header {
+    background: linear-gradient(135deg, #0d1f44 0%, #1d4ed8 100%);
+    color: #ffffff;
+    padding: 18px 20px;
+    text-align: center;
+}
+
+@media (max-width: 991.98px) {
+    .mq-sidebar {
+        transform: translateX(-100%);
+    }
+    .mq-sidebar.show {
+        transform: translateX(0);
+    }
+    .mq-main-panel {
+        margin-left: 0;
+    }
+}
+
+@media print {
+    .mq-sidebar, .mq-topbar, .no-print {
+        display: none !important;
+    }
+    .mq-main-panel {
+        margin-left: 0 !important;
+    }
+    body {
+        background: #ffffff;
+    }
+}
