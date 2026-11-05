@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `email` VARCHAR(150) NOT NULL UNIQUE COMMENT 'Email pribadi wajib untuk menerima notifikasi H-7, H-3, H-1',
     `password` VARCHAR(255) NOT NULL,
     `departemen_default` VARCHAR(30) DEFAULT 'ALL',
-    `role` ENUM('admin', 'user') DEFAULT 'user',
+    `role` ENUM('superadmin', 'admin', 'user') DEFAULT 'user',
+    `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'approved',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -109,5 +110,6 @@ INSERT IGNORE INTO `departments` (`kode_dept`, `nama_dept`, `deskripsi`) VALUES
 ('MPC', 'Medical Primary Care / Corporate (MPC)', 'Divisi MPC'),
 ('RA', 'Regulatory Affairs (RA)', 'Divisi Regulatory Affairs'),
 ('GA', 'General Affairs (GA)', 'Divisi General Affairs & Operasional'),
-('LAC', 'Legal & Agreement Compliance (LAC)', 'Divisi Legal & Compliance');
+('LAC', 'Legal & Agreement Compliance (LAC)', 'Divisi Legal & Compliance'),
+('ITD', 'Information Technology Department (ITD)', 'Divisi IT & Systems');
 

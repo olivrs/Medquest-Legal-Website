@@ -39,6 +39,7 @@ try {
         initialize_database_schema($pdo);
     }
     ensure_deadline_columns($pdo);
+    ensure_user_approval_columns($pdo);
 } catch (PDOException $e) {
     die("Koneksi Database Gagal: " . htmlspecialchars($e->getMessage()));
 }
@@ -62,6 +63,22 @@ function ensure_deadline_columns(PDO $pdo) {
     }
     // Ubah tipe_notif di email_notifications menjadi VARCHAR(20) agar mendukung H-90, H-60, H-30, H-14, H-7, H-3, H-1
     $pdo->exec("ALTER TABLE email_notifications MODIFY COLUMN `tipe_notif` VARCHAR(20) NOT NULL");
+}
+
+
+/**
+ * Pastikan kolom role superadmin dan status approval tersedia di tabel users
+ */
+function ensure_user_approval_columns(PDO $pdo) {
+    try {
+        $cols = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('status', $cols, true)) {
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN `role` ENUM('superadmin', 'admin', 'user') NOT NULL DEFAULT 'user'");
+            $pdo->exec("ALTER TABLE users ADD COLUMN `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'approved' AFTER `role`");
+        }
+    } catch (Exception $e) {
+        // ignore
+    }
 }
 
 function initialize_database_schema(PDO $pdo) {
@@ -98,6 +115,30 @@ function base_url($path = '') {
 
 function is_logged_in() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user']);
+}
+
+function is_superadmin() {
+    global $pdo;
+    $u = current_user();
+    if (!$u || empty($u['id'])) return false;
+    $role = strtolower($u['role'] ?? '');
+    if (in_array($role, ['superadmin', 'admin'], true)) {
+        return true;
+    }
+    // Refresh role dari database jika baru diangkat menjadi superadmin
+    try {
+        if (isset($pdo)) {
+            $stmt = $pdo->prepare("SELECT role, status FROM users WHERE id = ? LIMIT 1");
+            $stmt->execute([(int)$u['id']]);
+            $row = $stmt->fetch();
+            if ($row) {
+                $_SESSION['user']['role'] = $row['role'];
+                $_SESSION['user']['status'] = $row['status'];
+                return in_array(strtolower($row['role']), ['superadmin', 'admin'], true);
+            }
+        }
+    } catch (Exception $e) {}
+    return false;
 }
 
 function current_user() {
@@ -212,7 +253,7 @@ function get_expiry_info($expiry_date) {
     } elseif ($days === 0) {
         return [
             'status' => 'warning',
-            'row_class' => 'row-urgent',
+            'row_class' => 'row-urgent row-h3',
             'badge_class' => 'badge-h3',
             'label' => 'Expired Hari Ini!',
             'short_label' => 'HARI INI EXPIRED',
@@ -222,10 +263,10 @@ function get_expiry_info($expiry_date) {
     } elseif ($days <= 3) {
         return [
             'status' => 'warning',
-            'row_class' => 'row-urgent',
+            'row_class' => 'row-urgent row-h3',
             'badge_class' => 'badge-h3',
             'label' => "Mendesak: H-{$days} ({$days} hari lagi)",
-            'short_label' => ($days === 3 ? 'TEPAT H-3' : "Sisa {$days} Hari (Fase H-3)"),
+            'short_label' => ($days === 3 ? 'TEPAT H-3' : "Sisa {$days} Hari"),
             'next_stage' => 'H-3',
             'days' => $days
         ];
@@ -235,7 +276,7 @@ function get_expiry_info($expiry_date) {
             'row_class' => 'row-warning',
             'badge_class' => 'badge-h7',
             'label' => "Segera Expired: H-{$days}",
-            'short_label' => ($days === 7 ? 'TEPAT H-7' : "Sisa {$days} Hari (Fase H-7)"),
+            'short_label' => ($days === 7 ? 'TEPAT H-7' : "Sisa {$days} Hari"),
             'next_stage' => 'H-7',
             'days' => $days
         ];
@@ -245,7 +286,7 @@ function get_expiry_info($expiry_date) {
             'row_class' => 'row-warning',
             'badge_class' => 'badge-h14',
             'label' => "Fase H-14 (Sisa {$days} hari)",
-            'short_label' => ($days === 14 ? 'TEPAT H-14' : "Sisa {$days} Hari (Fase H-14)"),
+            'short_label' => ($days === 14 ? 'TEPAT H-14' : "Sisa {$days} Hari"),
             'next_stage' => 'H-14',
             'days' => $days
         ];
@@ -255,7 +296,7 @@ function get_expiry_info($expiry_date) {
             'row_class' => 'row-warning-soft',
             'badge_class' => 'badge-h30',
             'label' => "Fase H-30 (Sisa {$days} hari)",
-            'short_label' => ($days === 30 ? 'TEPAT H-30' : "Sisa {$days} Hari (Fase H-30)"),
+            'short_label' => ($days === 30 ? 'TEPAT H-30' : "Sisa {$days} Hari"),
             'next_stage' => 'H-30',
             'days' => $days
         ];
@@ -265,7 +306,7 @@ function get_expiry_info($expiry_date) {
             'row_class' => 'row-warning-soft',
             'badge_class' => 'badge-h60',
             'label' => "Fase H-60 (Sisa {$days} hari)",
-            'short_label' => ($days === 60 ? 'TEPAT H-60' : "Sisa {$days} Hari (Fase H-60)"),
+            'short_label' => ($days === 60 ? 'TEPAT H-60' : "Sisa {$days} Hari"),
             'next_stage' => 'H-60',
             'days' => $days
         ];
@@ -275,7 +316,7 @@ function get_expiry_info($expiry_date) {
             'row_class' => 'row-warning-soft',
             'badge_class' => 'badge-h90',
             'label' => "Fase H-90 (Sisa {$days} hari)",
-            'short_label' => ($days === 90 ? 'TEPAT H-90' : "Sisa {$days} Hari (Fase H-90)"),
+            'short_label' => ($days === 90 ? 'TEPAT H-90' : "Sisa {$days} Hari"),
             'next_stage' => 'H-90',
             'days' => $days
         ];

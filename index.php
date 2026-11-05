@@ -12,7 +12,7 @@ if ($page === 'logout') {
     exit;
 }
 
-$allowedPages = ['login', 'register', 'agreements', 'create', 'edit', 'detail', 'notifications', 'smtp_settings'];
+$allowedPages = ['login', 'register', 'register_pending', 'user_approvals', 'agreements', 'create', 'edit', 'detail', 'notifications', 'smtp_settings'];
 if (!in_array($page, $allowedPages, true)) {
     $page = is_logged_in() ? 'agreements' : 'login';
 }

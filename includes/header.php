@@ -40,6 +40,13 @@ if (is_logged_in()) {
         $userDeptCounts[strtoupper($r['department'])] = (int)$r['total'];
         $userTotalDocs += (int)$r['total'];
     }
+
+    $pendingApprovalsCount = 0;
+    if (is_superadmin()) {
+        try {
+            $pendingApprovalsCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE status = 'pending'")->fetchColumn();
+        } catch (Exception $e) {}
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -47,199 +54,227 @@ if (is_logged_in()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medquest LAC - Log of Cooperation Agreement</title>
+    <title>Medquest - Document System Monitoring (Log of Cooperation Agreement)</title>
+    <link rel="icon" href="<?= base_url('assets/img/logo_medquest.png') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq19" rel="stylesheet">
 </head>
 <body>
 
 <?php if (is_logged_in()):
-    $isDeptFiltered = ($currPage === 'agreements' && $currDept !== 'ALL');
+    $isDeptOpen = ($currPage === 'agreements');
 ?>
-<div class="mq-app-wrapper">
+<div class="app-layout">
     <!-- ========================================================================
-         LEFT SIDEBAR (Connect Plus Layout with Compact Departemen Dropdown)
+         1. LEFT SIDEBAR (TETAP DI SEBELAH KIRI DENGAN MENU LENGKAP SEBELUMNYA)
          ======================================================================== -->
-    <aside class="mq-sidebar" id="mqSidebar">
-        <a href="<?= base_url('?page=agreements') ?>" class="mq-sidebar-brand">
-            <span class="brand-logo-box">
-                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" onerror="this.style.display='none'">
-            </span>
-            <span class="brand-text">Medquest LAC</span>
+    <aside class="app-sidebar no-print">
+        <a href="<?= base_url('?page=agreements') ?>" class="sidebar-brand justify-content-center">
+            <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest Logo" class="sidebar-logo-centered">
         </a>
 
-        <div class="mq-sidebar-section">Main</div>
-        <ul class="mq-sidebar-nav">
-            <!-- 1. Dashboard -->
-            <li class="mq-sidebar-item">
-                <a href="<?= base_url('?page=agreements') ?>" class="mq-sidebar-link <?= ($currPage === 'agreements' && $currDept === 'ALL') ? 'active' : '' ?>">
-                    <span class="mq-sidebar-icon"><i class="fas fa-th-large"></i></span>
-                    <span>Dashboard</span>
-                </a>
-            </li>
+        <div class="sidebar-menu">
+            <div class="sidebar-section-title">MAIN</div>
 
-            <!-- 2. Dropdown Departemen (Ringkas & Tidak Memanjang) -->
-            <li class="mq-sidebar-item">
-                <a class="mq-sidebar-link <?= $isDeptFiltered ? 'active' : '' ?>"
-                   data-bs-toggle="collapse"
-                   href="#sidebarDeptDropdown"
-                   role="button"
-                   aria-expanded="<?= $isDeptFiltered ? 'true' : 'false' ?>"
-                   aria-controls="sidebarDeptDropdown">
-                    <span class="mq-sidebar-icon"><i class="fas fa-building"></i></span>
-                    <span>Departemen <?= $isDeptFiltered ? '(' . htmlspecialchars($currDept) . ')' : '' ?></span>
-                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+            <!-- Menu 1: Dashboard -->
+            <a href="<?= base_url('?page=agreements') ?>"
+               class="sidebar-link <?= ($currPage === 'agreements' && $currDept === 'ALL') ? 'active' : '' ?>">
+                <span class="s-icon"><i class="fas fa-th-large"></i></span>
+                <span>Dashboard</span>
+            </a>
+
+            <!-- Menu 2: Departemen (Dropdown Submenu) -->
+            <a class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && $currDept !== 'ALL') ? 'active' : '' ?>"
+               data-bs-toggle="collapse" href="#deptSubmenu" role="button"
+               aria-expanded="<?= $isDeptOpen ? 'true' : 'false' ?>" aria-controls="deptSubmenu">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="s-icon"><i class="fas fa-building"></i></span>
+                    <span>Departemen</span>
+                </div>
+                <i class="fas fa-chevron-down small transition-chevron"></i>
+            </a>
+
+            <div class="collapse <?= $isDeptOpen ? 'show' : '' ?>" id="deptSubmenu">
+                <div class="sidebar-submenu">
+                    <a href="<?= base_url('?page=agreements&dept=ALL') ?>"
+                       class="sidebar-sublink <?= ($currPage === 'agreements' && $currDept === 'ALL') ? 'active' : '' ?>">
+                        <span>Semua Departemen</span>
+                        <span class="sub-badge"><?= $userTotalDocs ?></span>
+                    </a>
+                    <?php foreach ($sidebarDepts as $sd):
+                        $dCode = strtoupper($sd['kode_dept']);
+                        $dCount = $userDeptCounts[$dCode] ?? 0;
+                    ?>
+                        <a href="<?= base_url('?page=agreements&dept=' . urlencode($dCode)) ?>"
+                           class="sidebar-sublink <?= ($currPage === 'agreements' && $currDept === $dCode) ? 'active' : '' ?>"
+                           title="<?= htmlspecialchars($sd['nama_dept']) ?>">
+                            <span><?= htmlspecialchars($dCode) ?></span>
+                            <span class="sub-badge"><?= $dCount ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Menu 3: Input Agreement -->
+            <a href="<?= base_url('?page=create' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
+               class="sidebar-link <?= $currPage === 'create' ? 'active' : '' ?>">
+                <span class="s-icon"><i class="fas fa-file-circle-plus"></i></span>
+                <span>Input Agreement</span>
+            </a>
+
+            <!-- Menu 4: Notifikasi Deadline -->
+            <a href="<?= base_url('?page=notifications') ?>"
+               class="sidebar-link d-flex justify-content-between align-items-center <?= $currPage === 'notifications' ? 'active' : '' ?>">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="s-icon"><i class="fas fa-bell"></i></span>
+                    <span>Deadline</span>
+                </div>
+                <?php if ($alertHCount > 0): ?>
+                    <span class="badge rounded-pill bg-danger"><?= $alertHCount ?></span>
+                <?php endif; ?>
+            </a>
+
+            <?php if (is_superadmin()): ?>
+            <!-- Menu 5: Persetujuan Akun (Superadmin) -->
+            <a href="<?= base_url('?page=user_approvals') ?>"
+               class="sidebar-link d-flex justify-content-between align-items-center <?= $currPage === 'user_approvals' ? 'active' : '' ?>">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="s-icon"><i class="fas fa-user-shield"></i></span>
+                    <span>Persetujuan Akun</span>
+                </div>
+                <?php if (!empty($pendingApprovalsCount) && $pendingApprovalsCount > 0): ?>
+                    <span class="badge rounded-pill bg-warning text-dark fw-bold"><?= $pendingApprovalsCount ?></span>
+                <?php endif; ?>
+            </a>
+            <?php endif; ?>
+
+            <div class="mt-3 px-2">
+                <a href="<?= base_url('?page=create' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
+                   class="btn btn-add-agreement w-100 fw-bold btn-sm py-2 shadow-sm">
+                    <i class="fas fa-plus-circle me-1"></i> + Tambah Dokumen
                 </a>
-                <div class="collapse <?= $isDeptFiltered ? 'show' : '' ?>" id="sidebarDeptDropdown">
-                    <ul class="mq-sidebar-submenu">
-                        <li>
-                            <a href="<?= base_url('?page=agreements&dept=ALL') ?>"
-                               class="mq-sidebar-sublink <?= ($currPage === 'agreements' && $currDept === 'ALL') ? 'active' : '' ?>">
-                                <span>Semua Departemen</span>
-                                <span class="badge bg-secondary bg-opacity-25 text-light rounded-pill"><?= $userTotalDocs ?></span>
-                            </a>
-                        </li>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card mb-2">
+                <div class="sidebar-avatar"><?= htmlspecialchars($user['kode_singkatan']) ?></div>
+                <div class="overflow-hidden flex-grow-1">
+                    <div class="fw-bold text-white text-truncate" style="font-size:0.8rem;"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
+                    <div class="text-white-50 text-truncate" style="font-size:0.7rem;">Kode: <?= htmlspecialchars($user['kode_singkatan']) ?></div>
+                </div>
+                <span class="badge bg-white bg-opacity-25 text-white" title="Total Dokumen Anda"><?= $userTotalDocs ?></span>
+            </div>
+            <a href="<?= base_url('?page=logout') ?>" class="sidebar-link text-white-50 py-1 px-2"
+               onclick="return confirm('Keluar dari akun <?= htmlspecialchars($user['kode_singkatan']) ?>?')">
+                <span class="s-icon" style="width:24px;height:24px;"><i class="fas fa-sign-out-alt"></i></span>
+                <span class="small">Log Out</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- ========================================================================
+         2. RIGHT MAIN COLUMN (TOP BAR MEDQUEST.CO.ID + HEADER + CONTENT + FOOTER)
+         ======================================================================== -->
+    <div class="app-main">
+        <!-- Top Utility Bar ala https://medquest.co.id/ (#top-header) -->
+        <div id="top-header" class="mq-top-header no-print">
+            <div class="mq-fluid-bar">
+                <div class="mq-top-left">
+                    <span class="mq-top-item"><i class="fas fa-phone-volume"></i> +62 21 39842961</span>
+                    <a href="mailto:info@medquest.co.id" class="mq-top-item"><i class="fas fa-envelope"></i> info@medquest.co.id</a>
+                    <span class="mq-top-item mq-hide-mobile"><i class="fas fa-map-marker-alt"></i> Menara Salemba 6th Fl Zone 1, Jakarta Pusat</span>
+                </div>
+                <div class="mq-top-right">
+                    <span class="mq-hotline-pill"><i class="fas fa-headset"></i> Hotline 24h: +62-21-29260000</span>
+                    <div class="mq-top-socials">
+                        <a href="https://www.facebook.com/MedquestID" target="_blank" rel="noopener" title="Facebook Medquest"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://twitter.com/medquest_id" target="_blank" rel="noopener" title="X / Twitter Medquest"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.instagram.com/medquest_id/" target="_blank" rel="noopener" title="Instagram Medquest"><i class="fab fa-instagram"></i></a>
+                        <a href="https://medquest.co.id/" target="_blank" rel="noopener" title="Website Resmi medquest.co.id"><i class="fas fa-globe"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Topbar Header ala https://medquest.co.id/ (#main-header) -->
+        <header id="main-header" class="app-topbar no-print">
+            <div class="d-flex align-items-center gap-3 flex-grow-1" style="max-width: 460px;">
+                <button type="button" id="sidebarToggleBtn" class="sidebar-toggle-btn" title="Buka / Tutup Sidebar" aria-label="Toggle Sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <form method="GET" action="<?= base_url() ?>" class="topbar-search">
+                    <input type="hidden" name="page" value="agreements">
+                    <input type="hidden" name="dept" value="<?= htmlspecialchars($currDept) ?>">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="q" placeholder="Cari dokumen milik <?= htmlspecialchars($user['kode_singkatan']) ?> (nomor, customer, produk, S/N)..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+                </form>
+            </div>
+
+            <div class="topbar-actions">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light border-0 fw-semibold text-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Departemen (<?= htmlspecialchars($currDept) ?>)
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                        <li><a class="dropdown-item small fw-bold" href="<?= base_url('?page=agreements&dept=ALL') ?>">Semua Departemen (<?= $userTotalDocs ?>)</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <?php foreach ($sidebarDepts as $sd):
                             $dCode = strtoupper($sd['kode_dept']);
                             $dCount = $userDeptCounts[$dCode] ?? 0;
                         ?>
                             <li>
-                                <a href="<?= base_url('?page=agreements&dept=' . urlencode($dCode)) ?>"
-                                   class="mq-sidebar-sublink <?= ($currPage === 'agreements' && $currDept === $dCode) ? 'active' : '' ?>">
-                                    <span><?= htmlspecialchars($dCode) ?></span>
-                                    <span class="badge bg-secondary bg-opacity-25 text-light rounded-pill"><?= $dCount ?></span>
+                                <a class="dropdown-item small d-flex justify-content-between align-items-center" href="<?= base_url('?page=agreements&dept=' . urlencode($dCode)) ?>">
+                                    <span><strong><?= htmlspecialchars($dCode) ?></strong> - <?= htmlspecialchars($sd['nama_dept']) ?></span>
+                                    <span class="badge bg-light text-dark ms-2"><?= $dCount ?></span>
                                 </a>
                             </li>
                         <?php endforeach; ?>
                     </ul>
                 </div>
-            </li>
 
-            <!-- 3. Input Data Baru -->
-            <li class="mq-sidebar-item">
-                <a href="<?= base_url('?page=create') ?>" class="mq-sidebar-link <?= ($currPage === 'create') ? 'active' : '' ?>">
-                    <span class="mq-sidebar-icon"><i class="fas fa-file-circle-plus"></i></span>
-                    <span>Input Agreement</span>
-                </a>
-            </li>
+                <div class="d-flex align-items-center gap-2 border-start ps-3">
+                    <div class="sidebar-avatar" style="width:30px;height:30px;font-size:0.72rem;background:#2458f1;">
+                        <?= htmlspecialchars($user['kode_singkatan']) ?>
+                    </div>
+                    <div class="d-none d-md-block" style="line-height:1.15;">
+                        <div class="fw-bold text-dark" style="font-size:0.78rem;"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
+                        <div class="text-muted" style="font-size:0.68rem;"><?= htmlspecialchars($user['email']) ?></div>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.7rem;">
+                        <?= htmlspecialchars($user['kode_singkatan']) ?>
+                    </span>
+                </div>
 
-            <!-- 4. Jadwal Deadline & Email -->
-            <li class="mq-sidebar-item">
-                <a href="<?= base_url('?page=notifications') ?>" class="mq-sidebar-link <?= ($currPage === 'notifications') ? 'active' : '' ?>">
-                    <span class="mq-sidebar-icon"><i class="fas fa-bell"></i></span>
-                    <span>Deadline H-90 s/d H-3</span>
-                    <?php if ($alertHCount > 0): ?>
-                        <span class="badge bg-danger ms-auto"><?= $alertHCount ?></span>
+                <?php if (is_superadmin()): ?>
+                <a href="<?= base_url('?page=user_approvals') ?>" class="topbar-icon-btn position-relative" title="Persetujuan Akun User (Superadmin)">
+                    <i class="fas fa-user-shield"></i>
+                    <?php if (!empty($pendingApprovalsCount) && $pendingApprovalsCount > 0): ?>
+                        <span class="dot-badge" style="background:#f59e0b !important;"></span>
                     <?php endif; ?>
                 </a>
-            </li>
-        </ul>
+                <?php endif; ?>
 
-        <div class="mq-sidebar-cta">
-            <a href="<?= base_url('?page=create' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>" class="btn-cta">
-                <i class="fas fa-plus-circle me-1"></i> + Tambah Dokumen
-            </a>
-        </div>
-
-        <!-- Bottom User Profile & Settings -->
-        <div class="mq-sidebar-footer">
-            <div class="mq-sidebar-user">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="mq-user-avatar"><?= htmlspecialchars($user['kode_singkatan']) ?></span>
-                    <div style="line-height:1.2;">
-                        <div class="fw-bold text-white" style="font-size:0.84rem;"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
-                        <div style="font-size:0.7rem;color:#94a3b8;">Kode: <?= htmlspecialchars($user['kode_singkatan']) ?></div>
-                    </div>
-                </div>
-                <span class="badge bg-primary rounded-2 px-2 py-1" title="Total Dokumen <?= htmlspecialchars($user['kode_singkatan']) ?>"><?= $userTotalDocs ?></span>
-            </div>
-
-            <ul class="mq-sidebar-nav px-0">
-                <li class="mq-sidebar-item">
-                    <a href="<?= base_url('?page=logout') ?>" class="mq-sidebar-link py-2 px-2" onclick="return confirm('Keluar dari akun <?= htmlspecialchars($user['kode_singkatan']) ?>?')">
-                        <i class="fas fa-sign-out-alt text-danger" style="width:20px;"></i>
-                        <span>Log Out</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </aside>
-
-    <!-- ========================================================================
-         RIGHT MAIN PANEL (Topbar + Content)
-         ======================================================================== -->
-    <div class="mq-main-panel">
-        <!-- Top White Bar -->
-        <header class="mq-topbar no-print">
-            <div class="d-flex align-items-center gap-3 flex-grow-1">
-                <button type="button" class="btn btn-sm btn-light border d-lg-none" onclick="document.getElementById('mqSidebar').classList.toggle('show')">
-                    <i class="fas fa-bars"></i>
-                </button>
-
-                <form method="GET" action="<?= base_url() ?>" class="mq-topbar-search">
-                    <input type="hidden" name="page" value="agreements">
-                    <input type="hidden" name="dept" value="<?= htmlspecialchars($currDept) ?>">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" name="q" placeholder="Cari dokumen milik <?= htmlspecialchars($user['kode_singkatan']) ?> (nomor, customer, produk)..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
-                </form>
-            </div>
-
-            <div class="d-flex align-items-center gap-3">
-                <!-- Dropdown Departemen di Topbar -->
-                <div class="dropdown d-none d-md-block">
-                    <a class="text-dark text-decoration-none small fw-semibold dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                        Departemen (<?= htmlspecialchars($currDept) ?>)
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                        <li>
-                            <a class="dropdown-item small fw-bold d-flex justify-content-between align-items-center" href="<?= base_url('?page=agreements&dept=ALL') ?>">
-                                <span>Semua Departemen</span>
-                                <span class="badge bg-light text-dark border ms-2"><?= $userTotalDocs ?></span>
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <?php foreach ($sidebarDepts as $sd):
-                            $dCode = strtoupper($sd['kode_dept']);
-                            $dCnt  = $userDeptCounts[$dCode] ?? 0;
-                        ?>
-                            <li>
-                                <a class="dropdown-item small d-flex justify-content-between align-items-center" href="<?= base_url('?page=agreements&dept=' . urlencode($dCode)) ?>">
-                                    <span><strong><?= htmlspecialchars($dCode) ?></strong> &mdash; <?= htmlspecialchars($sd['nama_dept']) ?></span>
-                                    <span class="badge bg-light text-dark border ms-2"><?= $dCnt ?></span>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-
-                <!-- User Info -->
-                <div class="d-flex align-items-center gap-2 border-start ps-3">
-                    <span class="mq-user-avatar" style="width:32px;height:32px;font-size:0.75rem;"><?= htmlspecialchars($user['kode_singkatan']) ?></span>
-                    <div class="d-none d-sm-block" style="line-height:1.15;">
-                        <div class="fw-bold text-dark" style="font-size:0.83rem;"><?= htmlspecialchars($user['nama_lengkap']) ?> <span class="badge bg-primary-subtle text-primary ms-1"><?= htmlspecialchars($user['kode_singkatan']) ?></span></div>
-                        <div class="text-muted" style="font-size:0.7rem;"><?= htmlspecialchars($user['email']) ?></div>
-                    </div>
-                </div>
-
-                <!-- Icon Mail & Bell -->
-                <a href="<?= base_url('?page=notifications') ?>" class="text-secondary position-relative ms-1" title="Riwayat Email Terkirim">
-                    <i class="far fa-envelope fs-6"></i>
+                <a href="<?= base_url('?page=smtp_settings') ?>" class="topbar-icon-btn" title="Pengaturan Email Otomatis (SMTP)">
+                    <i class="fas fa-envelope-open-text"></i>
                 </a>
-                <a href="<?= base_url('?page=notifications') ?>" class="text-secondary position-relative ms-1" title="Jadwal Deadline & Notifikasi">
-                    <i class="far fa-bell fs-6"></i>
+
+                <a href="<?= base_url('?page=notifications') ?>" class="topbar-icon-btn" title="Notifikasi Email Deadline">
+                    <i class="far fa-bell"></i>
                     <?php if ($alertHCount > 0): ?>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                        <span class="dot-badge"></span>
                     <?php endif; ?>
                 </a>
             </div>
         </header>
 
-        <!-- Main Content Container -->
-        <div class="mq-content-area">
+        <!-- Main Content Area -->
+        <main class="app-content">
+            <!-- Toast Container untuk Notifikasi Pengiriman Email Otomatis Background -->
             <div id="autoEmailToastContainer" class="no-print" style="position:fixed;bottom:20px;right:20px;z-index:9999;max-width:420px;"></div>
 
             <?php
@@ -254,13 +289,31 @@ if (is_logged_in()) {
                 </div>
             <?php endif; ?>
 <?php else: ?>
-    <!-- Jika belum login (Halaman Login / Register) -->
+    <!-- Top Utility Bar ala https://medquest.co.id/ untuk halaman Login / Register -->
+    <div id="top-header" class="mq-top-header no-print">
+        <div class="mq-container">
+            <div class="mq-top-left">
+                <span class="mq-top-item"><i class="fas fa-phone-volume"></i> +62 21 39842961</span>
+                <a href="mailto:info@medquest.co.id" class="mq-top-item"><i class="fas fa-envelope"></i> info@medquest.co.id</a>
+                <span class="mq-top-item mq-hide-mobile"><i class="fas fa-map-marker-alt"></i> Menara Salemba 6th Fl Zone 1, Jakarta Pusat</span>
+            </div>
+            <div class="mq-top-right">
+                <span class="mq-hotline-pill"><i class="fas fa-headset"></i> Hotline 24h: +62-21-29260000</span>
+                <div class="mq-top-socials">
+                    <a href="https://www.facebook.com/MedquestID" target="_blank" rel="noopener" title="Facebook Medquest"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://twitter.com/medquest_id" target="_blank" rel="noopener" title="X / Twitter Medquest"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.instagram.com/medquest_id/" target="_blank" rel="noopener" title="Instagram Medquest"><i class="fab fa-instagram"></i></a>
+                    <a href="https://medquest.co.id/" target="_blank" rel="noopener" title="Website Resmi medquest.co.id"><i class="fas fa-globe"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php
     $flash = get_flash();
     if ($flash):
         $alertType = $flash['type'] === 'error' ? 'danger' : ($flash['type'] ?: 'info');
     ?>
-        <div class="container pt-3" style="position:fixed;top:10px;left:0;right:0;z-index:9999;max-width:520px;">
+        <div class="container pt-3" style="position:fixed;top:42px;left:0;right:0;z-index:9999;max-width:520px;">
             <div class="alert alert-<?= htmlspecialchars($alertType) ?> alert-dismissible fade show shadow border-0" role="alert">
                 <?= $flash['message'] ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

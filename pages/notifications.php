@@ -78,14 +78,14 @@ $emailLogs = $stmtLogs->fetchAll();
                         $expInfo = get_expiry_info($item['expiry_date']);
                         $schedule = get_deadline_schedule($item['expiry_date'], $item);
                     ?>
-                        <tr>
+                        <tr class="<?= $expInfo['row_class'] ?>">
                             <td>
                                 <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
                                     <?= htmlspecialchars($expInfo['short_label']) ?>
                                 </span>
                             </td>
                             <td>
-                                <span class="badge text-white px-2 py-1" style="background:#0d1f44;"><?= htmlspecialchars($item['department']) ?></span>
+                                <span class="badge mq-dept-badge px-2 py-1"><?= htmlspecialchars($item['department']) ?></span>
                             </td>
                             <td>
                                 <div class="fw-bold text-dark"><?= htmlspecialchars($item['customer']) ?></div>
@@ -182,7 +182,7 @@ $emailLogs = $stmtLogs->fetchAll();
 <div class="modal fade" id="modalEmailPreview" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-3 overflow-hidden border-0 shadow">
-            <div class="modal-header text-white py-2" style="background:#0d1f44;">
+            <div class="modal-header mq-modal-header text-white py-2">
                 <h6 class="modal-title fw-bold">Detail Email</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>

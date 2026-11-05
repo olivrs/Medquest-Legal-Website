@@ -9,30 +9,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password  = $_POST['password'] ?? '';
 
     if ($identitas === '' || $password === '') {
-        set_flash('error', 'Harap isi Email / Kode Singkatan dan Password Anda.');
+        set_flash('error', 'Harap isi Email / NIK dan Password Anda.');
     } else {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR kode_singkatan = ? LIMIT 1");
         $stmt->execute([$identitas, strtoupper($identitas)]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user'] = [
-                'id' => $user['id'],
-                'nama_lengkap' => $user['nama_lengkap'],
-                'kode_singkatan' => strtoupper($user['kode_singkatan']),
-                'email' => $user['email'],
-                'departemen_default' => $user['departemen_default'],
-                'role' => $user['role']
-            ];
-            set_flash('success', 'Selamat datang kembali, <strong>' . htmlspecialchars($user['nama_lengkap']) . ' (' . htmlspecialchars($user['kode_singkatan']) . ')</strong>!');
-            $redirectDept = ($user['departemen_default'] && $user['departemen_default'] !== 'ALL')
-                ? '&dept=' . urlencode($user['departemen_default'])
-                : '';
-            header("Location: " . base_url('?page=agreements' . $redirectDept));
-            exit;
+            $status = $user['status'] ?? 'approved';
+            if ($status === 'pending') {
+                set_flash('error', '<div class="fw-bold mb-1"><i class="fas fa-hourglass-half me-1 text-warning"></i> Akun Sedang Ditinjau!</div>Akun dengan kode <strong>' . htmlspecialchars($user['kode_singkatan']) . '</strong> sudah didaftarkan dan <strong>sedang ditinjau oleh Team Medquest</strong>.<br><span class="small opacity-85">Mohon menunggu persetujuan (ACC) dari Superadmin dan cek secara berkala.</span>');
+                header("Location: " . base_url('?page=login'));
+                exit;
+            } elseif ($status === 'rejected') {
+                set_flash('error', '<div class="fw-bold mb-1"><i class="fas fa-times-circle me-1 text-danger"></i> Pendaftaran Akun Ditolak</div>Pendaftaran akun dengan kode <strong>' . htmlspecialchars($user['kode_singkatan']) . '</strong> ditolak oleh Superadmin. Silakan hubungi admin Medquest.');
+                header("Location: " . base_url('?page=login'));
+                exit;
+            } else {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user'] = [
+                    'id' => $user['id'],
+                    'nama_lengkap' => $user['nama_lengkap'],
+                    'kode_singkatan' => strtoupper($user['kode_singkatan']),
+                    'email' => $user['email'],
+                    'departemen_default' => $user['departemen_default'],
+                    'role' => $user['role'],
+                    'status' => $status
+                ];
+                set_flash('success', 'Selamat datang kembali, <strong>' . htmlspecialchars($user['nama_lengkap']) . ' (' . htmlspecialchars($user['kode_singkatan']) . ')</strong>!');
+                $redirectDept = ($user['departemen_default'] && $user['departemen_default'] !== 'ALL')
+                    ? '&dept=' . urlencode($user['departemen_default'])
+                    : '';
+                header("Location: " . base_url('?page=agreements' . $redirectDept));
+                exit;
+            }
         } else {
-            set_flash('error', 'Email / Kode Singkatan atau Password tidak sesuai.');
+            set_flash('error', 'Email / NIK atau Password tidak sesuai.');
+            header("Location: " . base_url('?page=login'));
+            exit;
         }
     }
 }
@@ -41,20 +55,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-card-header">
-            <div class="bg-white d-inline-block px-3 py-2 rounded-3 mb-2">
-                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:32px;">
+            <div class="d-inline-block mb-2">
+                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px; border-radius:6px;">
             </div>
             <h4 class="fw-bold mb-1">LOG OF COOPERATION AGREEMENT</h4>
-            <div class="small opacity-75">Sistem Monitoring Kontrak &amp; Notifikasi Email Otomatis (H-7, H-3, H-1)</div>
+            <div class="small opacity-75">Document System Monitoring</div>
         </div>
 
         <div class="p-4 p-md-4">
             <form method="POST" action="<?= base_url('?page=login') ?>">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Email Pribadi atau Kode Singkatan Medquest</label>
+                    <label class="form-label fw-semibold">Email / NIK </label>
                     <div class="input-group">
                         <span class="input-group-text bg-light"><i class="fas fa-user-tag text-primary"></i></span>
-                        <input type="text" name="identitas" class="form-control" placeholder="Contoh: FJR atau fjr.medquest@gmail.com" required autofocus>
+                        <input type="text" name="identitas" class="form-control" placeholder="Contoh: FJR, NIK, atau fjr.medquest@gmail.com" required autofocus>
                     </div>
                 </div>
 
@@ -82,10 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mt-4 p-3 rounded-3 bg-light border small">
                 <div class="fw-bold text-dark mb-1"><i class="fas fa-info-circle text-primary me-1"></i> Akun Demo Bawaan (Sesuai Foto Form):</div>
-                <div>Kode Singkatan: <code class="fw-bold">FJR</code> &bull; Email: <code>fjr.medquest@gmail.com</code></div>
+                <div>Kode Singkatan / NIK: <code class="fw-bold">FJR</code> &bull; Email: <code>fjr.medquest@gmail.com</code></div>
                 <div>Password: <code class="fw-bold">medquest123</code></div>
             </div>
         </div>
     </div>
 </div>
-

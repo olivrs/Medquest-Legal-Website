@@ -79,7 +79,7 @@ function send_via_zero_config_cloud_relay(string $toEmail, string $subject, arra
  * Bangun template HTML Email resmi Medquest untuk pengingat H-90, H-60, H-30, H-14, H-7, H-3
  */
 function build_expiry_email_html(array $agreement, array $creator, string $tipeNotif, int $daysRemaining): string {
-    $badgeColor = '#2563eb';
+    $badgeColor = '#0059fb';
     $urgencyText = "{$daysRemaining} Hari Lagi ({$tipeNotif})";
 
     if ($daysRemaining <= 3 || $tipeNotif === 'H-3') {
@@ -117,7 +117,7 @@ function build_expiry_email_html(array $agreement, array $creator, string $tipeN
         $borderPill = $isCurrent ? '2px solid #ca8a04' : '1px solid #cbd5e1';
         $scheduleHtml .= '
           <td style="padding:8px 6px;text-align:center;background:' . $bgPill . ';border:' . $borderPill . ';">
-            <div style="font-weight:800;font-size:12px;color:#1e3a8a;">' . $code . '</div>
+            <div style="font-weight:800;font-size:12px;color:#0059fb;">' . $code . '</div>
             <div style="font-size:11px;color:#334155;margin-top:2px;">' . $sItem['date_text'] . '</div>
           </td>';
     }
@@ -129,9 +129,9 @@ function build_expiry_email_html(array $agreement, array $creator, string $tipeN
 <meta charset="UTF-8">
 <title>Notifikasi Deadline ' . htmlspecialchars($tipeNotif) . ' - Medquest</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Segoe UI,Arial,sans-serif;color:#1e293b;">
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Open Sans,Helvetica,Arial,sans-serif;color:#282828;">
   <div style="max-width:680px;margin:24px auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #e2e8f0;">
-    <div style="background:linear-gradient(135deg,#0d1f44 0%,#1d4ed8 100%);padding:22px 28px;color:#ffffff;">
+    <div style="background:linear-gradient(135deg,#101399 0%,#0059fb 65%,#2ea3f2 100%);padding:22px 28px;color:#ffffff;">
       <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:0.85;">PT Medquest Jaya Global &bull; Doc No: MJG-FOR-LAC.12-001-03</div>
       <h2 style="margin:6px 0 0;font-size:20px;font-weight:700;">PENGINGAT DEADLINE KONTRAK: ' . htmlspecialchars($tipeNotif) . '</h2>
     </div>
@@ -156,7 +156,7 @@ function build_expiry_email_html(array $agreement, array $creator, string $tipeN
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px;border:1px solid #cbd5e1;">
         <tr style="background:#f8fafc;">
           <td style="padding:10px 14px;border:1px solid #cbd5e1;font-weight:700;width:34%;color:#334155;">Department / Division</td>
-          <td style="padding:10px 14px;border:1px solid #cbd5e1;font-weight:700;color:#1e3a8a;">' . htmlspecialchars($agreement['department']) . '</td>
+          <td style="padding:10px 14px;border:1px solid #cbd5e1;font-weight:700;color:#0059fb;">' . htmlspecialchars($agreement['department']) . '</td>
         </tr>
         <tr>
           <td style="padding:10px 14px;border:1px solid #cbd5e1;font-weight:700;color:#334155;">Document Number</td>
@@ -193,7 +193,7 @@ function build_expiry_email_html(array $agreement, array $creator, string $tipeN
       </table>
 
       <div style="text-align:center;margin:26px 0 10px;">
-        <a href="' . htmlspecialchars($appUrl) . '" style="background:#1d4ed8;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;display:inline-block;">
+        <a href="' . htmlspecialchars($appUrl) . '" style="background:#0059fb;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;display:inline-block;">
           Buka Departemen ' . htmlspecialchars($agreement['department']) . ' di Website
         </a>
       </div>

@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
 }
 
 $expInfo      = get_expiry_info($agr['expiry_date']);
+$cleanLabel   = preg_replace('/\s*\(Fase\s+H-\d+\)/i', '', $expInfo['short_label']);
 $effFormatted = format_date_medquest($agr['effective_date'], $agr['effective_date_na']);
 $expFormatted = format_date_medquest($agr['expiry_date'], false);
 $schedule     = get_deadline_schedule($agr['expiry_date'], $agr);
@@ -57,167 +58,152 @@ $histories = $stmtHist->fetchAll();
 $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
 ?>
 
-<!-- Header dengan Tombol Back, Edit & Cetak -->
-<div class="cp-header-row mb-3 no-print">
-    <div class="d-flex align-items-center gap-2">
-        <a href="<?= $backUrl ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
-            <i class="fas fa-arrow-left me-1"></i> Back
-        </a>
-        <h1 class="cp-page-title ms-1">Detail Agreement (#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?>)</h1>
+<div class="mq-detail-fullpage">
+    <!-- Header dengan Tombol Back, Edit & Cetak -->
+    <div class="cp-header-row mb-3 no-print">
+        <div class="d-flex align-items-center gap-2">
+            <a href="<?= $backUrl ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
+                <i class="fas fa-arrow-left me-1"></i> Back
+            </a>
+            <h1 class="cp-page-title ms-1">Detail Agreement (#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?>)</h1>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" onclick="window.print()" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
+                <i class="fas fa-print me-1"></i> Print
+            </button>
+            <a href="<?= base_url('?page=edit&id=' . $agr['id']) ?>" class="btn btn-sm btn-primary fw-semibold px-3 py-1">
+                <i class="fas fa-edit me-1"></i> Edit Data
+            </a>
+        </div>
     </div>
 
-    <div class="d-flex align-items-center gap-2">
-        <button type="button" onclick="window.print()" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
-            <i class="fas fa-print me-1"></i> Print
-        </button>
-        <a href="<?= base_url('?page=edit&id=' . $agr['id']) ?>" class="btn btn-sm btn-primary fw-semibold px-3 py-1">
-            <i class="fas fa-edit me-1"></i> Edit Data
-        </a>
-    </div>
-</div>
-
-<div class="row g-3">
-    <!-- Kolom Kiri: Rincian Lengkap Data Agreement -->
-    <div class="col-lg-8">
-        <div class="cp-table-card mt-0">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                <div>
-                    <span class="badge text-white px-2 py-1 me-2" style="background:#0d1f44;">
-                        DEPT: <?= htmlspecialchars($agr['department']) ?>
-                    </span>
-                    <span class="fw-bold text-dark">Doc. No: MJG-FOR-LAC.12-001-03</span>
-                </div>
-                <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
-                    <?= htmlspecialchars($expInfo['short_label']) ?>
-                </span>
-            </div>
-
-            <table class="table table-sm table-bordered mb-3" style="font-size:0.8rem;">
-                <tbody>
-                    <tr>
-                        <th class="bg-light text-secondary" style="width:32%;padding:8px 12px;">No. Urut Form</th>
-                        <td class="fw-bold" style="padding:8px 12px;">#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Department / Division</th>
-                        <td class="fw-bold text-primary" style="padding:8px 12px;"><?= htmlspecialchars($agr['department']) ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Document Number</th>
-                        <td class="fw-semibold" style="padding:8px 12px;white-space:pre-line;"><?= htmlspecialchars($agr['document_number']) ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Customer</th>
-                        <td class="fw-bold text-dark" style="padding:8px 12px;"><?= htmlspecialchars($agr['customer']) ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Product (Description)</th>
-                        <td style="padding:8px 12px;"><?= htmlspecialchars($agr['product_description']) ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Product (Serial Number)</th>
-                        <td style="padding:8px 12px;"><?= htmlspecialchars($agr['serial_number'] ?: 'N/A') ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Effective Date</th>
-                        <td class="fw-semibold" style="padding:8px 12px;"><?= $effFormatted ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-danger" style="padding:8px 12px;">Expiry Date</th>
-                        <td class="fw-bold text-danger" style="padding:8px 12px;"><?= $expFormatted ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Note</th>
-                        <td style="padding:8px 12px;white-space:pre-line;"><?= htmlspecialchars($agr['note'] ?: 'N/A') ?></td>
-                    </tr>
-                    <tr>
-                        <th class="bg-light text-secondary" style="padding:8px 12px;">Created By</th>
-                        <td class="fw-bold font-monospace" style="padding:8px 12px;white-space:pre-line;"><?= htmlspecialchars($agr['created_by_log']) ?></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- Jadwal Tanggal Deadline H-90, H-60, H-30, H-14, H-7, H-3 -->
-            <div class="fw-bold text-dark mb-2" style="font-size:0.78rem;">Jadwal Tanggal Deadline (H-90 s/d H-3)</div>
-            <div class="row g-2 text-center">
-                <?php foreach ($schedule as $code => $dl):
-                    $bgClass = ($dl['state'] === 'today') ? 'bg-warning-subtle border-warning' : (($dl['state'] === 'passed') ? 'bg-light text-muted' : 'bg-primary-subtle border-primary-subtle');
-                ?>
-                    <div class="col-4 col-md-2">
-                        <div class="p-2 rounded border <?= $bgClass ?>">
-                            <div class="fw-bold" style="font-size:0.72rem;"><?= $code ?></div>
-                            <div class="fw-semibold" style="font-size:0.7rem;"><?= $dl['date_text'] ?></div>
-                        </div>
+    <div class="row g-3 flex-grow-1 align-items-stretch">
+        <!-- Kolom Kiri: Rincian Lengkap Data Agreement -->
+        <div class="col-lg-8 d-flex flex-column">
+            <div class="cp-table-card mt-0 flex-grow-1 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                    <div>
+                        <span class="badge mq-dept-badge px-2 py-1 me-2">
+                            DEPT: <?= htmlspecialchars($agr['department']) ?>
+                        </span>
+                        <span class="fw-bold text-dark">Doc. No: MJG-FOR-LAC.12-001-03</span>
                     </div>
-                <?php endforeach; ?>
+                    <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
+                        <?= htmlspecialchars($cleanLabel) ?>
+                    </span>
+                </div>
+
+                <div class="mb-0">
+                    <table class="table table-bordered mq-detail-table mb-0">
+                        <tbody>
+                            <tr class="mq-row-compact">
+                                <th class="bg-light text-secondary" style="width:32%;">No. Urut Form</th>
+                                <td class="fw-bold">#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?></td>
+                            </tr>
+                            <tr class="mq-row-compact">
+                                <th class="bg-light text-secondary">Department / Division</th>
+                                <td class="fw-bold text-primary"><?= htmlspecialchars($agr['department']) ?></td>
+                            </tr>
+                            <tr class="mq-row-compact">
+                                <th class="bg-light text-secondary">Document Number</th>
+                                <td class="fw-semibold" style="white-space:pre-line;"><?= htmlspecialchars($agr['document_number']) ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-secondary">Customer</th>
+                                <td class="fw-bold text-dark"><?= htmlspecialchars($agr['customer']) ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-secondary">Product (Description)</th>
+                                <td><?= htmlspecialchars($agr['product_description']) ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-secondary">Product (Serial Number)</th>
+                                <td><?= htmlspecialchars($agr['serial_number'] ?: 'N/A') ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-secondary">Effective Date</th>
+                                <td class="fw-semibold"><?= $effFormatted ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-danger">Expiry Date</th>
+                                <td class="fw-bold text-danger"><?= $expFormatted ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-secondary">Note</th>
+                                <td style="white-space:pre-line;"><?= htmlspecialchars($agr['note'] ?: 'N/A') ?></td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light text-secondary">Created By</th>
+                                <td class="fw-bold font-monospace" style="white-space:pre-line;"><?= htmlspecialchars($agr['created_by_log']) ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Kolom Kanan: File Dokumen & Riwayat Input -->
-    <div class="col-lg-4">
-        <!-- Kartu Lampiran File Dokumen -->
-        <div class="cp-table-card mt-0 mb-3">
-            <div class="fw-bold text-dark border-bottom pb-2 mb-2" style="font-size:0.8rem;">
-                File Lampiran Dokumen
-            </div>
-
-            <?php if (!empty($agr['file_attachment'])):
-                $fileUrl = base_url('assets/uploads/' . $agr['file_attachment']);
-                $ext = strtolower(pathinfo($agr['file_attachment'], PATHINFO_EXTENSION));
-            ?>
-                <div class="p-2 rounded bg-light border mb-2 d-flex justify-content-between align-items-center">
-                    <span class="small text-truncate me-2"><i class="far fa-file-pdf text-danger me-1"></i><?= htmlspecialchars($agr['file_attachment']) ?></span>
-                    <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary py-0 px-2" style="font-size:0.72rem;">
-                        Buka File
-                    </a>
+        <!-- Kolom Kanan: File Dokumen & Riwayat Input -->
+        <div class="col-lg-4 d-flex flex-column gap-3">
+            <!-- Kartu Lampiran File Dokumen -->
+            <div class="cp-table-card mt-0">
+                <div class="fw-bold text-dark border-bottom pb-2 mb-3" style="font-size:0.84rem;">
+                    <i class="fas fa-paperclip text-primary me-1"></i> File Lampiran Dokumen
                 </div>
-                <?php if (in_array($ext, ['jpg', 'jpeg', 'png'], true)): ?>
-                    <img src="<?= $fileUrl ?>" alt="Lampiran" class="img-fluid rounded border mb-2">
-                <?php elseif ($ext === 'pdf'): ?>
-                    <iframe src="<?= $fileUrl ?>" style="width:100%;height:220px;border:1px solid #e2e8f0;border-radius:6px;" class="mb-2"></iframe>
+
+                <?php if (!empty($agr['file_attachment'])):
+                    $fileUrl = base_url('assets/uploads/' . $agr['file_attachment']);
+                    $ext = strtolower(pathinfo($agr['file_attachment'], PATHINFO_EXTENSION));
+                ?>
+                    <div class="p-2 rounded bg-light border mb-2 d-flex justify-content-between align-items-center">
+                        <span class="small text-truncate me-2"><i class="far fa-file-pdf text-danger me-1"></i><?= htmlspecialchars($agr['file_attachment']) ?></span>
+                        <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary py-0 px-2" style="font-size:0.72rem;">
+                            Buka File
+                        </a>
+                    </div>
+                    <?php if (in_array($ext, ['jpg', 'jpeg', 'png'], true)): ?>
+                        <img src="<?= $fileUrl ?>" alt="Lampiran" class="img-fluid rounded border mb-2">
+                    <?php elseif ($ext === 'pdf'): ?>
+                        <iframe src="<?= $fileUrl ?>" style="width:100%;height:210px;border:1px solid #dce6f5;border-radius:6px;" class="mb-2"></iframe>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <div class="mq-empty-upload-box mb-3">
+                        <i class="fas fa-file-upload text-primary opacity-50 mb-1" style="font-size:1.35rem;"></i>
+                        <div class="text-muted small">Belum ada file scan/dokumen yang diunggah.</div>
+                    </div>
                 <?php endif; ?>
-            <?php else: ?>
-                <div class="text-muted small mb-2">Belum ada file scan/dokumen yang diunggah.</div>
-            <?php endif; ?>
 
-            <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" enctype="multipart/form-data" class="no-print">
-                <input type="hidden" name="action" value="upload_file">
-                <div class="input-group input-group-sm">
-                    <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
-                    <button type="submit" class="btn btn-outline-primary fw-semibold">Upload</button>
-                </div>
-                <div class="text-muted mt-1" style="font-size:0.68rem;">Mendukung PDF, JPG, PNG, Word, Excel</div>
-            </form>
-        </div>
-
-        <!-- Kartu Riwayat Input & Update -->
-        <div class="cp-table-card mt-0">
-            <div class="fw-bold text-dark border-bottom pb-2 mb-2" style="font-size:0.8rem;">
-                Riwayat Log Input (<?= htmlspecialchars($uCode) ?>)
+                <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" enctype="multipart/form-data" class="no-print">
+                    <input type="hidden" name="action" value="upload_file">
+                    <div class="input-group input-group-sm">
+                        <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
+                        <button type="submit" class="btn btn-outline-primary fw-semibold">Upload</button>
+                    </div>
+                    <div class="text-muted mt-1" style="font-size:0.7rem;">Mendukung PDF, JPG, PNG, Word, Excel</div>
+                </form>
             </div>
-            <?php if (empty($histories)): ?>
-                <div class="text-muted small">Belum ada riwayat tercatat.</div>
-            <?php else: ?>
-                <div class="d-flex flex-column gap-2">
-                    <?php foreach ($histories as $h): ?>
-                        <div class="p-2 rounded bg-light border" style="font-size:0.74rem;">
-                            <div class="d-flex justify-content-between fw-bold text-dark">
-                                <span><?= htmlspecialchars($h['kode_singkatan']) ?>, <?= format_date_medquest($h['tanggal_input']) ?></span>
-                                <span class="badge bg-secondary bg-opacity-25 text-dark"><?= htmlspecialchars($h['aksi']) ?></span>
-                            </div>
-                            <div class="text-secondary mt-1"><?= nl2br(htmlspecialchars($h['catatan'] ?: 'N/A')) ?></div>
-                        </div>
-                    <?php endforeach; ?>
+
+            <!-- Kartu Riwayat Input & Update (Full Stretch) -->
+            <div class="cp-table-card mt-0 flex-grow-1 d-flex flex-column">
+                <div class="fw-bold text-dark border-bottom pb-2 mb-3" style="font-size:0.84rem;">
+                    <i class="fas fa-history text-primary me-1"></i> Riwayat Log Input (<?= htmlspecialchars($uCode) ?>)
                 </div>
-            <?php endif; ?>
+                <?php if (empty($histories)): ?>
+                    <div class="text-muted small">Belum ada riwayat tercatat.</div>
+                <?php else: ?>
+                    <div class="d-flex flex-column gap-2 overflow-auto" style="max-height:360px;">
+                        <?php foreach ($histories as $h): ?>
+                            <div class="p-2 px-3 rounded bg-light border" style="font-size:0.76rem;">
+                                <div class="d-flex justify-content-between align-items-center fw-bold text-dark">
+                                    <span><?= htmlspecialchars($h['kode_singkatan']) ?>, <?= format_date_medquest($h['tanggal_input']) ?></span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><?= htmlspecialchars($h['aksi']) ?></span>
+                                </div>
+                                <div class="text-secondary mt-1"><?= nl2br(htmlspecialchars($h['catatan'] ?: 'N/A')) ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
-
-<div class="mt-3 no-print">
-    <a href="<?= $backUrl ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
-        <i class="fas fa-arrow-left me-1"></i> Back ke Daftar Dokumen
-    </a>
-</div>
-

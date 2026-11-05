@@ -1,4 +1,10 @@
 # Ignore generated local email outbox files
 mail_outbox/*.html
+
+# Ignore uploads except .gitkeep
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+# System files
 .DS_Store
 Thumbs.db

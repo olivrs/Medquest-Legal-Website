@@ -196,15 +196,49 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
 
     <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- Quick Filter Tahapan Deadline -->
+        <?php
+        $isHFilterActive = in_array($selectedStatus, ['H7_3', 'H30_14', 'H90_60', 'DEADLINE_ALL'], true);
+        $hFilterLabel = match ($selectedStatus) {
+            'H7_3'   => 'H-3 s/d H-7',
+            'H30_14' => 'H-14 s/d H-30',
+            'H90_60' => 'H-60 s/d H-90',
+            default  => 'H-7 s/d H-90',
+        };
+        ?>
         <div class="cp-pill-group">
             <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=ALL') ?>"
                class="cp-pill-link <?= $selectedStatus === 'ALL' ? 'active' : '' ?>">Semua</a>
-            <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H7_3') ?>"
-               class="cp-pill-link <?= $selectedStatus === 'H7_3' ? 'active' : '' ?>">H-7 / H-3</a>
-            <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H30_14') ?>"
-               class="cp-pill-link <?= $selectedStatus === 'H30_14' ? 'active' : '' ?>">H-30 / H-14</a>
-            <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H90_60') ?>"
-               class="cp-pill-link <?= $selectedStatus === 'H90_60' ? 'active' : '' ?>">H-90 / H-60</a>
+
+            <div class="dropdown d-inline-block">
+                <a href="#"
+                   class="cp-pill-link d-inline-flex align-items-center gap-1 <?= $isHFilterActive ? 'active' : '' ?>"
+                   data-bs-toggle="dropdown"
+                   aria-expanded="false">
+                    <span><?= $hFilterLabel ?></span>
+                    <i class="fas fa-chevron-down" style="font-size:0.62rem;"></i>
+                </a>
+                <ul class="dropdown-menu shadow-sm border p-1 mt-1" style="min-width: 145px; border-radius: 8px;">
+                    <li>
+                        <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H7_3' ? 'active' : '' ?>"
+                           href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H7_3') ?>">
+                            H-3 s/d H-7
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H30_14' ? 'active' : '' ?>"
+                           href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H30_14') ?>">
+                            H-14 s/d H-30
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H90_60' ? 'active' : '' ?>"
+                           href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H90_60') ?>">
+                            H-60 s/d H-90
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=EXPIRED') ?>"
                class="cp-pill-link <?= $selectedStatus === 'EXPIRED' ? 'active' : '' ?>">Expired</a>
         </div>
@@ -214,8 +248,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
         </div>
 
         <a href="<?= base_url('?page=create' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>"
-           class="btn btn-sm fw-bold text-white px-3 py-2"
-           style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);border:none;">
+           class="btn btn-sm btn-primary fw-bold text-white px-3 py-2">
             + Input Agreement
         </a>
     </div>
@@ -223,24 +256,40 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
 
 <!-- 3. UNDERLINE TABS PER DEPARTEMEN -->
 <div class="d-flex justify-content-between align-items-center border-bottom mb-2 no-print">
-    <div class="cp-underline-tabs border-bottom-0 mb-0">
-        <a href="<?= base_url('?page=agreements&dept=ALL&status=' . urlencode($selectedStatus)) ?>"
-           class="cp-tab-link <?= $selectedDept === 'ALL' ? 'active' : '' ?>">
-            <span>Semua</span>
-            <span class="cp-tab-badge"><?= $totalAllDepts ?></span>
-        </a>
-
-        <?php foreach ($deptList as $dept):
-            $code = strtoupper($dept['kode_dept']);
-            $cnt  = $deptCounts[$code] ?? 0;
-        ?>
-            <a href="<?= base_url('?page=agreements&dept=' . urlencode($code) . '&status=' . urlencode($selectedStatus)) ?>"
-               class="cp-tab-link <?= $selectedDept === $code ? 'active' : '' ?>"
-               title="<?= htmlspecialchars($dept['nama_dept']) ?>">
-                <span><?= htmlspecialchars($code) ?></span>
-                <span class="cp-tab-badge"><?= $cnt ?></span>
+    <div class="d-flex align-items-center flex-wrap" style="min-height: 38px;">
+        <div class="cp-underline-tabs border-bottom-0 mb-0">
+            <a href="<?= base_url('?page=agreements&dept=ALL&status=' . urlencode($selectedStatus)) ?>"
+               class="cp-tab-link <?= $selectedDept === 'ALL' ? 'active' : '' ?>">
+                <span>Semua</span>
+                <span class="cp-tab-badge"><?= $totalAllDepts ?></span>
             </a>
-        <?php endforeach; ?>
+        </div>
+
+        <!-- Tombol > Buka/Tutup Kolom Departemen -->
+        <button type="button"
+                id="toggleDeptTabsBtn"
+                class="cp-tab-toggle-btn"
+                title="Buka / Tutup Daftar Departemen">
+            <i class="fas fa-chevron-right dept-toggle-icon <?= ($selectedDept !== 'ALL') ? 'rotate-open' : '' ?>"></i>
+            <span>Departemen</span>
+        </button>
+
+        <!-- Daftar Departemen yang Muncul Saat Tombol > Dipencet -->
+        <div id="deptTabsContainer" class="dept-tabs-wrapper <?= ($selectedDept !== 'ALL') ? 'is-open' : '' ?>">
+            <div class="cp-underline-tabs border-bottom-0 mb-0">
+                <?php foreach ($deptList as $dept):
+                    $code = strtoupper($dept['kode_dept']);
+                    $cnt  = $deptCounts[$code] ?? 0;
+                ?>
+                    <a href="<?= base_url('?page=agreements&dept=' . urlencode($code) . '&status=' . urlencode($selectedStatus)) ?>"
+                       class="cp-tab-link <?= $selectedDept === $code ? 'active' : '' ?>"
+                       title="<?= htmlspecialchars($dept['nama_dept']) ?>">
+                        <span><?= htmlspecialchars($code) ?></span>
+                        <span class="cp-tab-badge"><?= $cnt ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
     </div>
 
     <button type="button" class="btn btn-sm btn-light border text-secondary py-0 px-2 mb-1" style="font-size:0.7rem;" data-bs-toggle="modal" data-bs-target="#modalAddDept">
@@ -257,8 +306,8 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                 <div class="cp-stat-value"><?= $statTotal ?></div>
                 <div class="cp-stat-sublabel"><?= $selectedDept === 'ALL' ? 'Semua Dept' : htmlspecialchars($selectedDept) ?></div>
             </div>
-            <div class="cp-circle-gauge" style="background: conic-gradient(#1d4ed8 0% 75%, #38bdf8 75% 90%, #e2e8f0 90% 100%);">
-                <div class="cp-circle-inner"><i class="fas fa-file-contract" style="color:#1d4ed8;"></i></div>
+            <div class="cp-circle-gauge" style="background: conic-gradient(#2458f1 0% 90%, #dce6f5 90% 100%);">
+                <div class="cp-circle-inner"><i class="fas fa-file-contract" style="color:#2458f1;"></i></div>
             </div>
         </a>
     </div>
@@ -279,7 +328,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
     <div class="col-6 col-xl-3">
         <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=DEADLINE_ALL') ?>" class="cp-stat-card">
             <div>
-                <div class="cp-stat-title">Fase H-90 s/d H-3</div>
+                <div class="cp-stat-title">Deadline</div>
                 <div class="cp-stat-value"><?= $statDeadline ?></div>
                 <div class="cp-stat-sublabel"><?= $statUrgent ?> Mendesak</div>
             </div>
@@ -324,7 +373,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                     <th style="width:90px;">Dept / No</th>
                     <th style="width:220px;">Customer &amp; Document No</th>
                     <th style="width:190px;">Product &amp; S/N</th>
-                    <th style="width:360px;">Tanggal Kontrak &amp; Deadline (H-90, 60, 30, 14, 7, 3)</th>
+                    <th style="width:280px;">Tanggal Kontrak &amp; Deadline</th>
                     <th style="width:210px;">Note</th>
                     <th style="width:165px;">Created By</th>
                 </tr>
@@ -353,8 +402,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                             <!-- 1. Dept & No -->
                             <td>
                                 <a href="<?= base_url('?page=agreements&dept=' . urlencode($row['department'])) ?>"
-                                   class="badge text-white text-decoration-none px-2 py-1 mb-1 d-inline-block"
-                                   style="background:#0d1f44;font-size:0.78rem;">
+                                   class="badge mq-dept-badge text-decoration-none px-2 py-1 mb-1 d-inline-block" style="font-size:0.76rem;">
                                     <?= htmlspecialchars($row['department']) ?>
                                 </a>
                                 <div class="text-muted small fw-semibold">#<?= htmlspecialchars($row['no_urut_dokumen'] ?: $row['id']) ?></div>
@@ -374,31 +422,17 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                                 </span>
                             </td>
 
-                            <!-- 4. Effective Date, Expiry Date & Tanggal Deadline H-90, 60, 30, 14, 7, 3 -->
+                            <!-- 4. Effective Date, Expiry Date & Status Deadline -->
                             <td>
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-                                    <div class="small">
-                                        <span class="text-muted">Effective:</span> <strong><?= $effFormatted ?></strong>
-                                        <span class="mx-1 text-muted">&rarr;</span>
-                                        <span class="text-danger fw-bold">Expiry: <?= $expFormatted ?></span>
-                                    </div>
+                                <div class="small mb-1">
+                                    <span class="text-muted">Effective:</span> <strong><?= $effFormatted ?></strong>
+                                    <span class="mx-1 text-muted">&rarr;</span>
+                                    <span class="text-danger fw-bold">Expiry: <?= $expFormatted ?></span>
+                                </div>
+                                <div>
                                     <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
                                         <?= htmlspecialchars($expInfo['short_label']) ?>
                                     </span>
-                                </div>
-
-                                <!-- Baris Tanggal Deadline H-90, H-60, H-30, H-14, H-7, H-3 -->
-                                <div class="dl-strip">
-                                    <?php foreach ($schedule as $code => $dl):
-                                        $pClass = ($dl['state'] === 'today') ? 'dl-today' : (($dl['state'] === 'passed') ? 'dl-passed' : 'dl-upcoming');
-                                    ?>
-                                        <span class="dl-pill-item <?= $pClass ?>" title="Deadline <?= $code ?>: <?= $dl['date_text'] ?>">
-                                            <strong><?= $code ?>:</strong> <?= $dl['date_text'] ?>
-                                            <?php if ($dl['is_sent']): ?>
-                                                <i class="fas fa-check-circle text-success"></i>
-                                            <?php endif; ?>
-                                        </span>
-                                    <?php endforeach; ?>
                                 </div>
                             </td>
 
@@ -453,7 +487,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
             <input type="hidden" name="agreement_id" id="noteModalAgrId">
             <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
 
-            <div class="modal-header text-white" style="background:#0d1f44;">
+            <div class="modal-header mq-modal-header text-white">
                 <h6 class="modal-title fw-bold">
                     <i class="fas fa-comment-medical me-1"></i> Tambah Note &amp; Stempel Created By
                 </h6>
@@ -499,7 +533,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-4 border-0 shadow">
             <input type="hidden" name="action" value="add_department">
-            <div class="modal-header text-white" style="background:#0d1f44;">
+            <div class="modal-header mq-modal-header text-white">
                 <h6 class="modal-title fw-bold">Tambah Departemen Baru</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -528,6 +562,18 @@ if (modalAddNote) {
         document.getElementById('noteModalAgrId').value = button.getAttribute('data-id');
         document.getElementById('noteModalCustomer').textContent = button.getAttribute('data-customer');
         document.getElementById('noteModalDocNo').textContent = button.getAttribute('data-docno');
+    });
+}
+const toggleDeptBtn = document.getElementById('toggleDeptTabsBtn');
+const deptTabsWrapper = document.getElementById('deptTabsContainer');
+if (toggleDeptBtn && deptTabsWrapper) {
+    toggleDeptBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        deptTabsWrapper.classList.toggle('is-open');
+        const icon = toggleDeptBtn.querySelector('.dept-toggle-icon');
+        if (icon) {
+            icon.classList.toggle('rotate-open');
+        }
     });
 }
 </script>
