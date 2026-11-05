@@ -253,19 +253,19 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                 <li>
                     <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
                        href="<?= base_url('?page=create&doc_type=COOPERATION' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
-                        1. Log of Cooperation Agreement
+                        1. LOG OF COOPERATION AGREEMENT
                     </a>
                 </li>
                 <li>
                     <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
                        href="<?= base_url('?page=create&doc_type=COMPANY' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
-                        2. Original Company Document
+                        2. ORIGINAL COMPANY DOCUMENT
                     </a>
                 </li>
                 <li>
                     <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
                        href="<?= base_url('?page=create&doc_type=PRINCIPAL' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
-                        3. Log of Principal Document
+                        3. LOG OF PRINCIPAL DOCUMENT
                     </a>
                 </li>
             </ul>
@@ -331,10 +331,10 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
 <!-- 3. PANEL BAWAH: TABEL DATA DOKUMEN -->
 <?php
 $activeTableTitle = match ($selectedDocType) {
-    'COMPANY'     => 'Original Company Document',
-    'PRINCIPAL'   => 'Log of Principal Document',
-    'COOPERATION' => 'Log of Cooperation Agreement',
-    default       => 'Daftar Dokumen Legal Medquest',
+    'COMPANY'     => 'ORIGINAL COMPANY DOCUMENT',
+    'PRINCIPAL'   => 'LOG OF PRINCIPAL DOCUMENT',
+    'COOPERATION' => 'LOG OF COOPERATION AGREEMENT',
+    default       => 'DAFTAR DOKUMEN LEGAL MEDQUEST',
 };
 $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status=' . urlencode($selectedStatus);
 ?>
@@ -347,13 +347,13 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
             <!-- Filter Tab Jenis Dokumen -->
             <div class="cp-pill-group no-print">
                 <a href="<?= base_url($typeFilterBase . '&doc_type=ALL') ?>"
-                   class="cp-pill-link <?= $selectedDocType === 'ALL' ? 'active' : '' ?>">Semua Jenis</a>
+                   class="cp-pill-link <?= $selectedDocType === 'ALL' ? 'active' : '' ?>">SEMUA JENIS</a>
                 <a href="<?= base_url($typeFilterBase . '&doc_type=COOPERATION') ?>"
-                   class="cp-pill-link <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">Cooperation Agreement</a>
+                   class="cp-pill-link <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">COOPERATION AGREEMENT</a>
                 <a href="<?= base_url($typeFilterBase . '&doc_type=COMPANY') ?>"
-                   class="cp-pill-link <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">Original Company Doc</a>
+                   class="cp-pill-link <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">ORIGINAL COMPANY DOC</a>
                 <a href="<?= base_url($typeFilterBase . '&doc_type=PRINCIPAL') ?>"
-                   class="cp-pill-link <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">Principal Document</a>
+                   class="cp-pill-link <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">PRINCIPAL DOCUMENT</a>
             </div>
         </div>
 

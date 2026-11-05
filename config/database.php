@@ -176,8 +176,8 @@ function get_doc_type_meta($doc_type) {
     return match ($type) {
         'COMPANY' => [
             'code'         => 'COMPANY',
-            'title'        => 'Original Company Document',
-            'short_title'  => 'Original Company Doc',
+            'title'        => 'ORIGINAL COMPANY DOCUMENT',
+            'short_title'  => 'ORIGINAL COMPANY DOC',
             'form_no'      => 'MJG-FOR-LAC.12-001-04',
             'badge_bg'     => '#f0fdf4',
             'badge_color'  => '#166534',
@@ -185,8 +185,8 @@ function get_doc_type_meta($doc_type) {
         ],
         'PRINCIPAL' => [
             'code'         => 'PRINCIPAL',
-            'title'        => 'Log of Principal Document',
-            'short_title'  => 'Principal Document',
+            'title'        => 'LOG OF PRINCIPAL DOCUMENT',
+            'short_title'  => 'PRINCIPAL DOCUMENT',
             'form_no'      => 'MJG-FOR-LAC.12-001-09',
             'badge_bg'     => '#faf5ff',
             'badge_color'  => '#6b21a8',
@@ -194,8 +194,8 @@ function get_doc_type_meta($doc_type) {
         ],
         default => [
             'code'         => 'COOPERATION',
-            'title'        => 'Log of Cooperation Agreement',
-            'short_title'  => 'Cooperation Agreement',
+            'title'        => 'LOG OF COOPERATION AGREEMENT',
+            'short_title'  => 'COOPERATION AGREEMENT',
             'form_no'      => 'MJG-FOR-LAC.12-001-03',
             'badge_bg'     => '#eff6ff',
             'badge_color'  => '#1e40af',
@@ -323,7 +323,7 @@ function get_expiry_info($expiry_date, $expiry_date_na = 0) {
             'row_class' => 'row-urgent row-h3',
             'badge_class' => 'badge-h3',
             'label' => "Mendesak: H-{$days} ({$days} hari lagi)",
-            'short_label' => ($days === 3 ? 'TEPAT H-3' : "Sisa {$days} Hari"),
+            'short_label' => ($days === 3 ? 'H-3' : "Sisa {$days} Hari"),
             'next_stage' => 'H-3',
             'days' => $days
         ];

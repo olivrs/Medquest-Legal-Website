@@ -61,7 +61,7 @@ if (is_logged_in()) {
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v2" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v3" rel="stylesheet">
 </head>
 <body>
 
@@ -138,15 +138,15 @@ if (is_logged_in()) {
                 <div class="sidebar-submenu">
                     <a href="<?= base_url('?page=create&doc_type=COOPERATION' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
                        class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'create' && ($currDocType === 'COOPERATION' || $currDocType === '')) ? 'active' : '' ?>">
-                        <span>1. Cooperation Agreement</span>
+                        <span>1. COOPERATION AGREEMENT</span>
                     </a>
                     <a href="<?= base_url('?page=create&doc_type=COMPANY' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
                        class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'create' && $currDocType === 'COMPANY') ? 'active' : '' ?>">
-                        <span>2. Original Company Doc</span>
+                        <span>2. ORIGINAL COMPANY DOC</span>
                     </a>
                     <a href="<?= base_url('?page=create&doc_type=PRINCIPAL' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
                        class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'create' && $currDocType === 'PRINCIPAL') ? 'active' : '' ?>">
-                        <span>3. Principal Document</span>
+                        <span>3. PRINCIPAL DOCUMENT</span>
                     </a>
                 </div>
             </div>

@@ -185,7 +185,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
             <div class="col-md-4">
                 <button type="button" onclick="selectDocType('COOPERATION')" id="btnType_COOPERATION"
                         class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">
-                    <span class="fw-bold text-dark" style="font-size:0.84rem;">1. Log of Cooperation Agreement</span>
+                    <span class="fw-bold text-dark" style="font-size:0.84rem;">1. LOG OF COOPERATION AGREEMENT</span>
                     <i class="fas fa-check-circle check-indicator"></i>
                 </button>
             </div>
@@ -193,7 +193,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
             <div class="col-md-4">
                 <button type="button" onclick="selectDocType('COMPANY')" id="btnType_COMPANY"
                         class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">
-                    <span class="fw-bold text-dark" style="font-size:0.84rem;">2. Original Company Document</span>
+                    <span class="fw-bold text-dark" style="font-size:0.84rem;">2. ORIGINAL COMPANY DOCUMENT</span>
                     <i class="fas fa-check-circle check-indicator"></i>
                 </button>
             </div>
@@ -201,7 +201,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
             <div class="col-md-4">
                 <button type="button" onclick="selectDocType('PRINCIPAL')" id="btnType_PRINCIPAL"
                         class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">
-                    <span class="fw-bold text-dark" style="font-size:0.84rem;">3. Log of Principal Document</span>
+                    <span class="fw-bold text-dark" style="font-size:0.84rem;">3. LOG OF PRINCIPAL DOCUMENT</span>
                     <i class="fas fa-check-circle check-indicator"></i>
                 </button>
             </div>
