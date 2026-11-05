@@ -85,11 +85,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Ambil Filter dari URL
+// Ambil Filter & Urutan dari URL
 $selectedDept    = strtoupper(trim($_GET['dept'] ?? 'ALL'));
 $selectedStatus  = trim($_GET['status'] ?? 'ALL');
 $selectedDocType = strtoupper(trim($_GET['doc_type'] ?? 'ALL'));
 $searchQuery     = trim($_GET['q'] ?? '');
+$selectedSort    = trim($_GET['sort'] ?? 'default');
+$currentPage     = max(1, (int)($_GET['p'] ?? 1));
+$perPage         = 15;
 
 // Query Data Agreements: HANYA MENAMPILKAN DOKUMEN DENGAN KODE SINGKATAN USER YANG SEDANG LOGIN
 $whereClauses = ["(a.created_by_user_id = ? OR a.created_by_code = ?)"];
@@ -131,25 +134,34 @@ if ($selectedStatus === 'EXPIRED') {
 
 $whereSql = 'WHERE ' . implode(' AND ', $whereClauses);
 
+// Opsi Urutan Sorting
+$orderBySql = match ($selectedSort) {
+    'newest'        => "a.id DESC",
+    'oldest'        => "a.id ASC",
+    'deadline_asc'  => "CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END, a.expiry_date ASC, a.id DESC",
+    'deadline_desc' => "CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END, a.expiry_date DESC, a.id DESC",
+    default         => "COALESCE(a.no_urut_dokumen, a.id) ASC, a.id ASC",
+};
+
 $sqlAgreements = "
     SELECT a.*, u.nama_lengkap AS creator_name, u.email AS creator_email
     FROM agreements a
     LEFT JOIN users u ON a.created_by_user_id = u.id
     {$whereSql}
-    ORDER BY COALESCE(a.no_urut_dokumen, a.id) ASC, a.id ASC
+    ORDER BY {$orderBySql}
 ";
 $stmtAgr = $pdo->prepare($sqlAgreements);
 $stmtAgr->execute($params);
-$agreements = $stmtAgr->fetchAll();
+$allMatchingAgreements = $stmtAgr->fetchAll();
 
-// Hitung statistik untuk 4 Kartu Lingkaran
-$statTotal    = count($agreements);
+// Hitung statistik untuk 4 Kartu Lingkaran (menggunakan seluruh data filter)
+$statTotal    = count($allMatchingAgreements);
 $statSafe     = 0;
 $statDeadline = 0;
 $statUrgent   = 0;
 $statExpired  = 0;
 
-foreach ($agreements as $row) {
+foreach ($allMatchingAgreements as $row) {
     if (!empty($row['expiry_date_na']) || empty($row['expiry_date'])) {
         $statSafe++;
         continue;
@@ -168,6 +180,14 @@ $pctSafe     = $statTotal > 0 ? round(($statSafe / $statTotal) * 100) : 0;
 $pctDeadline = $statTotal > 0 ? round(($statDeadline / $statTotal) * 100) : 0;
 $pctUrgent   = $statTotal > 0 ? round(($statUrgent / $statTotal) * 100) : 0;
 $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
+
+// LOGIKA PAGINATION: Setiap 15 Dokumen Otomatis Buat Page Baru (Kelipatan 15)
+$totalPages  = max(1, (int)ceil($statTotal / $perPage));
+$currentPage = max(1, min($currentPage, $totalPages));
+$offset      = ($currentPage - 1) * $perPage;
+
+// Ambil 15 dokumen yang ditampilkan pada halaman saat ini
+$agreements  = array_slice($allMatchingAgreements, $offset, $perPage);
 ?>
 
 <!-- 1. OVERVIEW DASHBOARD HEADER & QUICK FILTER PILLS -->
@@ -194,6 +214,11 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
             default  => 'Sisa Hari',
         };
         $baseFilterUrl = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType);
+        if ($selectedSort !== 'default') { $baseFilterUrl .= '&sort=' . urlencode($selectedSort); }
+        if ($searchQuery !== '') { $baseFilterUrl .= '&q=' . urlencode($searchQuery); }
+
+        $baseFilterUrlWithoutSort = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType) . '&status=' . urlencode($selectedStatus);
+        if ($searchQuery !== '') { $baseFilterUrlWithoutSort .= '&q=' . urlencode($searchQuery); }
         ?>
         <div class="cp-pill-group">
             <a href="<?= base_url($baseFilterUrl . '&status=ALL') ?>"
@@ -316,6 +341,8 @@ $activeTableTitle = match ($selectedDocType) {
     default       => 'DAFTAR DOKUMEN LEGAL MEDQUEST',
 };
 $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status=' . urlencode($selectedStatus);
+if ($selectedSort !== 'default') { $typeFilterBase .= '&sort=' . urlencode($selectedSort); }
+if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
 ?>
 <div class="cp-table-card">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -361,7 +388,54 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
                         <th style="width:240px;">Dokumen / Customer &amp; No</th>
                         <th style="width:200px;">Detail (Product / Issued By / Principal)</th>
                     <?php endif; ?>
-                    <th style="width:270px;">Effective, Expiry &amp; Deadline</th>
+                    <th style="min-width:275px;">
+                        <div class="d-flex align-items-center justify-content-between gap-1">
+                            <span>Effective, Expiry &amp; Deadline</span>
+                            <!-- Tombol Filter Urutan Dokumen (Terbaru > Lama, dll) -->
+                            <div class="dropdown no-print d-inline-block">
+                                <button class="btn btn-xs py-0 px-2 d-inline-flex align-items-center gap-1 dropdown-toggle <?= $selectedSort !== 'default' ? 'btn-primary text-white' : 'btn-outline-secondary bg-white text-dark' ?>"
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        style="font-size:0.72rem; font-weight:600; text-transform:none; border-radius:0;">
+                                    <span>Filter</span>
+                                    <i class="fas fa-chevron-down" style="font-size:0.58rem;"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border p-1 mt-1" style="min-width: 230px; border-radius: 0; font-size:0.76rem;">
+                                    <li><h6 class="dropdown-header py-1 px-2 text-uppercase text-muted" style="font-size:0.66rem;">Urutkan Dokumen:</h6></li>
+                                    <li>
+                                        <a class="dropdown-item py-1 px-2 fw-semibold <?= $selectedSort === 'newest' ? 'active text-white' : '' ?>"
+                                           href="<?= base_url($baseFilterUrlWithoutSort . '&sort=newest') ?>">
+                                            <i class="fas fa-arrow-down-wide-short me-1"></i> Data Terbaru &gt; Data Lama
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-1 px-2 fw-semibold <?= $selectedSort === 'oldest' ? 'active text-white' : '' ?>"
+                                           href="<?= base_url($baseFilterUrlWithoutSort . '&sort=oldest') ?>">
+                                            <i class="fas fa-arrow-up-wide-short me-1"></i> Data Paling Lama &gt; Data Paling Baru
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <a class="dropdown-item py-1 px-2 fw-semibold <?= ($selectedSort === 'default' || $selectedSort === '') ? 'active text-white' : '' ?>"
+                                           href="<?= base_url($baseFilterUrlWithoutSort . '&sort=default') ?>">
+                                            <i class="fas fa-sort-numeric-down me-1"></i> No. Urut Form (Default)
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-1 px-2 fw-semibold <?= $selectedSort === 'deadline_asc' ? 'active text-white' : '' ?>"
+                                           href="<?= base_url($baseFilterUrlWithoutSort . '&sort=deadline_asc') ?>">
+                                            <i class="fas fa-clock text-danger me-1"></i> Deadline Paling Dekat
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-1 px-2 fw-semibold <?= $selectedSort === 'deadline_desc' ? 'active text-white' : '' ?>"
+                                           href="<?= base_url($baseFilterUrlWithoutSort . '&sort=deadline_desc') ?>">
+                                            <i class="fas fa-calendar-check text-success me-1"></i> Deadline Paling Jauh
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </th>
                     <th style="width:200px;">Note</th>
                     <th style="width:160px;">Created By</th>
                 </tr>
@@ -489,6 +563,61 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
                 <?php endif; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- BARIS PAGINATION (15 DOKUMEN PER HALAMAN & BERLAKU KELIPATANNYA) -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between p-3 border-top bg-light no-print">
+        <div class="small text-muted fw-semibold mb-2 mb-md-0">
+            <?php if ($statTotal > 0): ?>
+                Menampilkan <span class="text-dark fw-bold"><?= $offset + 1 ?> &ndash; <?= min($offset + $perPage, $statTotal) ?></span> dari total <span class="text-dark fw-bold"><?= $statTotal ?></span> dokumen
+                <span class="ms-1 text-secondary">(Halaman <?= $currentPage ?> dari <?= $totalPages ?>)</span>
+            <?php else: ?>
+                Tidak ada dokumen yang ditampilkan
+            <?php endif; ?>
+        </div>
+
+        <?php if ($totalPages > 1): ?>
+            <?php
+            $pageUrlHelper = function($p) use ($selectedDept, $selectedDocType, $selectedStatus, $searchQuery, $selectedSort) {
+                $q = [
+                    'page'     => 'agreements',
+                    'dept'     => $selectedDept,
+                    'doc_type' => $selectedDocType,
+                    'status'   => $selectedStatus,
+                    'p'        => $p
+                ];
+                if ($searchQuery !== '') $q['q'] = $searchQuery;
+                if ($selectedSort !== 'default') $q['sort'] = $selectedSort;
+                return base_url('?' . http_build_query($q));
+            };
+            ?>
+            <nav aria-label="Navigasi Halaman Dokumen">
+                <ul class="pagination pagination-sm mb-0">
+                    <!-- Tombol Prev -->
+                    <li class="page-item <?= $currentPage <= 1 ? 'disabled' : '' ?>">
+                        <a class="page-link rounded-0 fw-semibold" href="<?= $currentPage <= 1 ? '#' : $pageUrlHelper($currentPage - 1) ?>" tabindex="-1">
+                            <i class="fas fa-chevron-left me-1"></i> Prev
+                        </a>
+                    </li>
+
+                    <!-- Nomor Halaman -->
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <li class="page-item <?= $i === $currentPage ? 'active' : '' ?>">
+                            <a class="page-link rounded-0 fw-bold" href="<?= $pageUrlHelper($i) ?>">
+                                <?= $i ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
+
+                    <!-- Tombol Next -->
+                    <li class="page-item <?= $currentPage >= $totalPages ? 'disabled' : '' ?>">
+                        <a class="page-link rounded-0 fw-semibold" href="<?= $currentPage >= $totalPages ? '#' : $pageUrlHelper($currentPage + 1) ?>">
+                            Next <i class="fas fa-chevron-right ms-1"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        <?php endif; ?>
     </div>
 </div>
 
