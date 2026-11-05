@@ -323,7 +323,7 @@ function get_expiry_info($expiry_date, $expiry_date_na = 0) {
             'row_class' => 'row-urgent row-h3',
             'badge_class' => 'badge-h3',
             'label' => "Mendesak: H-{$days} ({$days} hari lagi)",
-            'short_label' => ($days === 3 ? 'H-3' : "Sisa {$days} Hari"),
+            'short_label' => ($days === 3 ? 'Sisa H - 3 ⚠️' : ($days > 0 ? "Sisa H - {$days} ⚠️" : 'HARI INI EXPIRED')),
             'next_stage' => 'H-3',
             'days' => $days
         ];
