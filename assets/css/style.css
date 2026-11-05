@@ -1322,3 +1322,9 @@ input, button, select, textarea,
     border: none !important;
     box-shadow: none !important;
 }
+
+/* Pengecualian: Gauge lingkaran di kartu statistik tetap bulat seperti sebelumnya */
+.cp-stat-card .cp-circle-gauge,
+.cp-stat-card .cp-circle-inner {
+    border-radius: 50% !important;
+}
