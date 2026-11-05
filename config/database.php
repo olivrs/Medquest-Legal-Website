@@ -299,93 +299,93 @@ function get_expiry_info($expiry_date, $expiry_date_na = 0) {
 
     if ($days < 0) {
         return [
-            'status' => 'expired',
-            'row_class' => 'row-expired',
+            'status'      => 'expired',
+            'row_class'   => 'row-expired',
             'badge_class' => 'badge-expired',
-            'label' => 'Sudah Expired (' . abs($days) . ' hari lalu)',
+            'label'       => 'Sudah Expired (' . abs($days) . ' hari lalu)',
             'short_label' => 'EXPIRED (' . abs($days) . ' hr lalu)',
-            'next_stage' => 'Kontrak Habis',
-            'days' => $days
+            'next_stage'  => 'Kontrak Habis',
+            'days'        => $days
         ];
     } elseif ($days === 0) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-urgent row-h3',
+            'status'      => 'warning',
+            'row_class'   => 'row-urgent row-h3',
             'badge_class' => 'badge-h3',
-            'label' => 'Expired Hari Ini!',
-            'short_label' => 'HARI INI EXPIRED',
-            'next_stage' => 'H-0',
-            'days' => 0
+            'label'       => 'Expired Hari Ini! ⚠️',
+            'short_label' => 'Hari Ini Expired ⚠️',
+            'next_stage'  => 'Hari Ini',
+            'days'        => 0
         ];
     } elseif ($days <= 3) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-urgent row-h3',
+            'status'      => 'warning',
+            'row_class'   => 'row-urgent row-h3',
             'badge_class' => 'badge-h3',
-            'label' => "Mendesak: H-{$days} ({$days} hari lagi)",
-            'short_label' => ($days === 3 ? 'Sisa H - 3 ⚠️' : ($days > 0 ? "Sisa H - {$days} ⚠️" : 'HARI INI EXPIRED')),
-            'next_stage' => 'H-3',
-            'days' => $days
+            'label'       => "Mendesak: Sisa {$days} Hari ⚠️",
+            'short_label' => "Sisa {$days} Hari ⚠️",
+            'next_stage'  => "Sisa 3 Hari",
+            'days'        => $days
         ];
     } elseif ($days <= 7) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-warning',
+            'status'      => 'warning',
+            'row_class'   => 'row-warning',
             'badge_class' => 'badge-h7',
-            'label' => "Segera Expired: H-{$days}",
-            'short_label' => ($days === 7 ? 'TEPAT H-7' : "Sisa {$days} Hari"),
-            'next_stage' => 'H-7',
-            'days' => $days
+            'label'       => "Segera Expired (Sisa {$days} Hari)",
+            'short_label' => "Sisa {$days} Hari",
+            'next_stage'  => "Sisa 7 Hari",
+            'days'        => $days
         ];
     } elseif ($days <= 14) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-warning',
+            'status'      => 'warning',
+            'row_class'   => 'row-warning',
             'badge_class' => 'badge-h14',
-            'label' => "Fase H-14 (Sisa {$days} hari)",
-            'short_label' => ($days === 14 ? 'TEPAT H-14' : "Sisa {$days} Hari"),
-            'next_stage' => 'H-14',
-            'days' => $days
+            'label'       => "Sisa {$days} Hari",
+            'short_label' => "Sisa {$days} Hari",
+            'next_stage'  => "Sisa 14 Hari",
+            'days'        => $days
         ];
     } elseif ($days <= 30) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-warning-soft',
+            'status'      => 'warning',
+            'row_class'   => 'row-warning-soft',
             'badge_class' => 'badge-h30',
-            'label' => "Fase H-30 (Sisa {$days} hari)",
-            'short_label' => ($days === 30 ? 'TEPAT H-30' : "Sisa {$days} Hari"),
-            'next_stage' => 'H-30',
-            'days' => $days
+            'label'       => "Sisa {$days} Hari",
+            'short_label' => "Sisa {$days} Hari",
+            'next_stage'  => "Sisa 30 Hari",
+            'days'        => $days
         ];
     } elseif ($days <= 60) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-warning-soft',
+            'status'      => 'warning',
+            'row_class'   => 'row-warning-soft',
             'badge_class' => 'badge-h60',
-            'label' => "Fase H-60 (Sisa {$days} hari)",
-            'short_label' => ($days === 60 ? 'TEPAT H-60' : "Sisa {$days} Hari"),
-            'next_stage' => 'H-60',
-            'days' => $days
+            'label'       => "Sisa {$days} Hari",
+            'short_label' => "Sisa {$days} Hari",
+            'next_stage'  => "Sisa 60 Hari",
+            'days'        => $days
         ];
     } elseif ($days <= 90) {
         return [
-            'status' => 'warning',
-            'row_class' => 'row-warning-soft',
+            'status'      => 'warning',
+            'row_class'   => 'row-warning-soft',
             'badge_class' => 'badge-h90',
-            'label' => "Fase H-90 (Sisa {$days} hari)",
-            'short_label' => ($days === 90 ? 'TEPAT H-90' : "Sisa {$days} Hari"),
-            'next_stage' => 'H-90',
-            'days' => $days
+            'label'       => "Sisa {$days} Hari",
+            'short_label' => "Sisa {$days} Hari",
+            'next_stage'  => "Sisa 90 Hari",
+            'days'        => $days
         ];
     } else {
         return [
-            'status' => 'active',
-            'row_class' => 'row-active',
+            'status'      => 'active',
+            'row_class'   => 'row-active',
             'badge_class' => 'badge-active',
-            'label' => "Aman / Aktif ({$days} hari lagi)",
-            'short_label' => "Aman ({$days} hari lagi)",
-            'next_stage' => 'Menunggu H-90',
-            'days' => $days
+            'label'       => "Aman (Sisa {$days} Hari)",
+            'short_label' => "Aman ({$days} hari)",
+            'next_stage'  => 'Menunggu Deadline',
+            'days'        => $days
         ];
     }
 }

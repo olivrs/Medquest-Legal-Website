@@ -188,10 +188,10 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
         <?php
         $isHFilterActive = in_array($selectedStatus, ['H7_3', 'H30_14', 'H90_60', 'DEADLINE_ALL'], true);
         $hFilterLabel = match ($selectedStatus) {
-            'H7_3'   => 'H-3 s/d H-7',
-            'H30_14' => 'H-14 s/d H-30',
-            'H90_60' => 'H-60 s/d H-90',
-            default  => 'H-7 s/d H-90',
+            'H7_3'   => 'Sisa 3 - 7 Hari',
+            'H30_14' => 'Sisa 14 - 30 Hari',
+            'H90_60' => 'Sisa 60 - 90 Hari',
+            default  => 'Sisa Hari',
         };
         $baseFilterUrl = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType);
         ?>
@@ -211,19 +211,19 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                     <li>
                         <a class="dropdown-item rounded-0 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H7_3' ? 'active' : '' ?>"
                            href="<?= base_url($baseFilterUrl . '&status=H7_3') ?>">
-                            H-3 s/d H-7
+                            Sisa 3 - 7 Hari
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item rounded-0 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H30_14' ? 'active' : '' ?>"
                            href="<?= base_url($baseFilterUrl . '&status=H30_14') ?>">
-                            H-14 s/d H-30
+                            Sisa 14 - 30 Hari
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item rounded-0 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H90_60' ? 'active' : '' ?>"
                            href="<?= base_url($baseFilterUrl . '&status=H90_60') ?>">
-                            H-60 s/d H-90
+                            Sisa 60 - 90 Hari
                         </a>
                     </li>
                 </ul>

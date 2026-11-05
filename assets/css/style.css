@@ -1337,7 +1337,7 @@ input, button, select, textarea,
 }
 
 
-/* Badge H-3: Merah Nyala Terang Tegas & Glowing */
+/* Badge H-3 & Mendesak: Merah Nyala Terang Tegas & Glowing */
 .badge-h3,
 span.badge-h3,
 .expiry-pill.badge-h3 {
@@ -1346,5 +1346,9 @@ span.badge-h3,
     border: 1px solid #dc2626 !important;
     font-weight: 700 !important;
     letter-spacing: 0.3px !important;
+    padding: 3px 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
 }
