@@ -60,11 +60,11 @@ $emailLogs = $stmtLogs->fetchAll();
         <table class="cp-table">
             <thead>
                 <tr>
-                    <th>Status</th>
+                    <th style="width: 48px;" class="text-center">Buka</th>
                     <th>Dept</th>
                     <th>Customer &amp; Product</th>
                     <th>Expiry Date</th>
-                    <th>Jadwal Deadline</th>
+                    <th>Status</th>
                     <th>Created By</th>
                 </tr>
             </thead>
@@ -76,34 +76,40 @@ $emailLogs = $stmtLogs->fetchAll();
                 <?php else: ?>
                     <?php foreach ($upcomingH as $item):
                         $expInfo = get_expiry_info($item['expiry_date']);
-                        $schedule = get_deadline_schedule($item['expiry_date'], $item);
+                        $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Dokumen #' . $item['id']);
+                        $displaySub   = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
                     ?>
                         <tr class="<?= $expInfo['row_class'] ?>">
-                            <td>
+                            <!-- 1. Tombol '>' Mengarah ke Dokumen Tersebut -->
+                            <td class="text-center" style="vertical-align: middle;">
+                                <a href="<?= base_url('?page=detail&id=' . $item['id']) ?>"
+                                   class="btn btn-sm btn-primary py-1 px-2 text-white d-inline-flex align-items-center justify-content-center"
+                                   style="width: 32px; height: 32px; font-size: 0.85rem;"
+                                   title="Buka Dokumen <?= htmlspecialchars($displayTitle) ?>">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </td>
+                            <!-- 2. Dept -->
+                            <td style="vertical-align: middle;">
+                                <span class="badge mq-dept-badge px-2 py-1"><?= htmlspecialchars($item['department']) ?></span>
+                            </td>
+                            <!-- 3. Customer & Product -->
+                            <td style="vertical-align: middle;">
+                                <div class="fw-bold text-dark"><?= htmlspecialchars($displayTitle) ?></div>
+                                <div class="text-muted small"><?= htmlspecialchars($displaySub) ?></div>
+                            </td>
+                            <!-- 4. Expiry Date -->
+                            <td class="fw-bold text-danger" style="vertical-align: middle;">
+                                <?= format_date_medquest($item['expiry_date']) ?>
+                            </td>
+                            <!-- 5. Status (Pindahan ke tempat Jadwal Deadline) -->
+                            <td style="vertical-align: middle;">
                                 <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
                                     <?= htmlspecialchars($expInfo['short_label']) ?>
                                 </span>
                             </td>
-                            <td>
-                                <span class="badge mq-dept-badge px-2 py-1"><?= htmlspecialchars($item['department']) ?></span>
-                            </td>
-                            <td>
-                                <div class="fw-bold text-dark"><?= htmlspecialchars($item['customer']) ?></div>
-                                <div class="text-muted small"><?= htmlspecialchars($item['product_description']) ?></div>
-                            </td>
-                            <td class="fw-bold text-danger"><?= format_date_medquest($item['expiry_date']) ?></td>
-                            <td style="min-width:300px;">
-                                <div class="dl-strip">
-                                    <?php foreach ($schedule as $code => $dl):
-                                        $pClass = ($dl['state'] === 'today') ? 'dl-today' : (($dl['state'] === 'passed') ? 'dl-passed' : 'dl-upcoming');
-                                    ?>
-                                        <span class="dl-pill-item <?= $pClass ?>">
-                                            <strong><?= $code ?>:</strong> <?= $dl['date_text'] ?>
-                                        </span>
-                                    <?php endforeach; ?>
-                                </div>
-                            </td>
-                            <td>
+                            <!-- 6. Created By -->
+                            <td style="vertical-align: middle;">
                                 <div class="fw-bold font-monospace small"><?= htmlspecialchars($item['created_by_code']) ?></div>
                                 <div class="small text-muted"><?= htmlspecialchars($item['user_email'] ?? '-') ?></div>
                             </td>
