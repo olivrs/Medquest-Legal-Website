@@ -122,34 +122,12 @@ if (is_logged_in()) {
                 </div>
             </div>
 
-            <!-- Menu 3: Input Dokumen (3 Pilihan Jenis Form) -->
-            <?php $currDocType = strtoupper(trim($_GET['doc_type'] ?? '')); ?>
-            <a class="sidebar-link d-flex justify-content-between align-items-center <?= $currPage === 'create' ? 'active' : '' ?>"
-               data-bs-toggle="collapse" href="#inputDocSubmenu" role="button"
-               aria-expanded="<?= $currPage === 'create' ? 'true' : 'false' ?>" aria-controls="inputDocSubmenu">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="s-icon"><i class="fas fa-plus"></i></span>
-                    <span>Input Dokumen</span>
-                </div>
-                <i class="fas fa-chevron-down" style="font-size:0.68rem;opacity:0.75;"></i>
+            <!-- Menu 3: Input Dokumen -->
+            <a href="<?= base_url('?page=create' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
+               class="sidebar-link <?= $currPage === 'create' ? 'active' : '' ?>">
+                <span class="s-icon"><i class="fas fa-plus"></i></span>
+                <span>Input Dokumen</span>
             </a>
-
-            <div class="collapse <?= $currPage === 'create' ? 'show' : '' ?>" id="inputDocSubmenu">
-                <div class="sidebar-submenu">
-                    <a href="<?= base_url('?page=create&doc_type=COOPERATION' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
-                       class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'create' && ($currDocType === 'COOPERATION' || $currDocType === '')) ? 'active' : '' ?>">
-                        <span>1. COOPERATION AGREEMENT</span>
-                    </a>
-                    <a href="<?= base_url('?page=create&doc_type=COMPANY' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
-                       class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'create' && $currDocType === 'COMPANY') ? 'active' : '' ?>">
-                        <span>2. ORIGINAL COMPANY DOC</span>
-                    </a>
-                    <a href="<?= base_url('?page=create&doc_type=PRINCIPAL' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
-                       class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'create' && $currDocType === 'PRINCIPAL') ? 'active' : '' ?>">
-                        <span>3. PRINCIPAL DOCUMENT</span>
-                    </a>
-                </div>
-            </div>
 
             <!-- Menu 4: Notifikasi Deadline -->
             <a href="<?= base_url('?page=notifications') ?>"

@@ -180,65 +180,21 @@ $docMeta = get_doc_type_meta($selectedDocType);
             </div>
         </div>
 
-        <!-- PILIHAN 3 JENIS DOKUMEN MEDQUEST (RINGKAS & BERSIH) -->
-        <div class="row g-2 mb-3">
-            <div class="col-md-4">
-                <button type="button" onclick="selectDocType('COOPERATION')" id="btnType_COOPERATION"
-                        class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">
-                    <span class="fw-bold text-dark" style="font-size:0.84rem;">1. LOG OF COOPERATION AGREEMENT</span>
-                    <i class="fas fa-check-circle check-indicator"></i>
-                </button>
-            </div>
-
-            <div class="col-md-4">
-                <button type="button" onclick="selectDocType('COMPANY')" id="btnType_COMPANY"
-                        class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">
-                    <span class="fw-bold text-dark" style="font-size:0.84rem;">2. ORIGINAL COMPANY DOCUMENT</span>
-                    <i class="fas fa-check-circle check-indicator"></i>
-                </button>
-            </div>
-
-            <div class="col-md-4">
-                <button type="button" onclick="selectDocType('PRINCIPAL')" id="btnType_PRINCIPAL"
-                        class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">
-                    <span class="fw-bold text-dark" style="font-size:0.84rem;">3. LOG OF PRINCIPAL DOCUMENT</span>
-                    <i class="fas fa-check-circle check-indicator"></i>
-                </button>
-            </div>
-        </div>
-
-        <style>
-            .doc-type-card {
-                background: #ffffff;
-                border-color: #e2e8f0 !important;
-                cursor: pointer;
-                transition: all 0.18s ease;
-            }
-            .doc-type-card:hover {
-                border-color: #93c5fd !important;
-                background: #f8fafc;
-            }
-            .doc-type-card .check-indicator {
-                color: #cbd5e1;
-                font-size: 0.95rem;
-            }
-            .doc-type-card.active {
-                background: #eff6ff;
-                border: 2px solid #2b579a !important;
-                box-shadow: 0 3px 10px rgba(43, 87, 154, 0.1);
-            }
-            .doc-type-card.active .check-indicator {
-                color: #2b579a;
-            }
-        </style>
-
         <div class="cp-table-card mt-0">
             <form method="POST" action="<?= base_url('?page=create') ?>" enctype="multipart/form-data">
-                <input type="hidden" name="doc_type" id="inputDocType" value="<?= htmlspecialchars($selectedDocType) ?>">
-
                 <div class="row g-2">
-                    <!-- Baris Atas: Departemen, No. Urut Form, Tanggal Input -->
-                    <div class="col-md-5">
+                    <!-- 1. Type Dokumen Dropdown -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Type Dokumen <span class="text-danger">*</span></label>
+                        <select name="doc_type" id="inputDocType" class="form-select fw-bold text-primary" required onchange="selectDocType(this.value)">
+                            <option value="COOPERATION" <?= $selectedDocType === 'COOPERATION' ? 'selected' : '' ?>>1. COOPERATION AGREEMENT</option>
+                            <option value="COMPANY" <?= $selectedDocType === 'COMPANY' ? 'selected' : '' ?>>2. ORIGINAL COMPANY DOC</option>
+                            <option value="PRINCIPAL" <?= $selectedDocType === 'PRINCIPAL' ? 'selected' : '' ?>>3. PRINCIPAL DOCUMENT</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Departemen / Divisi -->
+                    <div class="col-md-3">
                         <label class="form-label fw-bold">Departemen / Divisi <span class="text-danger">*</span></label>
                         <select name="department" id="selectDept" class="form-select fw-semibold" required onchange="toggleCustomDept(this.value)">
                             <?php foreach ($departments as $d): ?>
@@ -255,12 +211,14 @@ $docMeta = get_doc_type_meta($selectedDocType);
                         <?php endif; ?>
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">No. Urut Form (No.)</label>
+                    <!-- 3. No. Urut Form (No.) -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">No. Urut (No.)</label>
                         <input type="number" name="no_urut_dokumen" id="inputNoUrut" class="form-control fw-bold" value="<?= $nextNums[$selectedDocType] ?>">
                     </div>
 
-                    <div class="col-md-4">
+                    <!-- 4. Tanggal Input (Created By) -->
+                    <div class="col-md-3">
                         <label class="form-label fw-bold">Tanggal Input (Created By) <span class="text-danger">*</span></label>
                         <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
                     </div>
@@ -407,17 +365,19 @@ const FORM_CODES = {
 };
 
 function selectDocType(type) {
-    document.getElementById('inputDocType').value = type;
+    const sel = document.getElementById('inputDocType');
+    if (sel && sel.value !== type) {
+        sel.value = type;
+    }
 
     if (NEXT_NUMS[type]) {
         document.getElementById('inputNoUrut').value = NEXT_NUMS[type];
     }
 
-    // Highlight active card
-    ['COOPERATION', 'COMPANY', 'PRINCIPAL'].forEach(t => {
-        const btn = document.getElementById('btnType_' + t);
-        if (btn) btn.classList.toggle('active', t === type);
-    });
+    const badge = document.getElementById('formCodeBadge');
+    if (badge && FORM_CODES[type]) {
+        badge.textContent = FORM_CODES[type];
+    }
 
     const isCoop = (type === 'COOPERATION');
     const isComp = (type === 'COMPANY');

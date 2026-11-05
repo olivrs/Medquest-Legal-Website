@@ -243,33 +243,12 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
         </button>
         <?php endif; ?>
 
-        <!-- Tombol + Input Dokumen dengan 3 Pilihan Jenis Dokumen -->
-        <div class="dropdown">
-            <button class="btn btn-sm btn-primary fw-bold text-white px-3 py-1 dropdown-toggle d-inline-flex align-items-center gap-1"
-                    style="font-size:0.76rem;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <span>+ Input Dokumen</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border p-1 mt-1" style="min-width: 245px; border-radius: 0;">
-                <li>
-                    <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
-                       href="<?= base_url('?page=create&doc_type=COOPERATION' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
-                        1. LOG OF COOPERATION AGREEMENT
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
-                       href="<?= base_url('?page=create&doc_type=COMPANY' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
-                        2. ORIGINAL COMPANY DOCUMENT
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
-                       href="<?= base_url('?page=create&doc_type=PRINCIPAL' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
-                        3. LOG OF PRINCIPAL DOCUMENT
-                    </a>
-                </li>
-            </ul>
-        </div>
+        <!-- Tombol + Input Dokumen -->
+        <a href="<?= base_url('?page=create' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>"
+           class="btn btn-sm btn-primary fw-bold text-white px-3 py-1 d-inline-flex align-items-center gap-1"
+           style="font-size:0.76rem;">
+            <i class="fas fa-plus me-1"></i> Input Dokumen
+        </a>
     </div>
 </div>
 
