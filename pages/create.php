@@ -180,12 +180,12 @@ $docMeta = get_doc_type_meta($selectedDocType);
             </div>
         </div>
 
-        <div class="cp-table-card mt-0">
+        <div class="cp-table-card mt-0 p-4">
             <form method="POST" action="<?= base_url('?page=create') ?>" enctype="multipart/form-data">
-                <div class="row g-2">
-                    <!-- 1. Type Dokumen Dropdown -->
+                <div class="row g-3">
+                    <!-- BARIS 1: INFORMASI UMUM & DEPARTEMEN -->
                     <div class="col-md-4">
-                        <label class="form-label fw-bold">Type Dokumen <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Type Dokumen <span class="text-danger">*</span></label>
                         <select name="doc_type" id="inputDocType" class="form-select fw-bold text-primary" required onchange="selectDocType(this.value)">
                             <option value="COOPERATION" <?= $selectedDocType === 'COOPERATION' ? 'selected' : '' ?>>1. COOPERATION AGREEMENT</option>
                             <option value="COMPANY" <?= $selectedDocType === 'COMPANY' ? 'selected' : '' ?>>2. ORIGINAL COMPANY DOC</option>
@@ -193,9 +193,8 @@ $docMeta = get_doc_type_meta($selectedDocType);
                         </select>
                     </div>
 
-                    <!-- 2. Departemen / Divisi -->
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Departemen / Divisi <span class="text-danger">*</span></label>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-dark mb-1">Departemen / Divisi <span class="text-danger">*</span></label>
                         <select name="department" id="selectDept" class="form-select fw-semibold" required onchange="toggleCustomDept(this.value)">
                             <?php foreach ($departments as $d): ?>
                                 <option value="<?= htmlspecialchars($d['kode_dept']) ?>" <?= ($preselectedDept === strtoupper($d['kode_dept'])) ? 'selected' : '' ?>>
@@ -211,138 +210,109 @@ $docMeta = get_doc_type_meta($selectedDocType);
                         <?php endif; ?>
                     </div>
 
-                    <!-- 3. No. Urut Form (No.) -->
                     <div class="col-md-2">
-                        <label class="form-label fw-bold">No. Urut (No.)</label>
+                        <label class="form-label fw-bold small text-dark mb-1">No. Urut (No.)</label>
                         <input type="number" name="no_urut_dokumen" id="inputNoUrut" class="form-control fw-bold" value="<?= $nextNums[$selectedDocType] ?>">
                     </div>
 
-                    <!-- 4. Tanggal Input (Created By) -->
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Tanggal Input (Created By) <span class="text-danger">*</span></label>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-1">Tanggal Input <span class="text-danger">*</span></label>
                         <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
                     </div>
 
-                    <!-- ================================================================
-                         FIELD KHUSUS 2 & 3: ORIGINAL COMPANY DOCUMENT & PRINCIPAL DOCUMENT
-                         (Document Title, Document No, Issued By, Principal)
-                         ================================================================ -->
+                    <!-- BARIS 2 & 3 KHUSUS 2 & 3: ORIGINAL COMPANY & PRINCIPAL -->
                     <div class="col-md-7 field-company-principal">
-                        <label class="form-label fw-bold">Document Title <span class="text-danger">*</span></label>
-                        <textarea name="document_title" id="inputDocTitle" class="form-control" rows="2"
-                                  placeholder="Contoh: Akta Pengangkatan kembali dewan direksi / Confidential Disclosure Agreement"></textarea>
+                        <label class="form-label fw-bold small text-dark mb-1">Document Title <span class="text-danger">*</span></label>
+                        <input type="text" name="document_title" id="inputDocTitle" class="form-control"
+                               placeholder="Contoh: Akta Pengangkatan kembali dewan direksi / Confidential Disclosure Agreement">
                     </div>
 
                     <div class="col-md-5 field-company-principal">
-                        <label class="form-label fw-bold">Document No.</label>
-                        <textarea name="document_number" id="inputDocNoAlt" class="form-control" rows="2"
-                                  placeholder="Contoh: AHU-AH.01.09-0410712 / SN : Q8-v3-1208007241 / ketik N/A jika tidak ada"></textarea>
+                        <label class="form-label fw-bold small text-dark mb-1">Document No.</label>
+                        <input type="text" name="document_number" id="inputDocNoAlt" class="form-control"
+                               placeholder="Contoh: AHU-AH.01.09-0410712 / SN : Q8-v3-1208007241 / ketik N/A jika tidak ada">
                     </div>
 
                     <div class="col-md-6 field-company-principal" id="colIssuedBy">
-                        <label class="form-label fw-bold">Issued By <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Issued By <span class="text-danger">*</span></label>
                         <input type="text" name="issued_by" id="inputIssuedBy" class="form-control"
                                placeholder="Contoh: Notaris Putranto / Nanik Gunawan - Cedric DEBONTE">
                     </div>
 
                     <div class="col-md-6 field-principal-only">
-                        <label class="form-label fw-bold">Principal <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Principal <span class="text-danger">*</span></label>
                         <input type="text" name="principal_name" id="inputPrincipal" class="form-control"
                                placeholder="Contoh: Cepheid Europe S.A.S / Diagast / Tecan / Novartis V & D">
                     </div>
 
-                    <!-- ================================================================
-                         FIELD KHUSUS 1: LOG OF COOPERATION AGREEMENT
-                         (Document Number, Customer, Product Description, Serial Number)
-                         ================================================================ -->
+                    <!-- BARIS 2 & 3 KHUSUS 1: LOG OF COOPERATION AGREEMENT -->
                     <div class="col-md-6 field-cooperation-only">
-                        <label class="form-label fw-bold">Document Number <span class="text-danger">*</span></label>
-                        <textarea name="document_number" id="inputDocNoCoop" class="form-control" rows="2"
-                                  placeholder="Contoh: 087/KKO.PL/MBB/MJG/XII/2025"></textarea>
+                        <label class="form-label fw-bold small text-dark mb-1">Document Number <span class="text-danger">*</span></label>
+                        <input type="text" name="document_number" id="inputDocNoCoop" class="form-control"
+                               placeholder="Contoh: 087/KKO.PL/MBB/MJG/XII/2025">
                     </div>
 
                     <div class="col-md-6 field-cooperation-only">
-                        <label class="form-label fw-bold">Customer <span class="text-danger">*</span></label>
-                        <textarea name="customer" id="inputCustomer" class="form-control" rows="2"
-                                  placeholder="Contoh: Palang Merah Indonesia Provinsi DKI Jakarta"></textarea>
+                        <label class="form-label fw-bold small text-dark mb-1">Customer <span class="text-danger">*</span></label>
+                        <input type="text" name="customer" id="inputCustomer" class="form-control"
+                               placeholder="Contoh: Palang Merah Indonesia Provinsi DKI Jakarta">
                     </div>
 
                     <div class="col-md-8 field-cooperation-only">
-                        <label class="form-label fw-bold">Product (Description) <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Product (Description) <span class="text-danger">*</span></label>
                         <input type="text" name="product_description" id="inputProductDesc" class="form-control"
                                placeholder="Contoh: Fibroscan 530 Compact / Hemocue Hb 301 / NDA">
                     </div>
 
                     <div class="col-md-4 field-cooperation-only">
-                        <label class="form-label fw-bold">Serial Number (S/N)</label>
+                        <label class="form-label fw-bold small text-dark mb-1">Serial Number (S/N)</label>
                         <input type="text" name="serial_number" id="inputSerialNo" class="form-control" value="N/A"
                                placeholder="Ketik S/N atau biarkan N/A">
                     </div>
 
-                    <!-- ================================================================
-                         TANGGAL EFFECTIVE DATE & EXPIRY DATE (BERLAKU UNTUK SEMUA JENIS)
-                         ================================================================ -->
-                    <div class="col-md-5 mt-2">
-                        <label class="form-label fw-bold">Effective Date</label>
+                    <!-- BARIS 4: TANGGAL EFFECTIVE DATE & EXPIRY DATE (SIMETRIS 50/50, TANPA PILIHAN CEPAT & TANPA JADWAL DEADLINE) -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark mb-1">Effective Date</label>
                         <div class="input-group">
                             <input type="date" name="effective_date" id="effDateInput" class="form-control" value="<?= date('Y-m-d') ?>">
                             <div class="input-group-text bg-light">
                                 <input class="form-check-input mt-0 me-1" type="checkbox" name="effective_date_na" id="effDateNaCheck" onchange="toggleEffNa(this.checked)">
-                                <label class="small mb-0 fw-semibold" for="effDateNaCheck">N/A</label>
+                                <label class="small mb-0 fw-semibold user-select-none" for="effDateNaCheck" style="cursor:pointer;">N/A</label>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-7 mt-2">
-                        <label class="form-label fw-bold text-danger">Expiry Date <span class="text-danger" id="expReqStar">*</span></label>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-dark mb-1">Expiry Date <span class="text-danger" id="expReqStar">*</span></label>
                         <div class="input-group">
-                            <input type="date" name="expiry_date" id="expDateInput" class="form-control border-danger fw-bold" onchange="updateDeadlinePreview()">
+                            <input type="date" name="expiry_date" id="expDateInput" class="form-control fw-semibold" required>
                             <div class="input-group-text bg-light">
                                 <input class="form-check-input mt-0 me-1" type="checkbox" name="expiry_date_na" id="expDateNaCheck" onchange="toggleExpNa(this.checked)">
-                                <label class="small mb-0 fw-semibold" for="expDateNaCheck">N/A</label>
+                                <label class="small mb-0 fw-semibold user-select-none" for="expDateNaCheck" style="cursor:pointer;">N/A</label>
                             </div>
-                        </div>
-                        <div class="mt-2 d-flex flex-wrap gap-1 align-items-center" id="quickExpiryBtns">
-                            <span class="small text-muted me-1">Pilih Cepat:</span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(90)">H-90</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(60)">H-60</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(30)">H-30</button>
-                            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(14)">H-14</button>
-                            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(7)">H-7</button>
-                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(3)">H-3</button>
                         </div>
                     </div>
 
-                    <!-- Preview Kalkulator Tanggal Deadline H-90, H-60, H-30, H-14, H-7, H-3 -->
-                    <div class="col-12" id="deadlinePreviewWrapper" style="display:none;">
-                        <div class="p-3 rounded-0 bg-light border">
-                            <div class="fw-bold small text-dark mb-2">
-                                <i class="fas fa-calendar-alt text-primary me-1"></i> Jadwal Tanggal Deadline Otomatis:
-                            </div>
-                            <div class="row g-2 text-center" id="deadlinePreviewBoxes"></div>
-                        </div>
-                    </div>
-
-                    <!-- Note & Upload File Dokumen -->
-                    <div class="col-md-8 mt-2">
+                    <!-- BARIS 5: NOTE & UPLOAD FILE DOKUMEN -->
+                    <div class="col-md-7">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-bold mb-0">Note</label>
-                            <div class="form-check form-switch small">
+                            <label class="form-label fw-bold small text-dark mb-0">Catatan (Note)</label>
+                            <div class="form-check form-switch small mb-0">
                                 <input class="form-check-input" type="checkbox" name="prefix_date_note" id="prefixDateCheck">
-                                <label class="form-check-label" for="prefixDateCheck">Beri tanggal di awal catatan</label>
+                                <label class="form-check-label text-muted small" for="prefixDateCheck">Beri tanggal di awal catatan</label>
                             </div>
                         </div>
                         <textarea name="note" class="form-control" rows="2" placeholder="Kosongkan jika N/A, atau ketik catatan (contoh: Distributed as on 02 OCT 2009)..."></textarea>
                     </div>
 
-                    <div class="col-md-4 mt-2">
-                        <label class="form-label fw-bold">Upload File Dokumen (Opsional)</label>
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold small text-dark mb-1">Upload File Dokumen (Opsional)</label>
                         <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-                        <div class="text-muted mt-1" style="font-size:0.68rem;">PDF, JPG, PNG, Word, atau Excel</div>
+                        <div class="text-muted mt-1" style="font-size:0.7rem;">Mendukung berkas format PDF, Word, Excel, JPG, atau PNG</div>
                     </div>
                 </div>
 
-                <hr class="my-3">
+                <hr class="my-4">
 
                 <div class="d-flex justify-content-end gap-2">
                     <a href="<?= base_url('?page=agreements') ?>" class="btn btn-light border fw-semibold px-4 py-2">Batal</a>
@@ -356,7 +326,6 @@ $docMeta = get_doc_type_meta($selectedDocType);
 </div>
 
 <script>
-const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const NEXT_NUMS = <?= json_encode($nextNums) ?>;
 const FORM_CODES = {
     'COOPERATION': 'Form: MJG-FOR-LAC.12-001-03',
@@ -437,13 +406,6 @@ function selectDocType(type) {
     toggleExpNa(expNaChecked);
 }
 
-function formatMedquestDateJS(dateObj) {
-    const dd = String(dateObj.getDate()).padStart(2, '0');
-    const mmm = MONTHS_SHORT[dateObj.getMonth()];
-    const yyyy = dateObj.getFullYear();
-    return `${dd} ${mmm} ${yyyy}`;
-}
-
 function toggleCustomDept(val) {
     const el = document.getElementById('customDeptInput');
     if (!el) return;
@@ -465,78 +427,12 @@ function toggleEffNa(checked) {
 function toggleExpNa(checked) {
     const inp = document.getElementById('expDateInput');
     const star = document.getElementById('expReqStar');
-    const quickBtns = document.getElementById('quickExpiryBtns');
     inp.disabled = checked;
     inp.required = !checked;
     if (star) star.style.display = checked ? 'none' : '';
-    if (quickBtns) quickBtns.style.display = checked ? 'none' : 'flex';
     if (checked) {
         inp.value = '';
-        document.getElementById('deadlinePreviewWrapper').style.display = 'none';
-    } else {
-        updateDeadlinePreview();
     }
-}
-
-function setQuickExpiry(daysFromToday) {
-    const expCheck = document.getElementById('expDateNaCheck');
-    if (expCheck && expCheck.checked) {
-        expCheck.checked = false;
-        toggleExpNa(false);
-    }
-    const d = new Date();
-    d.setDate(d.getDate() + daysFromToday);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const inp = document.getElementById('expDateInput');
-    inp.value = `${yyyy}-${mm}-${dd}`;
-    updateDeadlinePreview();
-}
-
-function updateDeadlinePreview() {
-    const val = document.getElementById('expDateInput').value;
-    const wrapper = document.getElementById('deadlinePreviewWrapper');
-    const container = document.getElementById('deadlinePreviewBoxes');
-
-    if (!val) {
-        wrapper.style.display = 'none';
-        return;
-    }
-
-    const milestones = [90, 60, 30, 14, 7, 3];
-    const expDate = new Date(val + 'T00:00:00');
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
-    let html = '';
-    milestones.forEach(m => {
-        const target = new Date(expDate);
-        target.setDate(target.getDate() - m);
-
-        let badgeClass = 'bg-white border text-dark';
-        let statusNote = 'Jadwal Pengingat';
-        if (target.getTime() === today.getTime()) {
-            badgeClass = 'bg-danger text-white border-danger shadow-sm';
-            statusNote = 'JATUH HARI INI!';
-        } else if (target < today) {
-            badgeClass = 'bg-secondary bg-opacity-10 text-muted border';
-            statusNote = 'Sudah Lewat';
-        }
-
-        html += `
-            <div class="col-6 col-md-2">
-                <div class="p-2 rounded-0 ${badgeClass}">
-                    <div class="fw-bold small">H-${m}</div>
-                    <div class="fw-bold" style="font-size:0.82rem;">${formatMedquestDateJS(target)}</div>
-                    <div style="font-size:0.68rem;">${statusNote}</div>
-                </div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-    wrapper.style.display = 'block';
 }
 
 // Inisialisasi tampilan form sesuai jenis dokumen awal
