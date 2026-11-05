@@ -97,7 +97,7 @@ $usersList = $stmtList->fetchAll();
         </a>
         <h1 class="cp-page-title ms-1">Persetujuan Akun</h1>
         <?php if ($countPending > 0): ?>
-            <span class="badge bg-warning text-dark rounded-pill px-2 py-1 ms-1" style="font-size:0.72rem;"><?= $countPending ?> Pending</span>
+            <span class="badge bg-warning text-dark rounded-0 px-2 py-1 ms-1" style="font-size:0.72rem;"><?= $countPending ?> Pending</span>
         <?php endif; ?>
     </div>
 </div>
@@ -106,7 +106,7 @@ $usersList = $stmtList->fetchAll();
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
             <a href="<?= base_url('?page=user_approvals&tab=pending') ?>" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-3 p-3 transition-hover <?= $tab === 'pending' ? 'ring-primary border-warning' : '' ?>" style="background: #fffdf5; border-left: 4px solid #f59e0b !important;">
+                <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'pending' ? 'ring-primary border-warning' : '' ?>" style="background: #fffdf5; border-left: 4px solid #f59e0b !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small fw-semibold">MENUNGGU ACC</div>
@@ -115,7 +115,7 @@ $usersList = $stmtList->fetchAll();
                                 <i class="fas fa-hourglass-half me-1"></i> Perlu Tindakan
                             </div>
                         </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#fef3c7;color:#d97706;font-size:22px;">
+                        <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#fef3c7;color:#d97706;font-size:22px;">
                             <i class="fas fa-user-clock"></i>
                         </div>
                     </div>
@@ -125,7 +125,7 @@ $usersList = $stmtList->fetchAll();
 
         <div class="col-sm-6 col-xl-3">
             <a href="<?= base_url('?page=user_approvals&tab=approved') ?>" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-3 p-3 transition-hover <?= $tab === 'approved' ? 'ring-primary border-success' : '' ?>" style="background: #f6fdf9; border-left: 4px solid #10b981 !important;">
+                <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'approved' ? 'ring-primary border-success' : '' ?>" style="background: #f6fdf9; border-left: 4px solid #10b981 !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small fw-semibold">SUDAH DISETUJUI</div>
@@ -134,7 +134,7 @@ $usersList = $stmtList->fetchAll();
                                 <i class="fas fa-check-circle me-1"></i> Aktif &amp; Siap Login
                             </div>
                         </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#d1fae5;color:#059669;font-size:22px;">
+                        <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#d1fae5;color:#059669;font-size:22px;">
                             <i class="fas fa-user-check"></i>
                         </div>
                     </div>
@@ -144,7 +144,7 @@ $usersList = $stmtList->fetchAll();
 
         <div class="col-sm-6 col-xl-3">
             <a href="<?= base_url('?page=user_approvals&tab=rejected') ?>" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-3 p-3 transition-hover <?= $tab === 'rejected' ? 'ring-primary border-danger' : '' ?>" style="background: #fff8f8; border-left: 4px solid #ef4444 !important;">
+                <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'rejected' ? 'ring-primary border-danger' : '' ?>" style="background: #fff8f8; border-left: 4px solid #ef4444 !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small fw-semibold">DITOLAK</div>
@@ -153,7 +153,7 @@ $usersList = $stmtList->fetchAll();
                                 <i class="fas fa-ban me-1"></i> Tidak Dapat Login
                             </div>
                         </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#fee2e2;color:#dc2626;font-size:22px;">
+                        <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#fee2e2;color:#dc2626;font-size:22px;">
                             <i class="fas fa-user-times"></i>
                         </div>
                     </div>
@@ -163,7 +163,7 @@ $usersList = $stmtList->fetchAll();
 
         <div class="col-sm-6 col-xl-3">
             <a href="<?= base_url('?page=user_approvals&tab=all') ?>" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-3 p-3 transition-hover <?= $tab === 'all' ? 'ring-primary border-primary' : '' ?>" style="background: #f8fafc; border-left: 4px solid #2b579a !important;">
+                <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'all' ? 'ring-primary border-primary' : '' ?>" style="background: #f8fafc; border-left: 4px solid #2b579a !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small fw-semibold">TOTAL SEMUA USER</div>
@@ -172,7 +172,7 @@ $usersList = $stmtList->fetchAll();
                                 <i class="fas fa-users me-1"></i> Basis Data User
                             </div>
                         </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#eff6ff;color:#2b579a;font-size:22px;">
+                        <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#eff6ff;color:#2b579a;font-size:22px;">
                             <i class="fas fa-users-cog"></i>
                         </div>
                     </div>
@@ -182,33 +182,33 @@ $usersList = $stmtList->fetchAll();
     </div>
 
     <!-- Filter Tabs & Search -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card border-0 shadow-sm rounded-0 mb-4">
         <div class="card-header bg-white border-bottom p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <ul class="nav nav-pills gap-1">
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'pending' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=pending' . ($search ? '&q=' . urlencode($search) : '')) ?>">
                         <i class="fas fa-hourglass-half me-1"></i> Menunggu Peninjauan
                         <?php if ($countPending > 0): ?>
-                            <span class="badge rounded-pill bg-warning text-dark ms-1"><?= $countPending ?></span>
+                            <span class="badge rounded-0 bg-warning text-dark ms-1"><?= $countPending ?></span>
                         <?php endif; ?>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'approved' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=approved' . ($search ? '&q=' . urlencode($search) : '')) ?>">
                         <i class="fas fa-check-circle me-1"></i> Disetujui (Approved)
-                        <span class="badge rounded-pill bg-light text-dark ms-1"><?= $countApproved ?></span>
+                        <span class="badge rounded-0 bg-light text-dark ms-1"><?= $countApproved ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'rejected' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=rejected' . ($search ? '&q=' . urlencode($search) : '')) ?>">
                         <i class="fas fa-times-circle me-1"></i> Ditolak (Rejected)
-                        <span class="badge rounded-pill bg-light text-dark ms-1"><?= $countRejected ?></span>
+                        <span class="badge rounded-0 bg-light text-dark ms-1"><?= $countRejected ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'all' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=all' . ($search ? '&q=' . urlencode($search) : '')) ?>">
                         <i class="fas fa-list me-1"></i> Semua User
-                        <span class="badge rounded-pill bg-light text-dark ms-1"><?= $countTotal ?></span>
+                        <span class="badge rounded-0 bg-light text-dark ms-1"><?= $countTotal ?></span>
                     </a>
                 </li>
             </ul>
@@ -249,7 +249,7 @@ $usersList = $stmtList->fetchAll();
                         <tr>
                             <td colspan="9" class="text-center py-5 text-muted">
                                 <div class="py-4">
-                                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;font-size:28px;">
+                                    <div class="rounded-0 bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;font-size:28px;">
                                         <i class="fas <?= $tab === 'pending' ? 'fa-check-double text-success' : 'fa-inbox text-secondary' ?>"></i>
                                     </div>
                                     <h6 class="fw-bold text-dark">
@@ -271,7 +271,7 @@ $usersList = $stmtList->fetchAll();
                                 <td class="ps-3 fw-bold text-muted small"><?= $idx + 1 ?></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="sidebar-avatar rounded-circle text-white fw-bold d-flex align-items-center justify-content-center"
+                                        <div class="sidebar-avatar rounded-0 text-white fw-bold d-flex align-items-center justify-content-center"
                                              style="width:36px;height:36px;font-size:0.8rem;background: <?= $uRole === 'superadmin' ? '#2b579a' : '#64748b' ?>;">
                                             <?= htmlspecialchars($u['kode_singkatan']) ?>
                                         </div>

@@ -207,21 +207,21 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                     <span><?= $hFilterLabel ?></span>
                     <i class="fas fa-chevron-down" style="font-size:0.62rem;"></i>
                 </a>
-                <ul class="dropdown-menu shadow-sm border p-1 mt-1" style="min-width: 145px; border-radius: 8px;">
+                <ul class="dropdown-menu shadow-sm border p-1 mt-1" style="min-width: 145px; border-radius: 0;">
                     <li>
-                        <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H7_3' ? 'active' : '' ?>"
+                        <a class="dropdown-item rounded-0 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H7_3' ? 'active' : '' ?>"
                            href="<?= base_url($baseFilterUrl . '&status=H7_3') ?>">
                             H-3 s/d H-7
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H30_14' ? 'active' : '' ?>"
+                        <a class="dropdown-item rounded-0 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H30_14' ? 'active' : '' ?>"
                            href="<?= base_url($baseFilterUrl . '&status=H30_14') ?>">
                             H-14 s/d H-30
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H90_60' ? 'active' : '' ?>"
+                        <a class="dropdown-item rounded-0 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H90_60' ? 'active' : '' ?>"
                            href="<?= base_url($baseFilterUrl . '&status=H90_60') ?>">
                             H-60 s/d H-90
                         </a>
@@ -249,21 +249,21 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                     style="font-size:0.76rem;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <span>+ Input Dokumen</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border p-1 mt-1" style="min-width: 245px; border-radius: 10px;">
+            <ul class="dropdown-menu dropdown-menu-end shadow border p-1 mt-1" style="min-width: 245px; border-radius: 0;">
                 <li>
-                    <a class="dropdown-item rounded-2 py-2 px-2 fw-semibold small"
+                    <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
                        href="<?= base_url('?page=create&doc_type=COOPERATION' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
                         1. Log of Cooperation Agreement
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item rounded-2 py-2 px-2 fw-semibold small"
+                    <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
                        href="<?= base_url('?page=create&doc_type=COMPANY' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
                         2. Original Company Document
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item rounded-2 py-2 px-2 fw-semibold small"
+                    <a class="dropdown-item rounded-0 py-2 px-2 fw-semibold small"
                        href="<?= base_url('?page=create&doc_type=PRINCIPAL' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
                         3. Log of Principal Document
                     </a>
@@ -358,9 +358,9 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
         </div>
 
         <div class="d-flex align-items-center gap-3 small no-print">
-            <span><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#10b981;"></span> Aktif</span>
-            <span><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#f59e0b;"></span> Akan Expired</span>
-            <span><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#ef4444;"></span> Expired</span>
+            <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#10b981;"></span> Aktif</span>
+            <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#f59e0b;"></span> Akan Expired</span>
+            <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#ef4444;"></span> Expired</span>
         </div>
     </div>
 
@@ -516,7 +516,7 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
 <!-- Modal Tambah Note -->
 <div class="modal fade no-print" id="modalAddNote" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-4 border-0 shadow">
+        <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
             <input type="hidden" name="action" value="add_note">
             <input type="hidden" name="agreement_id" id="noteModalAgrId">
             <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
@@ -529,7 +529,7 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
             </div>
 
             <div class="modal-body p-4">
-                <div class="p-2 rounded bg-light border mb-3 small">
+                <div class="p-2 rounded-0 bg-light border mb-3 small">
                     <div class="fw-bold text-dark" id="noteModalCustomer"></div>
                     <div class="text-muted" id="noteModalDocNo"></div>
                 </div>
@@ -562,7 +562,7 @@ $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status
 <!-- Modal Tambah Departemen Baru (Khusus Superadmin) -->
 <div class="modal fade no-print" id="modalAddDept" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
-        <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-4 border-0 shadow">
+        <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
             <input type="hidden" name="action" value="add_department">
             <div class="modal-header mq-modal-header text-white">
                 <h6 class="modal-title fw-bold">Tambah Departemen Baru</h6>

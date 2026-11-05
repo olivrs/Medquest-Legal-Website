@@ -61,7 +61,7 @@ if (is_logged_in()) {
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>?v=mq23" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v1" rel="stylesheet">
 </head>
 <body>
 
@@ -159,7 +159,7 @@ if (is_logged_in()) {
                     <span>Deadline</span>
                 </div>
                 <?php if ($alertHCount > 0): ?>
-                    <span class="badge rounded-pill bg-danger" style="font-size:0.66rem;"><?= $alertHCount ?></span>
+                    <span class="badge rounded-0 bg-danger" style="font-size:0.66rem;"><?= $alertHCount ?></span>
                 <?php endif; ?>
             </a>
 
@@ -172,7 +172,7 @@ if (is_logged_in()) {
                     <span>Persetujuan Akun</span>
                 </div>
                 <?php if (!empty($pendingApprovalsCount) && $pendingApprovalsCount > 0): ?>
-                    <span class="badge rounded-pill bg-warning text-dark fw-bold" style="font-size:0.66rem;"><?= $pendingApprovalsCount ?></span>
+                    <span class="badge rounded-0 bg-warning text-dark fw-bold" style="font-size:0.66rem;"><?= $pendingApprovalsCount ?></span>
                 <?php endif; ?>
             </a>
             <?php endif; ?>
@@ -215,11 +215,11 @@ if (is_logged_in()) {
 
             <div class="topbar-actions">
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-light border fw-semibold text-dark dropdown-toggle d-inline-flex align-items-center gap-2 px-3" style="font-size:0.76rem;border-radius:8px;" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-sm btn-light border fw-semibold text-dark dropdown-toggle d-inline-flex align-items-center gap-2 px-3" style="font-size:0.76rem;border-radius: 0;" type="button" data-bs-toggle="dropdown">
                         <i class="fas fa-building text-primary" style="font-size:0.72rem;"></i>
                         <span>Departemen: <strong><?= $currDept === 'ALL' ? 'Semua' : htmlspecialchars($currDept) ?></strong></span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border" style="min-width:220px;border-radius:10px;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border" style="min-width:220px;border-radius: 0;">
                         <li>
                             <a class="dropdown-item small d-flex justify-content-between align-items-center py-1 <?= $currDept === 'ALL' ? 'fw-bold text-primary bg-light' : '' ?>" href="<?= base_url('?page=agreements&dept=ALL') ?>">
                                 <span>Semua Departemen</span>

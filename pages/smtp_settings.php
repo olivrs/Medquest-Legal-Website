@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <!-- Panduan Cepat 30 Detik Cara Ambil 16-Digit App Password Gmail -->
-        <div class="card border-primary border-2 shadow-sm rounded-4 mb-4">
+        <div class="card border-primary border-2 shadow-sm rounded-0 mb-4">
             <div class="card-body p-3 bg-primary-subtle text-dark">
                 <div class="fw-bold mb-1"><i class="fas fa-key text-primary me-1"></i> Cara Mengambil 16-Digit Sandi Aplikasi (App Password) Gmail (Hanya 1 Menit):</div>
                 <ol class="small mb-0 ps-3" style="line-height:1.6;">
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card border-0 shadow-sm rounded-0 mb-4">
             <div class="card-body p-4">
                 <form method="POST" action="<?= base_url('?page=smtp_settings') ?>">
                     <input type="hidden" name="action" value="save">
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <!-- Panel Kirim Test Email -->
-        <div class="card border-0 shadow-sm rounded-4">
+        <div class="card border-0 shadow-sm rounded-0">
             <div class="card-body p-4">
                 <h6 class="fw-bold mb-2"><i class="fas fa-paper-plane text-success me-1"></i> Tes Kirim Email ke Gmail Anda Sekarang</h6>
                 <p class="small text-muted mb-3">Setelah menyimpan Gmail &amp; App Password di atas, Anda bisa mengetes apakah email langsung masuk ke Inbox Gmail tujuan:</p>

@@ -181,7 +181,7 @@ $emailLogs = $stmtLogs->fetchAll();
 <!-- Modal Preview Isi Email HTML -->
 <div class="modal fade" id="modalEmailPreview" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content rounded-3 overflow-hidden border-0 shadow">
+        <div class="modal-content rounded-0 overflow-hidden border-0 shadow">
             <div class="modal-header mq-modal-header text-white py-2">
                 <h6 class="modal-title fw-bold">Detail Email</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

@@ -176,7 +176,7 @@ a:hover {
     gap: 8px;
     text-decoration: none;
     color: #ffffff;
-    background: rgba(15, 23, 42, 0.35);
+    background: transparent !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -187,9 +187,9 @@ a:hover {
     object-fit: contain;
     display: block;
     margin: 0 auto;
-    padding: 3px 8px;
-    background: #ffffff;
-    border-radius: 5px;
+    padding: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
 }
 
 .sidebar-section-title {
@@ -211,7 +211,7 @@ a:hover {
     align-items: center;
     gap: 9px;
     padding: 6px 10px;
-    border-radius: 7px;
+    border-radius: 0;
     border: none;
     color: #cbd5e1;
     text-decoration: none;
@@ -236,7 +236,7 @@ a:hover {
 .sidebar-link .s-icon {
     width: 24px;
     height: 24px;
-    border-radius: 6px;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.07);
     border: none;
     color: #cbd5e1;
@@ -269,7 +269,7 @@ a:hover {
     align-items: center;
     justify-content: space-between;
     padding: 4px 8px;
-    border-radius: 5px;
+    border-radius: 0;
     border: none;
     color: #94a3b8;
     text-decoration: none;
@@ -299,7 +299,7 @@ a:hover {
     font-size: 0.64rem;
     font-weight: 600;
     padding: 0 5px;
-    border-radius: 99px;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #cbd5e1;
@@ -309,7 +309,7 @@ a:hover {
     background: #2b579a;
     color: #ffffff !important;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    border-radius: 0;
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
@@ -339,7 +339,7 @@ a:hover {
 .sidebar-avatar {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 0;
     background: #2b579a;
     border: none;
     color: #ffffff;
@@ -372,7 +372,7 @@ a:hover {
 .sidebar-toggle-btn {
     width: 34px;
     height: 34px;
-    border-radius: 8px;
+    border-radius: 0;
     border: 1px solid var(--mq-border);
     background: #f8fafc;
     color: var(--mq-text-body);
@@ -437,7 +437,7 @@ a:hover {
     border: none;
     color: #e2e8f0;
     padding: 2px 10px;
-    border-radius: 20px;
+    border-radius: 0;
     font-size: 11px;
     font-weight: 600;
     display: inline-flex;
@@ -456,7 +456,7 @@ a:hover {
     font-size: 11px;
     width: 22px;
     height: 22px;
-    border-radius: 50%;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.08);
     border: none;
     display: inline-flex;
@@ -495,7 +495,7 @@ a:hover {
     width: 100%;
     background: #f8fafc;
     border: 1px solid var(--mq-border);
-    border-radius: 20px;
+    border-radius: 0;
     padding: 6px 14px 6px 34px;
     font-size: 0.78rem;
     color: var(--mq-text-dark);
@@ -527,7 +527,7 @@ a:hover {
 .topbar-icon-btn {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 0;
     background: #f1f5f9;
     color: var(--mq-text-body);
     display: inline-flex;
@@ -550,7 +550,7 @@ a:hover {
     right: 5px;
     width: 7px;
     height: 7px;
-    border-radius: 50%;
+    border-radius: 0;
     background: #ef4444;
     border: 1.5px solid #ffffff;
 }
@@ -591,7 +591,7 @@ a:hover {
 .mq-empty-upload-box {
     background: #f8fafc;
     border: 1.5px dashed #cbd5e1;
-    border-radius: 8px;
+    border-radius: 0;
     padding: 18px 12px;
     text-align: center;
 }
@@ -601,7 +601,7 @@ a:hover {
    ============================================================================ */
 .cp-header-row {
     background: #ffffff;
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid var(--mq-border);
     border-left: 4px solid var(--mq-primary);
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
@@ -625,7 +625,7 @@ a:hover {
 .cp-pill-group {
     background: #f8fafc;
     border: 1px solid var(--mq-border);
-    border-radius: 7px;
+    border-radius: 0;
     padding: 3px 5px;
     display: inline-flex;
     align-items: center;
@@ -638,7 +638,7 @@ a:hover {
     color: var(--mq-text-body);
     text-decoration: none;
     padding: 4px 10px;
-    border-radius: 5px;
+    border-radius: 0;
     transition: all 0.15s ease;
 }
 
@@ -688,7 +688,7 @@ a:hover {
     font-size: 0.68rem;
     font-weight: 600;
     padding: 1px 7px;
-    border-radius: 99px;
+    border-radius: 0;
     background: #f1f5f9;
     color: var(--mq-text-body);
 }
@@ -703,7 +703,7 @@ a:hover {
    ============================================================================ */
 .cp-stat-card {
     background: #ffffff;
-    border-radius: 10px;
+    border-radius: 0;
     padding: 14px 16px;
     border: 1px solid var(--mq-border);
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
@@ -741,7 +741,7 @@ a:hover {
 .cp-circle-gauge {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -751,7 +751,7 @@ a:hover {
 .cp-circle-inner {
     width: 35px;
     height: 35px;
-    border-radius: 50%;
+    border-radius: 0;
     background: #ffffff;
     display: flex;
     align-items: center;
@@ -770,7 +770,7 @@ a:hover {
    ============================================================================ */
 .cp-table-card {
     background: #ffffff;
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px 18px;
     border: 1px solid var(--mq-border);
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
@@ -847,7 +847,7 @@ a:hover {
     border: 1px solid #bfdbfe;
     font-weight: 700;
     letter-spacing: 0.3px;
-    border-radius: 5px;
+    border-radius: 0;
 }
 
 .mq-dept-badge:hover {
@@ -869,7 +869,7 @@ a:hover {
     display: inline-flex;
     align-items: center;
     padding: 3px 9px;
-    border-radius: 99px;
+    border-radius: 0;
     font-size: 0.68rem;
     font-weight: 600;
 }
@@ -932,9 +932,9 @@ a:hover {
 
 .mq-footer-logo-box {
     display: inline-block;
-    background: #ffffff;
-    padding: 5px 12px;
-    border-radius: 6px;
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
     margin-bottom: 12px;
 }
 
@@ -1002,7 +1002,7 @@ a:hover {
     font-size: 10.5px;
     font-weight: 600;
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: 0;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1052,7 +1052,7 @@ a:hover {
 .mq-hotline-card {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 12px 14px;
     display: flex;
     align-items: center;
@@ -1063,7 +1063,7 @@ a:hover {
 .mq-hotline-icon {
     width: 36px;
     height: 36px;
-    border-radius: 50%;
+    border-radius: 0;
     background: rgba(59, 130, 246, 0.2);
     color: #60a5fa;
     font-size: 16px;
@@ -1094,7 +1094,7 @@ a:hover {
 .mq-footer-socials a {
     width: 32px;
     height: 32px;
-    border-radius: 7px;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.07);
     border: none;
     color: #cbd5e1;
@@ -1136,7 +1136,7 @@ a:hover {
     width: 100%;
     max-width: 430px;
     background: #ffffff;
-    border-radius: 12px;
+    border-radius: 0;
     border: 1px solid var(--mq-border);
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
     overflow: hidden;
@@ -1151,9 +1151,9 @@ a:hover {
 }
 
 .auth-card-header img {
-    background: #ffffff;
-    padding: 5px 12px;
-    border-radius: 6px;
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
 }
 
 .auth-card-header h4 {
@@ -1230,7 +1230,7 @@ a:hover {
     font-size: 0.75rem;
     font-weight: 600;
     padding: 3px 10px;
-    border-radius: 20px;
+    border-radius: 0;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1264,4 +1264,61 @@ a:hover {
 
 .dept-tabs-wrapper.is-open {
     display: inline-flex;
+}
+
+
+/* ==========================================================================
+   GLOBAL SHARP SQUARE DESIGN (SEMUA SHAPE / ELEMEN MENJADI KOTAK)
+   ========================================================================== */
+*,
+*::before,
+*::after {
+    border-radius: 0 !important;
+}
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center, dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend, table, caption,
+tbody, tfoot, thead, tr, th, td, article, aside,
+canvas, details, embed, figure, figcaption, footer,
+header, hgroup, menu, nav, output, ruby, section,
+summary, time, mark, audio, video,
+input, button, select, textarea,
+.btn, .btn-sm, .btn-lg, .btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-light, .btn-dark,
+.btn-outline-primary, .btn-outline-secondary, .btn-outline-success, .btn-outline-danger, .btn-outline-warning, .btn-outline-info, .btn-outline-light, .btn-outline-dark,
+.form-control, .form-select, .form-check-input, .input-group-text, .input-group,
+.card, .card-header, .card-body, .card-footer,
+.badge, .sub-badge, .dot-badge,
+.dropdown-menu, .dropdown-item,
+.modal-content, .modal-header, .modal-body, .modal-footer,
+.alert, .toast, .tooltip, .popover,
+.nav, .nav-tabs, .nav-pills, .nav-link,
+.pagination, .page-item, .page-link,
+.progress, .progress-bar,
+.sidebar-link, .sidebar-sublink, .sidebar-user-card, .sidebar-avatar,
+.topbar-avatar, .topbar-search, .topbar-pill, .topbar-icon-btn, .sidebar-toggle-btn,
+.cp-header-row, .cp-pill-group, .cp-pill-link, .cp-stat-card, .cp-table-card, .cp-circle-gauge, .cp-circle-inner,
+.cp-tab-link, .cp-tab-badge, .cp-tab-toggle-btn, .mq-dept-badge, .expiry-pill,
+.mq-hotline-pill, .mq-iso-pill, .mq-hotline-card, .mq-footer-logo-box, .mq-footer-hotline, .mq-footer-socials a, .mq-top-socials a,
+.auth-card, .auth-card-header, .auth-card-header img,
+.rounded, .rounded-0, .rounded-1, .rounded-2, .rounded-3, .rounded-4, .rounded-5,
+.rounded-pill, .rounded-circle, .rounded-top, .rounded-bottom, .rounded-start, .rounded-end {
+    border-radius: 0 !important;
+}
+
+/* Hilangkan Latar Putih Di Belakang Logo Medquest */
+.sidebar-logo-centered,
+.sidebar-brand,
+.mq-footer-logo-box,
+.mq-footer-logo-box img,
+.auth-card-header img {
+    background: transparent !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
 }

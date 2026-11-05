@@ -184,7 +184,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
         <div class="row g-2 mb-3">
             <div class="col-md-4">
                 <button type="button" onclick="selectDocType('COOPERATION')" id="btnType_COOPERATION"
-                        class="w-100 text-start px-3 py-2 rounded-3 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">
+                        class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">
                     <span class="fw-bold text-dark" style="font-size:0.84rem;">1. Log of Cooperation Agreement</span>
                     <i class="fas fa-check-circle check-indicator"></i>
                 </button>
@@ -192,7 +192,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
 
             <div class="col-md-4">
                 <button type="button" onclick="selectDocType('COMPANY')" id="btnType_COMPANY"
-                        class="w-100 text-start px-3 py-2 rounded-3 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">
+                        class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">
                     <span class="fw-bold text-dark" style="font-size:0.84rem;">2. Original Company Document</span>
                     <i class="fas fa-check-circle check-indicator"></i>
                 </button>
@@ -200,7 +200,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
 
             <div class="col-md-4">
                 <button type="button" onclick="selectDocType('PRINCIPAL')" id="btnType_PRINCIPAL"
-                        class="w-100 text-start px-3 py-2 rounded-3 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">
+                        class="w-100 text-start px-3 py-2 rounded-0 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">
                     <span class="fw-bold text-dark" style="font-size:0.84rem;">3. Log of Principal Document</span>
                     <i class="fas fa-check-circle check-indicator"></i>
                 </button>
@@ -357,7 +357,7 @@ $docMeta = get_doc_type_meta($selectedDocType);
 
                     <!-- Preview Kalkulator Tanggal Deadline H-90, H-60, H-30, H-14, H-7, H-3 -->
                     <div class="col-12" id="deadlinePreviewWrapper" style="display:none;">
-                        <div class="p-3 rounded-3 bg-light border">
+                        <div class="p-3 rounded-0 bg-light border">
                             <div class="fw-bold small text-dark mb-2">
                                 <i class="fas fa-calendar-alt text-primary me-1"></i> Jadwal Tanggal Deadline Otomatis:
                             </div>
@@ -566,7 +566,7 @@ function updateDeadlinePreview() {
 
         html += `
             <div class="col-6 col-md-2">
-                <div class="p-2 rounded-3 ${badgeClass}">
+                <div class="p-2 rounded-0 ${badgeClass}">
                     <div class="fw-bold small">H-${m}</div>
                     <div class="fw-bold" style="font-size:0.82rem;">${formatMedquestDateJS(target)}</div>
                     <div style="font-size:0.68rem;">${statusNote}</div>

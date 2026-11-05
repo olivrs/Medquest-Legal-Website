@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-card">
         <div class="auth-card-header">
             <div class="d-inline-block mb-2">
-                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px; border-radius:6px;">
+                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px;">
             </div>
             <h4 class="fw-bold mb-1">LOG OF COOPERATION AGREEMENT</h4>
             <div class="small opacity-75">Document System Monitoring</div>
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </a>
             </div>
 
-            <div class="mt-4 p-3 rounded-3 bg-light border small">
+            <div class="mt-4 p-3 rounded-0 bg-light border small">
                 <div class="fw-bold text-dark mb-1"><i class="fas fa-info-circle text-primary me-1"></i> Akun Demo Bawaan (Sesuai Foto Form):</div>
                 <div>Kode Singkatan / NIK: <code class="fw-bold">FJR</code> &bull; Email: <code>fjr.medquest@gmail.com</code></div>
                 <div>Password: <code class="fw-bold">medquest123</code></div>

@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-card" style="max-width:560px;">
         <div class="auth-card-header">
             <div class="d-inline-block mb-2">
-                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px; border-radius:6px;">
+                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px;">
             </div>
             <h4 class="fw-bold mb-1">PENDAFTARAN AKUN USER MEDQUEST</h4>
             <div class="small opacity-85">Wajib mencantumkan Email Pribadi &amp; Singkatan Nama Medquest (Contoh: RYN / FJR)</div>
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <div class="mt-3 p-2 px-3 rounded-2 bg-light border small text-muted">
+                <div class="mt-3 p-2 px-3 rounded-0 bg-light border small text-muted">
                     <i class="fas fa-info-circle text-primary me-1"></i> Setelah mendaftar, akun akan ditinjau oleh <strong>Superadmin Medquest</strong> terlebih dahulu sebelum dapat digunakan untuk login.
                 </div>
 

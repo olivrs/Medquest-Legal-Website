@@ -6,7 +6,7 @@ $pendingInfo = $_SESSION['registered_pending'] ?? null;
     <div class="auth-card" style="max-width:540px;">
         <div class="auth-card-header">
             <div class="d-inline-block mb-2">
-                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px; border-radius:6px;">
+                <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest" style="height:34px;">
             </div>
             <h4 class="fw-bold mb-1">PENDAFTARAN AKUN USER</h4>
             <div class="small opacity-85">PT Medquest Jaya Global - Document System Monitoring</div>
@@ -15,7 +15,7 @@ $pendingInfo = $_SESSION['registered_pending'] ?? null;
         <div class="p-4 p-md-4 text-center">
             <!-- Icon Status Pending -->
             <div class="mb-3">
-                <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm"
+                <div class="d-inline-flex align-items-center justify-content-center rounded-0 shadow-sm"
                      style="width:80px; height:80px; background: #fff8e6; border: 3px solid #f6b73c; color: #d97706; font-size: 38px;">
                     <i class="fas fa-user-clock"></i>
                 </div>
@@ -24,7 +24,7 @@ $pendingInfo = $_SESSION['registered_pending'] ?? null;
             <!-- Pesan Utama Sesuai Arahan User -->
             <h5 class="fw-bold text-dark mb-2">Pendaftaran Berhasil Dikirim</h5>
             
-            <div class="alert alert-warning border border-warning-subtle text-start p-3 my-3 rounded-3 shadow-sm" style="background:#fffbeb;">
+            <div class="alert alert-warning border border-warning-subtle text-start p-3 my-3 rounded-0 shadow-sm" style="background:#fffbeb;">
                 <div class="d-flex align-items-start gap-2">
                     <i class="fas fa-hourglass-half text-warning fs-5 mt-1"></i>
                     <div>
@@ -40,7 +40,7 @@ $pendingInfo = $_SESSION['registered_pending'] ?? null;
 
             <?php if ($pendingInfo): ?>
                 <!-- Ringkasan Data Akun yang Didaftarkan -->
-                <div class="card border bg-light text-start p-3 rounded-3 mb-4">
+                <div class="card border bg-light text-start p-3 rounded-0 mb-4">
                     <div class="fw-bold text-dark small mb-2 border-bottom pb-1">
                         <i class="fas fa-id-card text-primary me-1"></i> Rincian Akun Terdaftar:
                     </div>

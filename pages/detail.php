@@ -203,16 +203,16 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']) . '
                     $fileUrl = base_url('assets/uploads/' . $agr['file_attachment']);
                     $ext = strtolower(pathinfo($agr['file_attachment'], PATHINFO_EXTENSION));
                 ?>
-                    <div class="p-2 rounded bg-light border mb-2 d-flex justify-content-between align-items-center">
+                    <div class="p-2 rounded-0 bg-light border mb-2 d-flex justify-content-between align-items-center">
                         <span class="small text-truncate me-2"><i class="far fa-file-pdf text-danger me-1"></i><?= htmlspecialchars($agr['file_attachment']) ?></span>
                         <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary py-0 px-2" style="font-size:0.72rem;">
                             Buka File
                         </a>
                     </div>
                     <?php if (in_array($ext, ['jpg', 'jpeg', 'png'], true)): ?>
-                        <img src="<?= $fileUrl ?>" alt="Lampiran" class="img-fluid rounded border mb-2">
+                        <img src="<?= $fileUrl ?>" alt="Lampiran" class="img-fluid rounded-0 border mb-2">
                     <?php elseif ($ext === 'pdf'): ?>
-                        <iframe src="<?= $fileUrl ?>" style="width:100%;height:210px;border:1px solid #e2e8f0;border-radius:6px;" class="mb-2"></iframe>
+                        <iframe src="<?= $fileUrl ?>" style="width:100%;height:210px;border:1px solid #e2e8f0;border-radius: 0;" class="mb-2"></iframe>
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="mq-empty-upload-box mb-3">
@@ -240,7 +240,7 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']) . '
                 <?php else: ?>
                     <div class="d-flex flex-column gap-2 overflow-auto" style="max-height:360px;">
                         <?php foreach ($histories as $h): ?>
-                            <div class="p-2 px-3 rounded bg-light border" style="font-size:0.76rem;">
+                            <div class="p-2 px-3 rounded-0 bg-light border" style="font-size:0.76rem;">
                                 <div class="d-flex justify-content-between align-items-center fw-bold text-dark">
                                     <span><?= htmlspecialchars($h['kode_singkatan']) ?>, <?= format_date_medquest($h['tanggal_input']) ?></span>
                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><?= htmlspecialchars($h['aksi']) ?></span>
