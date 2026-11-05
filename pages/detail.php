@@ -21,7 +21,7 @@ if (!$agr) {
     exit;
 }
 
-// Handle Upload File Lampiran langsung dari halaman Inspect/Detail jika user mengunggah file
+// Handle Upload File Lampiran langsung dari halaman Inspect/Detail
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'upload_file') {
     if (!empty($_FILES['file_dokumen']['name']) && $_FILES['file_dokumen']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__ . '/../assets/uploads';
@@ -44,18 +44,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
     }
 }
 
-$expInfo      = get_expiry_info($agr['expiry_date']);
+$docType      = strtoupper(trim($agr['doc_type'] ?? 'COOPERATION'));
+$typeMeta     = get_doc_type_meta($docType);
+$isExpNa      = !empty($agr['expiry_date_na']) || empty($agr['expiry_date']);
+$expInfo      = get_expiry_info($agr['expiry_date'], $isExpNa);
 $cleanLabel   = preg_replace('/\s*\(Fase\s+H-\d+\)/i', '', $expInfo['short_label']);
 $effFormatted = format_date_medquest($agr['effective_date'], $agr['effective_date_na']);
-$expFormatted = format_date_medquest($agr['expiry_date'], false);
-$schedule     = get_deadline_schedule($agr['expiry_date'], $agr);
+$expFormatted = format_date_medquest($agr['expiry_date'], $isExpNa);
 
 // Ambil riwayat perubahan / note
 $stmtHist = $pdo->prepare("SELECT * FROM agreement_histories WHERE agreement_id = ? ORDER BY id ASC");
 $stmtHist->execute([$id]);
 $histories = $stmtHist->fetchAll();
 
-$backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
+$backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']) . '&doc_type=' . urlencode($docType));
 ?>
 
 <div class="mq-detail-fullpage">
@@ -65,7 +67,9 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
             <a href="<?= $backUrl ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
                 <i class="fas fa-arrow-left me-1"></i> Back
             </a>
-            <h1 class="cp-page-title ms-1">Detail Agreement (#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?>)</h1>
+            <h1 class="cp-page-title ms-1">
+                <?= htmlspecialchars($typeMeta['title']) ?> (#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?>)
+            </h1>
         </div>
 
         <div class="d-flex align-items-center gap-2">
@@ -79,7 +83,7 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
     </div>
 
     <div class="row g-3 flex-grow-1 align-items-stretch">
-        <!-- Kolom Kiri: Rincian Lengkap Data Agreement -->
+        <!-- Kolom Kiri: Rincian Lengkap Data Dokumen Sesuai Jenis Form -->
         <div class="col-lg-8 d-flex flex-column">
             <div class="cp-table-card mt-0 flex-grow-1 d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
@@ -87,7 +91,7 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
                         <span class="badge mq-dept-badge px-2 py-1 me-2">
                             DEPT: <?= htmlspecialchars($agr['department']) ?>
                         </span>
-                        <span class="fw-bold text-dark">Doc. No: MJG-FOR-LAC.12-001-03</span>
+                        <span class="fw-bold text-dark"><?= htmlspecialchars($typeMeta['title']) ?></span>
                     </div>
                     <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
                         <?= htmlspecialchars($cleanLabel) ?>
@@ -98,43 +102,88 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
                     <table class="table table-bordered mq-detail-table mb-0">
                         <tbody>
                             <tr class="mq-row-compact">
-                                <th class="bg-light text-secondary" style="width:32%;">No. Urut Form</th>
+                                <th class="bg-light text-secondary" style="width:32%;">Jenis Dokumen</th>
+                                <td>
+                                    <span class="badge" style="background:<?= $typeMeta['badge_bg'] ?>;color:<?= $typeMeta['badge_color'] ?>;border:1px solid <?= $typeMeta['badge_border'] ?>;">
+                                        <?= htmlspecialchars($typeMeta['title']) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="mq-row-compact">
+                                <th class="bg-light text-secondary">No. Urut Form (No.)</th>
                                 <td class="fw-bold">#<?= htmlspecialchars($agr['no_urut_dokumen'] ?: $agr['id']) ?></td>
                             </tr>
                             <tr class="mq-row-compact">
                                 <th class="bg-light text-secondary">Department / Division</th>
                                 <td class="fw-bold text-primary"><?= htmlspecialchars($agr['department']) ?></td>
                             </tr>
-                            <tr class="mq-row-compact">
-                                <th class="bg-light text-secondary">Document Number</th>
-                                <td class="fw-semibold" style="white-space:pre-line;"><?= htmlspecialchars($agr['document_number']) ?></td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light text-secondary">Customer</th>
-                                <td class="fw-bold text-dark"><?= htmlspecialchars($agr['customer']) ?></td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light text-secondary">Product (Description)</th>
-                                <td><?= htmlspecialchars($agr['product_description']) ?></td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light text-secondary">Product (Serial Number)</th>
-                                <td><?= htmlspecialchars($agr['serial_number'] ?: 'N/A') ?></td>
-                            </tr>
+
+                            <?php if ($docType === 'COMPANY'): ?>
+                                <!-- Kolom Sesuai Form ORIGINAL COMPANY DOCUMENT (MJG-FOR-LAC.12-001-04) -->
+                                <tr>
+                                    <th class="bg-light text-secondary">Document Title</th>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($agr['document_title'] ?: $agr['product_description']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Document No.</th>
+                                    <td class="fw-semibold" style="white-space:pre-line;"><?= htmlspecialchars($agr['document_number'] ?: 'N/A') ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Issued By</th>
+                                    <td class="fw-semibold"><?= htmlspecialchars($agr['issued_by'] ?: $agr['customer']) ?></td>
+                                </tr>
+                            <?php elseif ($docType === 'PRINCIPAL'): ?>
+                                <!-- Kolom Sesuai Form LOG OF PRINCIPAL DOCUMENT (MJG-FOR-LAC.12-001-09) -->
+                                <tr>
+                                    <th class="bg-light text-secondary">Document Title</th>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($agr['document_title'] ?: $agr['product_description']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Document No.</th>
+                                    <td class="fw-semibold" style="white-space:pre-line;"><?= htmlspecialchars($agr['document_number'] ?: 'N/A') ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Issued By</th>
+                                    <td class="fw-semibold"><?= htmlspecialchars($agr['issued_by'] ?: '-') ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Principal</th>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($agr['principal_name'] ?: $agr['customer']) ?></td>
+                                </tr>
+                            <?php else: ?>
+                                <!-- Kolom Sesuai Form LOG OF COOPERATION AGREEMENT (MJG-FOR-LAC.12-001-03) -->
+                                <tr class="mq-row-compact">
+                                    <th class="bg-light text-secondary">Document Number</th>
+                                    <td class="fw-semibold" style="white-space:pre-line;"><?= htmlspecialchars($agr['document_number']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Customer</th>
+                                    <td class="fw-bold text-dark"><?= htmlspecialchars($agr['customer']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Product (Description)</th>
+                                    <td><?= htmlspecialchars($agr['product_description']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-secondary">Product (Serial Number)</th>
+                                    <td><?= htmlspecialchars($agr['serial_number'] ?: 'N/A') ?></td>
+                                </tr>
+                            <?php endif; ?>
+
                             <tr>
                                 <th class="bg-light text-secondary">Effective Date</th>
                                 <td class="fw-semibold"><?= $effFormatted ?></td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-danger">Expiry Date</th>
-                                <td class="fw-bold text-danger"><?= $expFormatted ?></td>
+                                <td class="fw-bold <?= $isExpNa ? 'text-secondary' : 'text-danger' ?>"><?= $expFormatted ?></td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-secondary">Note</th>
                                 <td style="white-space:pre-line;"><?= htmlspecialchars($agr['note'] ?: 'N/A') ?></td>
                             </tr>
                             <tr>
-                                <th class="bg-light text-secondary">Created By</th>
+                                <th class="bg-light text-secondary"><?= $docType === 'PRINCIPAL' ? 'Created By / Update' : 'Created By' ?></th>
                                 <td class="fw-bold font-monospace" style="white-space:pre-line;"><?= htmlspecialchars($agr['created_by_log']) ?></td>
                             </tr>
                         </tbody>
@@ -145,7 +194,6 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
 
         <!-- Kolom Kanan: File Dokumen & Riwayat Input -->
         <div class="col-lg-4 d-flex flex-column gap-3">
-            <!-- Kartu Lampiran File Dokumen -->
             <div class="cp-table-card mt-0">
                 <div class="fw-bold text-dark border-bottom pb-2 mb-3" style="font-size:0.84rem;">
                     <i class="fas fa-paperclip text-primary me-1"></i> File Lampiran Dokumen
@@ -164,7 +212,7 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
                     <?php if (in_array($ext, ['jpg', 'jpeg', 'png'], true)): ?>
                         <img src="<?= $fileUrl ?>" alt="Lampiran" class="img-fluid rounded border mb-2">
                     <?php elseif ($ext === 'pdf'): ?>
-                        <iframe src="<?= $fileUrl ?>" style="width:100%;height:210px;border:1px solid #dce6f5;border-radius:6px;" class="mb-2"></iframe>
+                        <iframe src="<?= $fileUrl ?>" style="width:100%;height:210px;border:1px solid #e2e8f0;border-radius:6px;" class="mb-2"></iframe>
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="mq-empty-upload-box mb-3">
@@ -183,7 +231,6 @@ $backUrl = base_url('?page=agreements&dept=' . urlencode($agr['department']));
                 </form>
             </div>
 
-            <!-- Kartu Riwayat Input & Update (Full Stretch) -->
             <div class="cp-table-card mt-0 flex-grow-1 d-flex flex-column">
                 <div class="fw-bold text-dark border-bottom pb-2 mb-3" style="font-size:0.84rem;">
                     <i class="fas fa-history text-primary me-1"></i> Riwayat Log Input (<?= htmlspecialchars($uCode) ?>)

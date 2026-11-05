@@ -1,39 +1,41 @@
 /* ============================================================================
-   MEDQUEST LAC - OFFICIAL CORPORATE LAYOUT & THEME (https://medquest.co.id/)
+   MEDQUEST LAC - EYE-FRIENDLY CORPORATE SLATE & SOFT SAPPHIRE THEME
    Typography : 'Open Sans', Helvetica, 'Roboto', Arial, sans-serif
-   Colors     : #2458f1 (Primary Corporate Blue), with crisp thin white outlines
+   Palette    : Deep Slate Navy (#162238), Soft Sapphire (#2b579a), Neutral Slate (#f8fafc)
    ============================================================================ */
 
 :root {
     --mq-font-primary: 'Open Sans', Helvetica, 'Roboto', Arial, sans-serif;
     --mq-font-numeric: 'Roboto', 'Open Sans', Helvetica, Arial, sans-serif;
-    --mq-primary: #2458f1;
-    --mq-primary-dark: #1d49cf;
-    --mq-footer-blue: #2458f1;
-    --mq-logo-blue: #101399;
-    --mq-accent: #2458f1;
-    --mq-accent-alt: #2458f1;
-    --mq-teal: #2458f1;
-    --mq-bg-main: #f4f7fc;
-    --mq-text-dark: #282828;
-    --mq-text-body: #4c5866;
-    --mq-text-muted: #767676;
-    --mq-border: #dce6f5;
+    --mq-primary: #2b579a;
+    --mq-primary-dark: #1e3f73;
+    --mq-navy-sidebar: #162238;
+    --mq-navy-darker: #0f172a;
+    --mq-footer-blue: #162238;
+    --mq-logo-blue: #1e3f73;
+    --mq-accent: #3b6db5;
+    --mq-accent-alt: #2b579a;
+    --mq-teal: #0d9488;
+    --mq-bg-main: #f8fafc;
+    --mq-text-dark: #1e293b;
+    --mq-text-body: #475569;
+    --mq-text-muted: #64748b;
+    --mq-border: #e2e8f0;
 
-    /* Override Bootstrap 5 Core Tokens to #2458f1 */
+    /* Override Bootstrap 5 Core Tokens to Soft Sapphire (#2b579a) */
     --bs-body-font-family: 'Open Sans', Helvetica, 'Roboto', Arial, sans-serif;
-    --bs-body-color: #4c5866;
-    --bs-body-bg: #f4f7fc;
-    --bs-heading-color: #282828;
-    --bs-primary: #2458f1;
-    --bs-primary-rgb: 36, 88, 241;
-    --bs-primary-text-emphasis: #1d49cf;
-    --bs-primary-bg-subtle: #eaf0fe;
-    --bs-primary-border-subtle: #c5d5fc;
-    --bs-link-color: #2458f1;
-    --bs-link-color-rgb: 36, 88, 241;
-    --bs-link-hover-color: #1d49cf;
-    --bs-link-hover-color-rgb: 29, 73, 207;
+    --bs-body-color: #475569;
+    --bs-body-bg: #f8fafc;
+    --bs-heading-color: #1e293b;
+    --bs-primary: #2b579a;
+    --bs-primary-rgb: 43, 87, 154;
+    --bs-primary-text-emphasis: #1e3f73;
+    --bs-primary-bg-subtle: #eff6ff;
+    --bs-primary-border-subtle: #bfdbfe;
+    --bs-link-color: #2b579a;
+    --bs-link-color-rgb: 43, 87, 154;
+    --bs-link-hover-color: #1e3f73;
+    --bs-link-hover-color-rgb: 30, 63, 115;
 }
 
 * {
@@ -58,7 +60,7 @@ table, th, td,
 body {
     background-color: var(--mq-bg-main);
     color: var(--mq-text-body);
-    font-size: 13.5px;
+    font-size: 13px;
     line-height: 1.55;
     display: flex;
     flex-direction: column;
@@ -73,13 +75,13 @@ h1, h2, h3, h4, h5, h6,
 }
 
 a {
-    color: #2458f1;
+    color: var(--mq-primary);
     text-decoration: none;
     transition: all 0.2s ease;
 }
 
 a:hover {
-    color: #1d49cf;
+    color: var(--mq-primary-dark);
 }
 
 .mq-container {
@@ -93,49 +95,50 @@ a:hover {
     padding: 0 22px;
 }
 
-/* Bootstrap Primary Button & Utility Harmonization (#2458f1) */
+/* Bootstrap Primary Button & Utility Harmonization (Soft Sapphire) */
 .btn-primary {
-    background-color: #2458f1 !important;
+    background-color: var(--mq-primary) !important;
     background-image: none !important;
-    border-color: #2458f1 !important;
+    border-color: var(--mq-primary) !important;
     color: #ffffff !important;
-    box-shadow: 0 3px 10px rgba(36, 88, 241, 0.2);
+    box-shadow: 0 2px 6px rgba(43, 87, 154, 0.16);
     transition: all 0.2s ease;
 }
 
 .btn-primary:hover,
 .btn-primary:focus,
 .btn-primary:active {
-    background-color: #1d49cf !important;
+    background-color: var(--mq-primary-dark) !important;
     background-image: none !important;
-    border-color: #1d49cf !important;
+    border-color: var(--mq-primary-dark) !important;
     color: #ffffff !important;
-    box-shadow: 0 5px 14px rgba(36, 88, 241, 0.28);
+    box-shadow: 0 4px 10px rgba(30, 63, 115, 0.22);
 }
 
 .btn-outline-primary {
-    color: #2458f1 !important;
-    border-color: #2458f1 !important;
+    color: var(--mq-primary) !important;
+    border-color: #cbd5e1 !important;
+    background-color: #ffffff;
 }
 
 .btn-outline-primary:hover,
 .btn-outline-primary:focus,
 .btn-outline-primary:active {
-    background-color: #2458f1 !important;
-    border-color: #2458f1 !important;
-    color: #ffffff !important;
+    background-color: #eff6ff !important;
+    border-color: var(--mq-primary) !important;
+    color: var(--mq-primary-dark) !important;
 }
 
 .text-primary {
-    color: #2458f1 !important;
+    color: var(--mq-primary) !important;
 }
 
 .bg-primary {
-    background-color: #2458f1 !important;
+    background-color: var(--mq-primary) !important;
 }
 
 /* ============================================================================
-   1. APP LAYOUT & LEFT SIDEBAR (.app-sidebar)
+   1. APP LAYOUT & LEFT SIDEBAR (.app-sidebar) - CALM DEEP SLATE NAVY
    ============================================================================ */
 .app-layout {
     display: flex;
@@ -144,10 +147,10 @@ a:hover {
 }
 
 .app-sidebar {
-    width: 245px;
-    min-width: 245px;
-    background-color: #2458f1;
-    color: #ffffff;
+    width: 220px;
+    min-width: 220px;
+    background-color: var(--mq-navy-sidebar);
+    color: #e2e8f0;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -155,10 +158,10 @@ a:hover {
     left: 0;
     bottom: 0;
     z-index: 1040;
-    border-right: none;
-    box-shadow: 4px 0 22px rgba(20, 50, 140, 0.18);
-    overflow-y: auto;
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 2px 0 12px rgba(15, 23, 42, 0.1);
+    overflow-y: hidden;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .app-layout.sidebar-collapsed .app-sidebar {
@@ -166,154 +169,162 @@ a:hover {
 }
 
 .sidebar-brand {
-    padding: 15px 16px;
+    padding: 11px 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     text-decoration: none;
     color: #ffffff;
-    background: rgba(0, 20, 75, 0.14);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(15, 23, 42, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-logo-centered {
-    height: 36px;
-    max-width: 175px;
+    height: 28px;
+    max-width: 145px;
     width: auto;
     object-fit: contain;
     display: block;
     margin: 0 auto;
-    padding: 0;
-    background: transparent;
+    padding: 3px 8px;
+    background: #ffffff;
     border-radius: 5px;
-    border: none;
-    box-shadow: none;
 }
 
 .sidebar-section-title {
-    font-size: 0.67rem;
+    font-size: 0.62rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.68);
-    padding: 14px 18px 6px;
+    letter-spacing: 0.8px;
+    color: #64748b;
+    padding: 10px 14px 4px;
     font-weight: 700;
 }
 
 .sidebar-menu {
-    padding: 0 10px;
+    padding: 0 8px;
     flex-grow: 1;
 }
 
 .sidebar-link {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: 8px;
+    gap: 9px;
+    padding: 6px 10px;
+    border-radius: 7px;
     border: none;
-    color: rgba(255, 255, 255, 0.9);
+    color: #cbd5e1;
     text-decoration: none;
     font-weight: 600;
-    font-size: 0.82rem;
-    margin-bottom: 3px;
-    transition: all 0.18s ease;
+    font-size: 0.76rem;
+    margin-bottom: 2px;
+    transition: all 0.15s ease;
 }
 
 .sidebar-link:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.07);
     color: #ffffff;
 }
 
 .sidebar-link.active {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(59, 130, 246, 0.18);
     color: #ffffff;
     font-weight: 700;
-    box-shadow: none;
+    border-left: 3px solid #60a5fa;
 }
 
 .sidebar-link .s-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: rgba(255, 255, 255, 0.15);
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.07);
     border: none;
-    color: #ffffff;
+    color: #cbd5e1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     flex-shrink: 0;
 }
 
 .sidebar-link.active .s-icon {
-    background: #ffffff;
-    color: #2458f1;
+    background: #3b82f6;
+    color: #ffffff;
 }
 
-/* Submenu Departemen di Sidebar */
+/* Submenu Departemen di Sidebar (Ringkas 2 Kolom Tanpa Scroll) */
 .sidebar-submenu {
-    padding: 3px 0 6px 26px;
+    padding: 2px 4px 6px 10px;
+}
+
+.sidebar-dept-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    margin-top: 2px;
 }
 
 .sidebar-sublink {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
-    border-radius: 7px;
+    padding: 4px 8px;
+    border-radius: 5px;
     border: none;
-    color: rgba(255, 255, 255, 0.86);
+    color: #94a3b8;
     text-decoration: none;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 500;
-    margin-bottom: 2px;
+    background: rgba(255, 255, 255, 0.03);
     transition: all 0.15s ease;
 }
 
+.sidebar-sublink-full {
+    margin-bottom: 2px;
+}
+
 .sidebar-sublink:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f1f5f9;
 }
 
 .sidebar-sublink.active {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(59, 130, 246, 0.22);
     color: #ffffff;
     font-weight: 700;
 }
 
 .sidebar-sublink .sub-badge {
     font-family: var(--mq-font-numeric);
-    font-size: 0.68rem;
-    font-weight: 700;
-    padding: 1px 7px;
+    font-size: 0.64rem;
+    font-weight: 600;
+    padding: 0 5px;
     border-radius: 99px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     border: none;
-    color: #ffffff;
+    color: #cbd5e1;
 }
 
 .btn-add-agreement {
-    background: #ffffff;
-    color: #2458f1 !important;
-    border: none;
+    background: #2b579a;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 8px;
-    font-weight: 700;
-    box-shadow: 0 3px 10px rgba(0, 20, 65, 0.15);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
 }
 
 .btn-add-agreement:hover {
-    background: #f0f5ff;
-    color: #1d49cf !important;
+    background: #3668b4;
+    color: #ffffff !important;
     transform: translateY(-1px);
-    box-shadow: 0 5px 14px rgba(0, 20, 65, 0.22) !important;
 }
 
 .sidebar-footer {
     padding: 12px 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(0, 20, 75, 0.14);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.4);
 }
 
 .sidebar-user-card {
@@ -326,14 +337,14 @@ a:hover {
 }
 
 .sidebar-avatar {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.22);
+    background: #2b579a;
     border: none;
     color: #ffffff;
     font-weight: 700;
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -344,14 +355,14 @@ a:hover {
    2. RIGHT MAIN COLUMN (.app-main), #top-header & #main-header
    ============================================================================ */
 .app-main {
-    margin-left: 245px;
+    margin-left: 220px;
     flex-grow: 1;
     min-width: 0;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     background-color: var(--mq-bg-main);
-    transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .app-layout.sidebar-collapsed .app-main {
@@ -359,37 +370,36 @@ a:hover {
 }
 
 .sidebar-toggle-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
-    border: 1px solid #dce6f5;
-    background: #f0f5ff;
-    color: #2458f1;
+    border: 1px solid var(--mq-border);
+    background: #f8fafc;
+    color: var(--mq-text-body);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.2s ease;
 }
 
 .sidebar-toggle-btn:hover {
-    background: #2458f1;
-    border-color: #2458f1;
-    color: #ffffff;
-    box-shadow: 0 3px 10px rgba(36, 88, 241, 0.22);
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: var(--mq-primary);
 }
 
-/* Top Utility Bar (#top-header) */
+/* Top Utility Bar (#top-header) - Soft Muted Slate Bar */
 .mq-top-header {
-    background-color: #2458f1;
-    color: #ffffff;
+    background-color: #1e293b;
+    color: #cbd5e1;
     font-family: 'Open Sans', Arial, sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 5px 0;
+    border-bottom: 1px solid #334155;
     z-index: 1030;
 }
 
@@ -411,28 +421,25 @@ a:hover {
 }
 
 .mq-top-item {
-    color: #ffffff;
+    color: #cbd5e1;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    opacity: 0.95;
     text-decoration: none;
 }
 
 .mq-top-item:hover {
     color: #ffffff;
-    opacity: 1;
-    text-decoration: underline;
 }
 
 .mq-hotline-pill {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.1);
     border: none;
-    color: #ffffff;
+    color: #e2e8f0;
     padding: 2px 10px;
     border-radius: 20px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -441,16 +448,16 @@ a:hover {
 .mq-top-socials {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
 }
 
 .mq-top-socials a {
-    color: #ffffff;
-    font-size: 12px;
-    width: 23px;
-    height: 23px;
+    color: #cbd5e1;
+    font-size: 11px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
     border: none;
     display: inline-flex;
     align-items: center;
@@ -459,16 +466,15 @@ a:hover {
 }
 
 .mq-top-socials a:hover {
-    background: #ffffff;
-    color: #2458f1;
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
 }
 
 /* Main Topbar Header (#main-header) */
 .app-topbar {
-    height: 58px;
+    height: 54px;
     background: #ffffff;
-    border-bottom: 3px solid #2458f1;
+    border-bottom: 1px solid var(--mq-border);
     padding: 0 22px;
     display: flex;
     align-items: center;
@@ -476,7 +482,7 @@ a:hover {
     position: sticky;
     top: 0;
     z-index: 1025;
-    box-shadow: 0 2px 12px rgba(36, 88, 241, 0.06);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
 }
 
 .topbar-search {
@@ -487,11 +493,11 @@ a:hover {
 
 .topbar-search input {
     width: 100%;
-    background: #f4f7fc;
-    border: 1px solid #dce6f5;
+    background: #f8fafc;
+    border: 1px solid var(--mq-border);
     border-radius: 20px;
     padding: 6px 14px 6px 34px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--mq-text-dark);
     transition: all 0.2s ease;
 }
@@ -499,8 +505,8 @@ a:hover {
 .topbar-search input:focus {
     outline: none;
     background: #ffffff;
-    border-color: #2458f1;
-    box-shadow: 0 0 0 3px rgba(36, 88, 241, 0.12);
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(43, 87, 154, 0.1);
 }
 
 .topbar-search .search-icon {
@@ -508,41 +514,40 @@ a:hover {
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #2458f1;
-    font-size: 0.78rem;
-    opacity: 0.75;
+    color: var(--mq-text-muted);
+    font-size: 0.76rem;
 }
 
 .topbar-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .topbar-icon-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: #f0f5ff;
-    color: #2458f1;
+    background: #f1f5f9;
+    color: var(--mq-text-body);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
     position: relative;
     transition: all 0.15s ease;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
 }
 
 .topbar-icon-btn:hover {
-    background: #2458f1;
-    color: #ffffff;
+    background: #e2e8f0;
+    color: var(--mq-text-dark);
 }
 
 .topbar-icon-btn .dot-badge {
     position: absolute;
-    top: 5px;
-    right: 6px;
+    top: 4px;
+    right: 5px;
     width: 7px;
     height: 7px;
     border-radius: 50%;
@@ -554,7 +559,7 @@ a:hover {
    3. MAIN CONTENT AREA (.app-content) & DETAIL TABLE
    ============================================================================ */
 .app-content {
-    padding: 18px 22px 28px;
+    padding: 16px 22px 26px;
     flex: 1 0 auto;
     display: flex;
     flex-direction: column;
@@ -566,26 +571,26 @@ a:hover {
 }
 
 .mq-detail-table {
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     border-color: var(--mq-border);
 }
 
 .mq-detail-table th,
 .mq-detail-table td {
-    padding: 13px 16px;
+    padding: 11px 15px;
     vertical-align: middle;
 }
 
 .mq-detail-table tr.mq-row-compact th,
 .mq-detail-table tr.mq-row-compact td {
-    padding: 7px 16px;
-    font-size: 0.83rem;
+    padding: 7px 15px;
+    font-size: 0.8rem;
     line-height: 1.35;
 }
 
 .mq-empty-upload-box {
-    background: #f8faff;
-    border: 1.5px dashed #bfd7ff;
+    background: #f8fafc;
+    border: 1.5px dashed #cbd5e1;
     border-radius: 8px;
     padding: 18px 12px;
     text-align: center;
@@ -596,11 +601,11 @@ a:hover {
    ============================================================================ */
 .cp-header-row {
     background: #ffffff;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid var(--mq-border);
-    border-left: 5px solid #2458f1;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-    padding: 14px 20px;
+    border-left: 4px solid var(--mq-primary);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+    padding: 12px 18px;
     margin-bottom: 14px;
     display: flex;
     flex-wrap: wrap;
@@ -610,25 +615,25 @@ a:hover {
 }
 
 .cp-page-title {
-    font-size: 1.15rem;
-    font-weight: 800;
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--mq-text-dark);
     margin: 0;
     letter-spacing: -0.2px;
 }
 
 .cp-pill-group {
-    background: #f8faff;
+    background: #f8fafc;
     border: 1px solid var(--mq-border);
     border-radius: 7px;
-    padding: 3px 6px;
+    padding: 3px 5px;
     display: inline-flex;
     align-items: center;
     gap: 3px;
 }
 
 .cp-pill-link {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 600;
     color: var(--mq-text-body);
     text-decoration: none;
@@ -638,30 +643,30 @@ a:hover {
 }
 
 .cp-pill-link:hover {
-    color: #2458f1;
-    background: #eaf1fb;
+    color: var(--mq-primary);
+    background: #eff6ff;
 }
 
 .cp-pill-link.active {
     color: #ffffff;
-    font-weight: 700;
-    background: #2458f1;
+    font-weight: 600;
+    background: var(--mq-primary);
 }
 
 /* Underline Tabs */
 .cp-underline-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 14px;
 }
 
 .cp-tab-link {
     padding: 6px 4px 8px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--mq-text-body);
+    color: var(--mq-text-muted);
     text-decoration: none;
-    border-bottom: 2.5px solid transparent;
+    border-bottom: 2px solid transparent;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -669,28 +674,28 @@ a:hover {
 }
 
 .cp-tab-link:hover {
-    color: #2458f1;
+    color: var(--mq-text-dark);
 }
 
 .cp-tab-link.active {
-    color: #2458f1;
+    color: var(--mq-primary);
     font-weight: 700;
-    border-bottom-color: #2458f1;
+    border-bottom-color: var(--mq-primary);
 }
 
 .cp-tab-badge {
     font-family: var(--mq-font-numeric);
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.68rem;
+    font-weight: 600;
     padding: 1px 7px;
     border-radius: 99px;
-    background: #e6eef8;
+    background: #f1f5f9;
     color: var(--mq-text-body);
 }
 
 .cp-tab-link.active .cp-tab-badge {
-    background: #e3ebfa;
-    color: #2458f1;
+    background: #eff6ff;
+    color: var(--mq-primary);
 }
 
 /* ============================================================================
@@ -698,10 +703,10 @@ a:hover {
    ============================================================================ */
 .cp-stat-card {
     background: #ffffff;
-    border-radius: 12px;
-    padding: 15px 18px;
+    border-radius: 10px;
+    padding: 14px 16px;
     border: 1px solid var(--mq-border);
-    box-shadow: 0 4px 14px rgba(36, 88, 241, 0.04);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -712,14 +717,14 @@ a:hover {
 }
 
 .cp-stat-card:hover {
-    border-color: #2458f1;
-    box-shadow: 0 6px 18px rgba(36, 88, 241, 0.09);
-    transform: translateY(-2px);
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    transform: translateY(-1px);
     color: inherit;
 }
 
 .cp-stat-title {
-    font-size: 0.76rem;
+    font-size: 0.74rem;
     font-weight: 600;
     color: var(--mq-text-muted);
     margin-bottom: 2px;
@@ -727,15 +732,15 @@ a:hover {
 
 .cp-stat-value {
     font-family: var(--mq-font-numeric);
-    font-size: 1.38rem;
-    font-weight: 800;
+    font-size: 1.3rem;
+    font-weight: 700;
     color: var(--mq-text-dark);
     line-height: 1.15;
 }
 
 .cp-circle-gauge {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -744,32 +749,32 @@ a:hover {
 }
 
 .cp-circle-inner {
-    width: 38px;
-    height: 38px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .cp-stat-sublabel {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: var(--mq-text-muted);
-    margin-top: 3px;
+    margin-top: 2px;
 }
 
 /* ============================================================================
-   CORPORATE TABLE CARD & MEDQUEST BADGES
+   CORPORATE TABLE CARD & SOFT EYE-FRIENDLY BADGES
    ============================================================================ */
 .cp-table-card {
     background: #ffffff;
-    border-radius: 12px;
-    padding: 18px 20px;
+    border-radius: 10px;
+    padding: 16px 18px;
     border: 1px solid var(--mq-border);
-    box-shadow: 0 5px 18px rgba(36, 88, 241, 0.05);
-    margin-top: 14px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+    margin-top: 12px;
 }
 
 .cp-table {
@@ -778,138 +783,145 @@ a:hover {
 }
 
 .cp-table thead th {
-    background: #f0f4fc;
-    color: #2458f1;
-    font-size: 0.72rem;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    padding: 10px 12px;
-    border-bottom: 2px solid #d0dcf5;
+    padding: 9px 12px;
+    border-bottom: 1px solid #cbd5e1;
 }
 
 .cp-table tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #eef3fb;
+    padding: 9px 12px;
+    border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--mq-text-body);
 }
 
 .cp-table tbody tr:hover {
-    background-color: #f7faff;
+    background-color: #f8fafc;
 }
 
-/* Dokumen Masuk Fase H-3 s/d H-0: Latar Merah Lembut (Soft Pastel Red) */
+/* Dokumen Masuk Fase H-3 s/d H-0: Latar Merah Sangat Lembut & Nyaman di Mata */
 .cp-table tbody tr.row-urgent td,
 .cp-table tbody tr.row-h3 td {
-    background-color: #fde8e8;
-    border-bottom: 1px solid #fad2d2;
+    background-color: #fff5f5;
+    border-bottom: 1px solid #fee2e2;
 }
 
 .cp-table tbody tr.row-urgent:hover td,
 .cp-table tbody tr.row-h3:hover td {
-    background-color: #fcd4d4 !important;
+    background-color: #fef2f2 !important;
 }
 
 .cp-table tbody tr.row-urgent td:first-child,
 .cp-table tbody tr.row-h3 td:first-child {
-    border-left: 4px solid #e02424;
+    border-left: 3px solid #ef4444;
 }
 
 /* Dokumen Sudah Expired */
 .cp-table tbody tr.row-expired td {
-    background-color: #fef2f2;
-    border-bottom: 1px solid #fecaca;
+    background-color: #fafafa;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .cp-table tbody tr.row-expired:hover td {
-    background-color: #fee2e2 !important;
+    background-color: #f8fafc !important;
 }
 
 .cp-table tbody tr.row-expired td:first-child {
-    border-left: 4px solid #ef4444;
+    border-left: 3px solid #dc2626;
 }
 
 .cp-table tbody tr.row-warning td:first-child,
-.cp-table tbody tr.row-warning-soft td:first-child { border-left: 3px solid #eab308; }
+.cp-table tbody tr.row-warning-soft td:first-child { border-left: 3px solid #f59e0b; }
 .cp-table tbody tr.row-active td:first-child  { border-left: 3px solid #10b981; }
 
+/* Soft Department Badge (Tidak Silau) */
 .mq-dept-badge {
-    background-color: #2458f1 !important;
-    color: #ffffff !important;
+    background-color: #eff6ff !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe;
     font-weight: 700;
     letter-spacing: 0.3px;
     border-radius: 5px;
 }
 
 .mq-dept-badge:hover {
-    background-color: #1d49cf !important;
-    color: #ffffff !important;
+    background-color: #dbeafe !important;
+    color: #1e3a8a !important;
 }
 
 .mq-modal-header {
-    background-color: #2458f1 !important;
-    color: #ffffff;
+    background-color: var(--mq-navy-sidebar) !important;
+    color: #ffffff !important;
 }
 
-/* Status Badges */
+.mq-modal-header .modal-title {
+    color: #ffffff !important;
+}
+
+/* Soft Status Badges (Pastel dengan kontras teks nyaman) */
 .expiry-pill {
     display: inline-flex;
     align-items: center;
     padding: 3px 9px;
     border-radius: 99px;
-    font-size: 0.69rem;
-    font-weight: 700;
+    font-size: 0.68rem;
+    font-weight: 600;
 }
 
-.badge-expired { background: #fee2e2; color: #b91c1c; }
-.badge-h3      { background: #dc2626; color: #ffffff; }
-.badge-h7      { background: #ea580c; color: #ffffff; }
-.badge-h14     { background: #d97706; color: #ffffff; }
-.badge-h30     { background: #fef08a; color: #854d0e; }
-.badge-h60     { background: #e5edff; color: #2458f1; }
-.badge-h90     { background: #e5edff; color: #2458f1; }
-.badge-active  { background: #dcfce7; color: #15803d; }
+.badge-expired { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.badge-h3      { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.badge-h7      { background: #ffedd5; color: #9a3412; border: 1px solid #fdba74; }
+.badge-h14     { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-h30     { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+.badge-h60     { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.badge-h90     { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+.badge-active  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 
 /* Form controls */
 .form-label {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--mq-text-dark);
     margin-bottom: 4px;
 }
 
 .form-control, .form-select {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     padding: 7px 12px;
-    border-color: #cfdbe8;
+    border-color: #cbd5e1;
     color: var(--mq-text-dark);
 }
 
 .form-control:focus, .form-select:focus {
-    border-color: #2458f1;
-    box-shadow: 0 0 0 3px rgba(36, 88, 241, 0.12);
+    border-color: var(--mq-primary);
+    box-shadow: 0 0 0 3px rgba(43, 87, 154, 0.1);
 }
 
 /* ============================================================================
-   4. CORPORATE FOOTER ALA https://medquest.co.id/ (#2458f1)
+   4. CORPORATE FOOTER - CALM DARK SLATE NAVY (#162238)
    ============================================================================ */
 .mq-footer {
     flex-shrink: 0;
-    color: #f7f7f7;
+    color: #cbd5e1;
     font-family: 'Open Sans', Helvetica, Arial, sans-serif;
     margin-top: auto;
 }
 
 .mq-footer-main {
-    background-color: #2458f1;
-    padding: 34px 0 28px;
+    background-color: var(--mq-navy-sidebar);
+    padding: 28px 0 22px;
+    border-top: 1px solid #334155;
 }
 
 .mq-footer-grid {
     display: grid;
     grid-template-columns: 1.5fr 0.9fr 1.1fr;
-    gap: 32px;
+    gap: 28px;
     align-items: start;
 }
 
@@ -920,30 +932,25 @@ a:hover {
 
 .mq-footer-logo-box {
     display: inline-block;
-    background: transparent;
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    margin-bottom: 14px;
+    background: #ffffff;
+    padding: 5px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
 }
 
 .mq-footer-logo-box img {
-    height: 36px;
+    height: 30px;
     width: auto;
     display: block;
-    border-radius: 5px;
-    border: none;
-    box-shadow: none;
 }
 
 .mq-footer-desc {
-    font-size: 12.5px;
-    font-weight: 600;
-    line-height: 1.62;
-    color: #f7f7f7;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #94a3b8;
     text-align: justify;
-    margin-bottom: 14px;
-    opacity: 0.95;
+    margin-bottom: 12px;
 }
 
 .mq-footer-contacts {
@@ -951,28 +958,28 @@ a:hover {
     padding: 0;
     margin: 0 0 12px;
     font-family: 'Roboto', Helvetica, Arial, sans-serif;
-    font-size: 12.5px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .mq-footer-contacts li {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    margin-bottom: 6px;
-    color: #f7f7f7;
+    margin-bottom: 5px;
+    color: #cbd5e1;
 }
 
 .mq-footer-contacts li i {
-    color: #ffffff;
-    font-size: 13px;
+    color: #60a5fa;
+    font-size: 12px;
     margin-top: 3px;
     width: 18px;
     text-align: center;
 }
 
 .mq-footer-contacts li a {
-    color: #f7f7f7;
+    color: #cbd5e1;
     text-decoration: none;
 }
 
@@ -989,12 +996,12 @@ a:hover {
 }
 
 .mq-iso-pill {
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 5px 11px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 4px 10px;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;
@@ -1003,13 +1010,11 @@ a:hover {
 
 .mq-footer-title {
     font-family: 'Open Sans', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
-    color: #ffffff !important;
-    text-decoration: underline;
-    text-underline-offset: 6px;
+    color: #f8fafc !important;
     margin-top: 4px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
 
 .mq-footer-links ul {
@@ -1019,13 +1024,13 @@ a:hover {
 }
 
 .mq-footer-links ul li {
-    margin-bottom: 7px;
+    margin-bottom: 6px;
 }
 
 .mq-footer-links ul li a {
-    color: #f7f7f7;
-    font-size: 12.8px;
-    font-weight: 600;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1034,34 +1039,34 @@ a:hover {
 
 .mq-footer-links ul li a:before {
     content: "\203A";
-    font-weight: 800;
-    font-size: 16px;
-    color: #ffffff;
+    font-weight: 700;
+    font-size: 14px;
+    color: #60a5fa;
 }
 
 .mq-footer-links ul li a:hover {
     color: #ffffff;
-    transform: translateX(4px);
+    transform: translateX(3px);
 }
 
 .mq-hotline-card {
-    background: rgba(255, 255, 255, 0.14);
-    border: none;
-    border-radius: 12px;
-    padding: 13px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 13px;
+    gap: 12px;
     margin-bottom: 14px;
 }
 
 .mq-hotline-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: #ffffff;
-    color: #2458f1;
-    font-size: 18px;
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1070,57 +1075,57 @@ a:hover {
 
 .mq-hotline-label {
     font-size: 11px;
-    font-weight: 600;
-    color: #dbeafe;
+    font-weight: 500;
+    color: #94a3b8;
 }
 
 .mq-hotline-number {
-    font-size: 16px;
-    font-weight: 800;
-    color: #ffffff;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #f8fafc;
     letter-spacing: 0.3px;
 }
 
 .mq-footer-socials {
     display: flex;
-    gap: 9px;
+    gap: 8px;
 }
 
 .mq-footer-socials a {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.15);
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.07);
     border: none;
-    color: #ffffff;
+    color: #cbd5e1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 13px;
     transition: all 0.2s ease;
 }
 
 .mq-footer-socials a:hover {
-    background: #ffffff;
-    color: #2458f1;
-    transform: translateY(-2px);
+    background: #2b579a;
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
 .mq-footer-bottom {
-    background: linear-gradient(0deg, rgba(0, 20, 75, 0.16), rgba(0, 20, 75, 0.16)), #2458f1;
-    border-top: none;
-    color: #ffffff;
-    font-size: 12px;
+    background: var(--mq-navy-darker);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    font-size: 11.5px;
     text-align: center;
-    padding: 12px 0;
+    padding: 10px 0;
 }
 
 /* ============================================================================
-   5. AUTH WRAPPER & LOGIN/REGISTER CARD (#2458f1)
+   5. AUTH WRAPPER & LOGIN/REGISTER CARD (SOFT & ERGONOMIC)
    ============================================================================ */
 .auth-wrapper {
     flex: 1 0 auto;
-    background: linear-gradient(135deg, #e8f1ff 0%, #f7faff 52%, #dbeafe 100%);
+    background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 50%, #e2e8f0 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1131,36 +1136,37 @@ a:hover {
     width: 100%;
     max-width: 430px;
     background: #ffffff;
-    border-radius: 14px;
-    border: 1px solid #d5e4fb;
-    box-shadow: 0 14px 36px rgba(36, 88, 241, 0.12);
+    border-radius: 12px;
+    border: 1px solid var(--mq-border);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
     overflow: hidden;
 }
 
 .auth-card-header {
-    background-color: #2458f1;
+    background-color: var(--mq-navy-sidebar);
     color: #ffffff;
-    padding: 22px 22px 20px;
+    padding: 22px 22px 18px;
     text-align: center;
-    border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .auth-card-header img {
-    border: none;
-    box-shadow: none;
+    background: #ffffff;
+    padding: 5px 12px;
+    border-radius: 6px;
 }
 
 .auth-card-header h4 {
     color: #ffffff !important;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
 }
 
 .mq-auth-footer {
-    background-color: #2458f1;
-    color: #f7f7f7;
-    font-size: 12.5px;
+    background-color: var(--mq-navy-darker);
+    color: #94a3b8;
+    font-size: 12px;
     text-align: center;
-    padding: 11px 16px;
+    padding: 10px 16px;
     flex-shrink: 0;
 }
 
@@ -1216,13 +1222,12 @@ a:hover {
     }
 }
 
-
 /* Toggle Buka/Tutup Kolom Departemen di Samping Semua */
 .cp-tab-toggle-btn {
-    border: 1px solid #dce6f5;
-    background: #f8faff;
-    color: #4c5866;
-    font-size: 0.76rem;
+    border: 1px solid var(--mq-border);
+    background: #f8fafc;
+    color: var(--mq-text-body);
+    font-size: 0.75rem;
     font-weight: 600;
     padding: 3px 10px;
     border-radius: 20px;
@@ -1236,15 +1241,15 @@ a:hover {
 }
 
 .cp-tab-toggle-btn:hover {
-    background: #eaf1fb;
-    color: #2458f1;
-    border-color: #c5d5fc;
+    background: #eff6ff;
+    color: var(--mq-primary);
+    border-color: #bfdbfe;
 }
 
 .dept-toggle-icon {
     font-size: 0.65rem;
     transition: transform 0.2s ease;
-    color: #2458f1;
+    color: var(--mq-primary);
 }
 
 .dept-toggle-icon.rotate-open {

@@ -2,7 +2,7 @@
         </main><!-- /.app-content -->
 
         <!-- ====================================================================
-             3. CORPORATE FOOTER ALA https://medquest.co.id/ (et_pb_section_0_tb_footer)
+             3. CORPORATE FOOTER ALA https://medquest.co.id/
              ==================================================================== -->
         <footer class="mq-footer no-print">
             <div class="mq-footer-main">

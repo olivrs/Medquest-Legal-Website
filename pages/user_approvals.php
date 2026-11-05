@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_login();
 
 if (!is_superadmin()) {
@@ -90,34 +90,17 @@ $usersList = $stmtList->fetchAll();
 ?>
 
 <div class="container-fluid px-3 px-md-4 py-3">
-    <!-- Breadcrumb & Title -->
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div>
-            <div class="d-flex align-items-center gap-2 text-muted small mb-1">
-                <a href="<?= base_url('?page=agreements') ?>" class="text-decoration-none text-muted">Dashboard</a>
-                <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
-                <span class="text-dark fw-semibold">Persetujuan Akun User</span>
-            </div>
-            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <i class="fas fa-user-shield text-primary"></i> Persetujuan Akun Baru (Superadmin)
-                <?php if ($countPending > 0): ?>
-                    <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-1"><?= $countPending ?> Perlu Ditinjau</span>
-                <?php endif; ?>
-            </h4>
-            <div class="text-muted small mt-1">
-                Tinjau, setujui (ACC), atau tolak pendaftaran akun user baru Medquest sebelum dapat login ke sistem.
-            </div>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-            <a href="<?= base_url('?page=register') ?>" target="_blank" class="btn btn-outline-primary btn-sm fw-semibold shadow-sm">
-                <i class="fas fa-external-link-alt me-1"></i> Buka Halaman Register
-            </a>
-            <a href="<?= base_url('?page=agreements') ?>" class="btn btn-light btn-sm fw-semibold border shadow-sm">
-                <i class="fas fa-arrow-left me-1"></i> Kembali ke Dashboard
-            </a>
-        </div>
+<div class="cp-header-row mb-3">
+    <div class="d-flex align-items-center gap-2">
+        <a href="<?= base_url('?page=agreements') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
+            <i class="fas fa-arrow-left me-1"></i> Back
+        </a>
+        <h1 class="cp-page-title ms-1">Persetujuan Akun</h1>
+        <?php if ($countPending > 0): ?>
+            <span class="badge bg-warning text-dark rounded-pill px-2 py-1 ms-1" style="font-size:0.72rem;"><?= $countPending ?> Pending</span>
+        <?php endif; ?>
     </div>
+</div>
 
     <!-- 4 Metric Cards -->
     <div class="row g-3 mb-4">
@@ -180,7 +163,7 @@ $usersList = $stmtList->fetchAll();
 
         <div class="col-sm-6 col-xl-3">
             <a href="<?= base_url('?page=user_approvals&tab=all') ?>" class="text-decoration-none">
-                <div class="card border-0 shadow-sm rounded-3 p-3 transition-hover <?= $tab === 'all' ? 'ring-primary border-primary' : '' ?>" style="background: #f7f9ff; border-left: 4px solid #2458f1 !important;">
+                <div class="card border-0 shadow-sm rounded-3 p-3 transition-hover <?= $tab === 'all' ? 'ring-primary border-primary' : '' ?>" style="background: #f8fafc; border-left: 4px solid #2b579a !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="text-muted small fw-semibold">TOTAL SEMUA USER</div>
@@ -189,7 +172,7 @@ $usersList = $stmtList->fetchAll();
                                 <i class="fas fa-users me-1"></i> Basis Data User
                             </div>
                         </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#e0e7ff;color:#2458f1;font-size:22px;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#eff6ff;color:#2b579a;font-size:22px;">
                             <i class="fas fa-users-cog"></i>
                         </div>
                     </div>
@@ -289,7 +272,7 @@ $usersList = $stmtList->fetchAll();
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="sidebar-avatar rounded-circle text-white fw-bold d-flex align-items-center justify-content-center"
-                                             style="width:36px;height:36px;font-size:0.8rem;background: <?= $uRole === 'superadmin' ? '#2458f1' : '#64748b' ?>;">
+                                             style="width:36px;height:36px;font-size:0.8rem;background: <?= $uRole === 'superadmin' ? '#2b579a' : '#64748b' ?>;">
                                             <?= htmlspecialchars($u['kode_singkatan']) ?>
                                         </div>
                                         <div>

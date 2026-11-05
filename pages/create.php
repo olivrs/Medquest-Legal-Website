@@ -3,37 +3,91 @@ require_login();
 $user = current_user();
 
 $departments = $pdo->query("SELECT * FROM departments ORDER BY id ASC")->fetchAll();
-$maxNoUrut = (int)$pdo->query("SELECT COALESCE(MAX(no_urut_dokumen), 730) FROM agreements")->fetchColumn();
-$nextNoUrut = $maxNoUrut + 1;
 
-$preselectedDept = strtoupper(trim($_GET['dept'] ?? ($user['departemen_default'] !== 'ALL' ? $user['departemen_default'] : 'MHO')));
+// Hitung saran nomor urut berikutnya untuk masing-masing jenis dokumen
+$maxCoop = (int)$pdo->query("SELECT COALESCE(MAX(no_urut_dokumen), 730) FROM agreements WHERE doc_type = 'COOPERATION' OR doc_type IS NULL")->fetchColumn();
+$maxComp = (int)$pdo->query("SELECT COALESCE(MAX(no_urut_dokumen), 184) FROM agreements WHERE doc_type = 'COMPANY'")->fetchColumn();
+$maxPrin = (int)$pdo->query("SELECT COALESCE(MAX(no_urut_dokumen), 0) FROM agreements WHERE doc_type = 'PRINCIPAL'")->fetchColumn();
+
+$nextNums = [
+    'COOPERATION' => $maxCoop + 1,
+    'COMPANY'     => $maxComp + 1,
+    'PRINCIPAL'   => $maxPrin + 1,
+];
+
+$selectedDocType = strtoupper(trim($_GET['doc_type'] ?? ($_POST['doc_type'] ?? 'COOPERATION')));
+if (!in_array($selectedDocType, ['COOPERATION', 'COMPANY', 'PRINCIPAL'], true)) {
+    $selectedDocType = 'COOPERATION';
+}
+
+$defaultDept = ($selectedDocType === 'COOPERATION') ? 'MHO' : 'LAC';
+$preselectedDept = strtoupper(trim($_GET['dept'] ?? ($user['departemen_default'] !== 'ALL' ? $user['departemen_default'] : $defaultDept)));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $department          = strtoupper(trim($_POST['department'] ?? 'MHO'));
-    $custom_dept         = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim($_POST['custom_dept'] ?? '')));
-    if ($department === 'OTHER' && $custom_dept !== '') {
+    $doc_type    = strtoupper(trim($_POST['doc_type'] ?? 'COOPERATION'));
+    if (!in_array($doc_type, ['COOPERATION', 'COMPANY', 'PRINCIPAL'], true)) {
+        $doc_type = 'COOPERATION';
+    }
+
+    $department  = strtoupper(trim($_POST['department'] ?? 'LAC'));
+    $custom_dept = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim($_POST['custom_dept'] ?? '')));
+    if ($department === 'OTHER' && $custom_dept !== '' && is_superadmin()) {
         $department = $custom_dept;
         $pdo->prepare("INSERT IGNORE INTO departments (kode_dept, nama_dept) VALUES (?, ?)")->execute([$department, 'Divisi ' . $department]);
     }
 
-    $no_urut_dokumen     = !empty($_POST['no_urut_dokumen']) ? (int)$_POST['no_urut_dokumen'] : $nextNoUrut;
+    $no_urut_dokumen     = !empty($_POST['no_urut_dokumen']) ? (int)$_POST['no_urut_dokumen'] : ($nextNums[$doc_type] ?? 1);
     $document_number     = trim($_POST['document_number'] ?? '');
+    if ($document_number === '') $document_number = 'N/A';
+
+    // Field dinamis sesuai jenis dokumen
+    $document_title      = trim($_POST['document_title'] ?? '');
+    $issued_by           = trim($_POST['issued_by'] ?? '');
+    $principal_name      = trim($_POST['principal_name'] ?? '');
     $customer            = trim($_POST['customer'] ?? '');
     $product_description = trim($_POST['product_description'] ?? '');
     $serial_number       = trim($_POST['serial_number'] ?? '');
     if ($serial_number === '') $serial_number = 'N/A';
 
+    // Sinkronisasi kolom pencarian/tampilan untuk COMPANY & PRINCIPAL
+    if ($doc_type === 'COMPANY') {
+        $customer            = $issued_by !== '' ? $issued_by : 'Original Company Document';
+        $product_description = $document_title;
+    } elseif ($doc_type === 'PRINCIPAL') {
+        $customer            = $principal_name !== '' ? $principal_name : $issued_by;
+        $product_description = $document_title;
+    }
+
     $effective_date_na   = isset($_POST['effective_date_na']) ? 1 : 0;
     $effective_date      = ($effective_date_na || empty($_POST['effective_date'])) ? null : $_POST['effective_date'];
     if ($effective_date === null) $effective_date_na = 1;
 
-    $expiry_date         = $_POST['expiry_date'] ?? '';
+    $expiry_date_na      = isset($_POST['expiry_date_na']) ? 1 : 0;
+    $expiry_date         = ($expiry_date_na || empty($_POST['expiry_date'])) ? null : $_POST['expiry_date'];
+    if ($expiry_date === null) $expiry_date_na = 1;
+
     $tanggal_input       = !empty($_POST['tanggal_input']) ? $_POST['tanggal_input'] : date('Y-m-d');
     $raw_note            = trim($_POST['note'] ?? '');
     $prefix_date_note    = isset($_POST['prefix_date_note']);
 
-    if ($document_number === '' || $customer === '' || $product_description === '' || $expiry_date === '') {
-        set_flash('error', 'Harap lengkapi Document Number, Customer, Product Description, dan Expiry Date.');
+    // Validasi sesuai jenis dokumen yang dipilih
+    $errorMsg = '';
+    if ($doc_type === 'COOPERATION') {
+        if ($document_number === '' || $customer === '' || $product_description === '' || (!$expiry_date_na && !$expiry_date)) {
+            $errorMsg = 'Untuk Log of Cooperation Agreement, harap lengkapi Document Number, Customer, Product Description, dan Expiry Date.';
+        }
+    } elseif ($doc_type === 'COMPANY') {
+        if ($document_title === '' || $issued_by === '') {
+            $errorMsg = 'Untuk Original Company Document, harap lengkapi Document Title dan Issued By.';
+        }
+    } elseif ($doc_type === 'PRINCIPAL') {
+        if ($document_title === '' || $issued_by === '' || $principal_name === '') {
+            $errorMsg = 'Untuk Log of Principal Document, harap lengkapi Document Title, Issued By, dan Principal.';
+        }
+    }
+
+    if ($errorMsg !== '') {
+        set_flash('error', $errorMsg);
     } else {
         if ($raw_note === '' || strtoupper($raw_note) === 'N/A') {
             $finalNote = 'N/A';
@@ -47,19 +101,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $ins = $pdo->prepare("
             INSERT INTO agreements
-            (no_urut_dokumen, department, document_number, customer, product_description, serial_number, effective_date, effective_date_na, expiry_date, note, created_by_user_id, created_by_code, created_by_log)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (doc_type, no_urut_dokumen, department, document_title, document_number, issued_by, principal_name, customer, product_description, serial_number, effective_date, effective_date_na, expiry_date, expiry_date_na, note, created_by_user_id, created_by_code, created_by_log)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $ins->execute([
+            $doc_type,
             $no_urut_dokumen,
             $department,
+            $document_title ?: null,
             $document_number,
+            $issued_by ?: null,
+            $principal_name ?: null,
             $customer,
             $product_description,
             $serial_number,
             $effective_date,
             $effective_date_na,
             $expiry_date,
+            $expiry_date_na,
             $finalNote,
             $user['id'],
             $user['kode_singkatan'],
@@ -67,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         $newAgrId = (int)$pdo->lastInsertId();
 
-        // Simpan file lampiran jika ada yang diupload saat input
+        // Simpan file lampiran jika ada yang diupload
         if (!empty($_FILES['file_dokumen']['name']) && $_FILES['file_dokumen']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = __DIR__ . '/../assets/uploads';
             if (!is_dir($uploadDir)) {
@@ -89,18 +148,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
         $insHist->execute([$newAgrId, $user['id'], $user['kode_singkatan'], $tanggal_input, $raw_note ?: 'N/A']);
 
-        // Cek otomatis H-90, H-60, H-30, H-14, H-7, H-3
-        $autoEmails = run_auto_expiry_notifications($pdo);
+        // Cek otomatis H-90, H-60, H-30, H-14, H-7, H-3 jika memiliki Expiry Date
         $extraMsg = '';
-        if (!empty($autoEmails)) {
-            $extraMsg = " Karena tanggal berada di titik pengingat (H-90/60/30/14/7/3), sistem langsung memproses pengiriman email ke <strong>" . htmlspecialchars($user['email']) . "</strong>!";
+        if (!$expiry_date_na && $expiry_date) {
+            $autoEmails = run_auto_expiry_notifications($pdo);
+            if (!empty($autoEmails)) {
+                $extraMsg = " Karena tanggal berada di titik pengingat (H-90/60/30/14/7/3), sistem langsung memproses pengiriman email ke <strong>" . htmlspecialchars($user['email']) . "</strong>!";
+            }
         }
 
-        set_flash('success', "Dokumen berhasil disimpan ke departemen <strong>{$department}</strong> dengan tanda Created By: <strong>{$createdByStamp}</strong>.{$extraMsg}");
-        header("Location: " . base_url('?page=agreements&dept=' . urlencode($department)));
+        $meta = get_doc_type_meta($doc_type);
+        set_flash('success', "Dokumen <strong>{$meta['title']}</strong> berhasil disimpan ke departemen <strong>{$department}</strong> dengan tanda Created By: <strong>{$createdByStamp}</strong>.{$extraMsg}");
+        header("Location: " . base_url('?page=agreements&dept=' . urlencode($department) . '&doc_type=' . urlencode($doc_type)));
         exit;
     }
 }
+
+$docMeta = get_doc_type_meta($selectedDocType);
 ?>
 
 <div class="row justify-content-center">
@@ -110,133 +174,308 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="<?= base_url('?page=agreements') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
                     <i class="fas fa-arrow-left me-1"></i> Back
                 </a>
-                <h1 class="cp-page-title ms-1">Input Agreement</h1>
+                <div>
+                    <h1 class="cp-page-title ms-1">Input Dokumen Baru</h1>
+                </div>
             </div>
         </div>
 
-        <div class="cp-table-card mt-0">
-            <div>
-
-                <form method="POST" action="<?= base_url('?page=create') ?>" enctype="multipart/form-data">
-                    <div class="row g-2">
-                        <!-- 1. Department / Division -->
-                        <div class="col-md-5">
-                            <label class="form-label fw-bold">1. Pilih Departemen / Divisi <span class="text-danger">*</span></label>
-                            <select name="department" id="selectDept" class="form-select fw-semibold" required onchange="toggleCustomDept(this.value)">
-                                <?php foreach ($departments as $d): ?>
-                                    <option value="<?= htmlspecialchars($d['kode_dept']) ?>" <?= ($preselectedDept === strtoupper($d['kode_dept'])) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($d['kode_dept']) ?> &mdash; <?= htmlspecialchars($d['nama_dept']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                                <option value="OTHER">+ Tambah Departemen Lainnya...</option>
-                            </select>
-                            <input type="text" name="custom_dept" id="customDeptInput" class="form-control mt-1 text-uppercase d-none" placeholder="Ketik singkatan departemen baru (contoh: FIN)">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">No. Urut Dokumen</label>
-                            <input type="number" name="no_urut_dokumen" class="form-control" value="<?= $nextNoUrut ?>">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Tanggal Input Data <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                        </div>
-
-                        <!-- 2. Document Number & 3. Customer -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">2. Nomor Dokumen (Document Number) <span class="text-danger">*</span></label>
-                            <textarea name="document_number" class="form-control" rows="2" placeholder="Contoh: 087/KKO.PL/MBB/MJG/XII/2025" required></textarea>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">3. Nama Customer / Rumah Sakit / Instansi <span class="text-danger">*</span></label>
-                            <textarea name="customer" class="form-control" rows="2" placeholder="Contoh: Palang Merah Indonesia Provinsi DKI Jakarta" required></textarea>
-                        </div>
-
-                        <!-- 4. Product (Description & Serial Number) -->
-                        <div class="col-md-8">
-                            <label class="form-label fw-bold">4a. Nama Produk / Deskripsi Kerjasama (Product Description) <span class="text-danger">*</span></label>
-                            <input type="text" name="product_description" class="form-control" placeholder="Contoh: Fibroscan 530 Compact / Hemocue Hb 301 / NDA" required>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">4b. Serial Number (S/N)</label>
-                            <input type="text" name="serial_number" class="form-control" value="N/A" placeholder="Ketik S/N atau biarkan N/A">
-                        </div>
-
-                        <!-- 5. Effective Date & 6. Expiry Date -->
-                        <div class="col-md-5">
-                            <label class="form-label fw-bold">5. Tanggal Mulai Berlaku (Effective Date)</label>
-                            <div class="input-group">
-                                <input type="date" name="effective_date" id="effDateInput" class="form-control" value="<?= date('Y-m-d') ?>">
-                                <div class="input-group-text bg-light">
-                                    <input class="form-check-input mt-0 me-1" type="checkbox" name="effective_date_na" id="effDateNaCheck" onchange="toggleEffNa(this.checked)">
-                                    <label class="small mb-0 fw-semibold" for="effDateNaCheck">N/A</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-7">
-                            <label class="form-label fw-bold text-danger">6. Tanggal Berakhir Kontrak (Expiry Date) <span class="text-danger">*</span></label>
-                            <input type="date" name="expiry_date" id="expDateInput" class="form-control border-danger fw-bold" required onchange="updateDeadlinePreview()">
-                            <div class="mt-2 d-flex flex-wrap gap-1 align-items-center">
-                                <span class="small text-muted me-1">Pilih Cepat Tanggal:</span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" onclick="setQuickExpiry(90)">H-90</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" onclick="setQuickExpiry(60)">H-60</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" onclick="setQuickExpiry(30)">H-30</button>
-                                <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size:0.75rem;" onclick="setQuickExpiry(14)">H-14</button>
-                                <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size:0.75rem;" onclick="setQuickExpiry(7)">H-7</button>
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.75rem;" onclick="setQuickExpiry(3)">H-3</button>
-                            </div>
-                        </div>
-
-                        <!-- Preview Kalkulator Tanggal Deadline H-90, H-60, H-30, H-14, H-7, H-3 -->
-                        <div class="col-12" id="deadlinePreviewWrapper" style="display:none;">
-                            <div class="p-3 rounded-4 bg-light border">
-                                <div class="fw-bold small text-dark mb-2">
-                                    <i class="fas fa-calendar-alt text-primary me-1"></i> Jadwal Tanggal Deadline Otomatis untuk Kontrak Ini:
-                                </div>
-                                <div class="row g-2 text-center" id="deadlinePreviewBoxes"></div>
-                            </div>
-                        </div>
-
-                        <!-- 7. Note -->
-                        <div class="col-md-8">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <label class="form-label fw-bold mb-0">7. Catatan (Note)</label>
-                                <div class="form-check form-switch small">
-                                    <input class="form-check-input" type="checkbox" name="prefix_date_note" id="prefixDateCheck" checked>
-                                    <label class="form-check-label" for="prefixDateCheck">Otomatis beri tanggal di awal catatan</label>
-                                </div>
-                            </div>
-                            <textarea name="note" class="form-control" rows="2" placeholder="Kosongkan jika N/A, atau ketik catatan tindak lanjut..."></textarea>
-                        </div>
-
-                        <!-- 8. Upload File Lampiran (Opsional) -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">8. Upload File Dokumen (Opsional)</label>
-                            <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-                            <div class="text-muted mt-1" style="font-size:0.68rem;">PDF, JPG, PNG, Word, atau Excel</div>
-                        </div>
-                    </div>
-
-                    <hr class="my-3">
-
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="<?= base_url('?page=agreements') ?>" class="btn btn-light border fw-semibold px-4 py-2">Batal</a>
-                        <button type="submit" class="btn btn-primary fw-bold px-5 py-2">
-                            <i class="fas fa-save me-1"></i> Simpan Dokumen
-                        </button>
-                    </div>
-                </form>
+        <!-- PILIHAN 3 JENIS DOKUMEN MEDQUEST (RINGKAS & BERSIH) -->
+        <div class="row g-2 mb-3">
+            <div class="col-md-4">
+                <button type="button" onclick="selectDocType('COOPERATION')" id="btnType_COOPERATION"
+                        class="w-100 text-start px-3 py-2 rounded-3 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">
+                    <span class="fw-bold text-dark" style="font-size:0.84rem;">1. Log of Cooperation Agreement</span>
+                    <i class="fas fa-check-circle check-indicator"></i>
+                </button>
             </div>
+
+            <div class="col-md-4">
+                <button type="button" onclick="selectDocType('COMPANY')" id="btnType_COMPANY"
+                        class="w-100 text-start px-3 py-2 rounded-3 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">
+                    <span class="fw-bold text-dark" style="font-size:0.84rem;">2. Original Company Document</span>
+                    <i class="fas fa-check-circle check-indicator"></i>
+                </button>
+            </div>
+
+            <div class="col-md-4">
+                <button type="button" onclick="selectDocType('PRINCIPAL')" id="btnType_PRINCIPAL"
+                        class="w-100 text-start px-3 py-2 rounded-3 border d-flex align-items-center justify-content-between doc-type-card <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">
+                    <span class="fw-bold text-dark" style="font-size:0.84rem;">3. Log of Principal Document</span>
+                    <i class="fas fa-check-circle check-indicator"></i>
+                </button>
+            </div>
+        </div>
+
+        <style>
+            .doc-type-card {
+                background: #ffffff;
+                border-color: #e2e8f0 !important;
+                cursor: pointer;
+                transition: all 0.18s ease;
+            }
+            .doc-type-card:hover {
+                border-color: #93c5fd !important;
+                background: #f8fafc;
+            }
+            .doc-type-card .check-indicator {
+                color: #cbd5e1;
+                font-size: 0.95rem;
+            }
+            .doc-type-card.active {
+                background: #eff6ff;
+                border: 2px solid #2b579a !important;
+                box-shadow: 0 3px 10px rgba(43, 87, 154, 0.1);
+            }
+            .doc-type-card.active .check-indicator {
+                color: #2b579a;
+            }
+        </style>
+
+        <div class="cp-table-card mt-0">
+            <form method="POST" action="<?= base_url('?page=create') ?>" enctype="multipart/form-data">
+                <input type="hidden" name="doc_type" id="inputDocType" value="<?= htmlspecialchars($selectedDocType) ?>">
+
+                <div class="row g-2">
+                    <!-- Baris Atas: Departemen, No. Urut Form, Tanggal Input -->
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Departemen / Divisi <span class="text-danger">*</span></label>
+                        <select name="department" id="selectDept" class="form-select fw-semibold" required onchange="toggleCustomDept(this.value)">
+                            <?php foreach ($departments as $d): ?>
+                                <option value="<?= htmlspecialchars($d['kode_dept']) ?>" <?= ($preselectedDept === strtoupper($d['kode_dept'])) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($d['kode_dept']) ?> &mdash; <?= htmlspecialchars($d['nama_dept']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <?php if (is_superadmin()): ?>
+                                <option value="OTHER">+ Tambah Departemen Lainnya...</option>
+                            <?php endif; ?>
+                        </select>
+                        <?php if (is_superadmin()): ?>
+                            <input type="text" name="custom_dept" id="customDeptInput" class="form-control mt-1 text-uppercase d-none" placeholder="Ketik singkatan departemen baru (contoh: FIN)">
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">No. Urut Form (No.)</label>
+                        <input type="number" name="no_urut_dokumen" id="inputNoUrut" class="form-control fw-bold" value="<?= $nextNums[$selectedDocType] ?>">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Tanggal Input (Created By) <span class="text-danger">*</span></label>
+                        <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+
+                    <!-- ================================================================
+                         FIELD KHUSUS 2 & 3: ORIGINAL COMPANY DOCUMENT & PRINCIPAL DOCUMENT
+                         (Document Title, Document No, Issued By, Principal)
+                         ================================================================ -->
+                    <div class="col-md-7 field-company-principal">
+                        <label class="form-label fw-bold">Document Title <span class="text-danger">*</span></label>
+                        <textarea name="document_title" id="inputDocTitle" class="form-control" rows="2"
+                                  placeholder="Contoh: Akta Pengangkatan kembali dewan direksi / Confidential Disclosure Agreement"></textarea>
+                    </div>
+
+                    <div class="col-md-5 field-company-principal">
+                        <label class="form-label fw-bold">Document No.</label>
+                        <textarea name="document_number" id="inputDocNoAlt" class="form-control" rows="2"
+                                  placeholder="Contoh: AHU-AH.01.09-0410712 / SN : Q8-v3-1208007241 / ketik N/A jika tidak ada"></textarea>
+                    </div>
+
+                    <div class="col-md-6 field-company-principal" id="colIssuedBy">
+                        <label class="form-label fw-bold">Issued By <span class="text-danger">*</span></label>
+                        <input type="text" name="issued_by" id="inputIssuedBy" class="form-control"
+                               placeholder="Contoh: Notaris Putranto / Nanik Gunawan - Cedric DEBONTE">
+                    </div>
+
+                    <div class="col-md-6 field-principal-only">
+                        <label class="form-label fw-bold">Principal <span class="text-danger">*</span></label>
+                        <input type="text" name="principal_name" id="inputPrincipal" class="form-control"
+                               placeholder="Contoh: Cepheid Europe S.A.S / Diagast / Tecan / Novartis V & D">
+                    </div>
+
+                    <!-- ================================================================
+                         FIELD KHUSUS 1: LOG OF COOPERATION AGREEMENT
+                         (Document Number, Customer, Product Description, Serial Number)
+                         ================================================================ -->
+                    <div class="col-md-6 field-cooperation-only">
+                        <label class="form-label fw-bold">Document Number <span class="text-danger">*</span></label>
+                        <textarea name="document_number" id="inputDocNoCoop" class="form-control" rows="2"
+                                  placeholder="Contoh: 087/KKO.PL/MBB/MJG/XII/2025"></textarea>
+                    </div>
+
+                    <div class="col-md-6 field-cooperation-only">
+                        <label class="form-label fw-bold">Customer <span class="text-danger">*</span></label>
+                        <textarea name="customer" id="inputCustomer" class="form-control" rows="2"
+                                  placeholder="Contoh: Palang Merah Indonesia Provinsi DKI Jakarta"></textarea>
+                    </div>
+
+                    <div class="col-md-8 field-cooperation-only">
+                        <label class="form-label fw-bold">Product (Description) <span class="text-danger">*</span></label>
+                        <input type="text" name="product_description" id="inputProductDesc" class="form-control"
+                               placeholder="Contoh: Fibroscan 530 Compact / Hemocue Hb 301 / NDA">
+                    </div>
+
+                    <div class="col-md-4 field-cooperation-only">
+                        <label class="form-label fw-bold">Serial Number (S/N)</label>
+                        <input type="text" name="serial_number" id="inputSerialNo" class="form-control" value="N/A"
+                               placeholder="Ketik S/N atau biarkan N/A">
+                    </div>
+
+                    <!-- ================================================================
+                         TANGGAL EFFECTIVE DATE & EXPIRY DATE (BERLAKU UNTUK SEMUA JENIS)
+                         ================================================================ -->
+                    <div class="col-md-5 mt-2">
+                        <label class="form-label fw-bold">Effective Date</label>
+                        <div class="input-group">
+                            <input type="date" name="effective_date" id="effDateInput" class="form-control" value="<?= date('Y-m-d') ?>">
+                            <div class="input-group-text bg-light">
+                                <input class="form-check-input mt-0 me-1" type="checkbox" name="effective_date_na" id="effDateNaCheck" onchange="toggleEffNa(this.checked)">
+                                <label class="small mb-0 fw-semibold" for="effDateNaCheck">N/A</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-7 mt-2">
+                        <label class="form-label fw-bold text-danger">Expiry Date <span class="text-danger" id="expReqStar">*</span></label>
+                        <div class="input-group">
+                            <input type="date" name="expiry_date" id="expDateInput" class="form-control border-danger fw-bold" onchange="updateDeadlinePreview()">
+                            <div class="input-group-text bg-light">
+                                <input class="form-check-input mt-0 me-1" type="checkbox" name="expiry_date_na" id="expDateNaCheck" onchange="toggleExpNa(this.checked)">
+                                <label class="small mb-0 fw-semibold" for="expDateNaCheck">N/A</label>
+                            </div>
+                        </div>
+                        <div class="mt-2 d-flex flex-wrap gap-1 align-items-center" id="quickExpiryBtns">
+                            <span class="small text-muted me-1">Pilih Cepat:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(90)">H-90</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(60)">H-60</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(30)">H-30</button>
+                            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(14)">H-14</button>
+                            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(7)">H-7</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.73rem;" onclick="setQuickExpiry(3)">H-3</button>
+                        </div>
+                    </div>
+
+                    <!-- Preview Kalkulator Tanggal Deadline H-90, H-60, H-30, H-14, H-7, H-3 -->
+                    <div class="col-12" id="deadlinePreviewWrapper" style="display:none;">
+                        <div class="p-3 rounded-3 bg-light border">
+                            <div class="fw-bold small text-dark mb-2">
+                                <i class="fas fa-calendar-alt text-primary me-1"></i> Jadwal Tanggal Deadline Otomatis:
+                            </div>
+                            <div class="row g-2 text-center" id="deadlinePreviewBoxes"></div>
+                        </div>
+                    </div>
+
+                    <!-- Note & Upload File Dokumen -->
+                    <div class="col-md-8 mt-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold mb-0">Note</label>
+                            <div class="form-check form-switch small">
+                                <input class="form-check-input" type="checkbox" name="prefix_date_note" id="prefixDateCheck">
+                                <label class="form-check-label" for="prefixDateCheck">Beri tanggal di awal catatan</label>
+                            </div>
+                        </div>
+                        <textarea name="note" class="form-control" rows="2" placeholder="Kosongkan jika N/A, atau ketik catatan (contoh: Distributed as on 02 OCT 2009)..."></textarea>
+                    </div>
+
+                    <div class="col-md-4 mt-2">
+                        <label class="form-label fw-bold">Upload File Dokumen (Opsional)</label>
+                        <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                        <div class="text-muted mt-1" style="font-size:0.68rem;">PDF, JPG, PNG, Word, atau Excel</div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="<?= base_url('?page=agreements') ?>" class="btn btn-light border fw-semibold px-4 py-2">Batal</a>
+                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2">
+                        <i class="fas fa-save me-1"></i> Simpan Dokumen
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
 const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const NEXT_NUMS = <?= json_encode($nextNums) ?>;
+const FORM_CODES = {
+    'COOPERATION': 'Form: MJG-FOR-LAC.12-001-03',
+    'COMPANY':     'Form: MJG-FOR-LAC.12-001-04',
+    'PRINCIPAL':   'Form: MJG-FOR-LAC.12-001-09'
+};
+
+function selectDocType(type) {
+    document.getElementById('inputDocType').value = type;
+
+    if (NEXT_NUMS[type]) {
+        document.getElementById('inputNoUrut').value = NEXT_NUMS[type];
+    }
+
+    // Highlight active card
+    ['COOPERATION', 'COMPANY', 'PRINCIPAL'].forEach(t => {
+        const btn = document.getElementById('btnType_' + t);
+        if (btn) btn.classList.toggle('active', t === type);
+    });
+
+    const isCoop = (type === 'COOPERATION');
+    const isComp = (type === 'COMPANY');
+    const isPrin = (type === 'PRINCIPAL');
+
+    // Show/hide field groups & enable/disable duplicate name="document_number"
+    document.querySelectorAll('.field-cooperation-only').forEach(el => {
+        el.style.display = isCoop ? '' : 'none';
+    });
+    document.querySelectorAll('.field-company-principal').forEach(el => {
+        el.style.display = (isComp || isPrin) ? '' : 'none';
+    });
+    document.querySelectorAll('.field-principal-only').forEach(el => {
+        el.style.display = isPrin ? '' : 'none';
+    });
+
+    // Untuk COMPANY, kolom Issued By melebar penuh (col-md-12) karena tidak ada kolom Principal
+    const colIssuedBy = document.getElementById('colIssuedBy');
+    if (colIssuedBy) {
+        colIssuedBy.className = isComp ? 'col-md-12 field-company-principal' : 'col-md-6 field-company-principal';
+    }
+
+    // Atur required dan disabled agar form submit sesuai jenis dokumen
+    const docNoCoop = document.getElementById('inputDocNoCoop');
+    const docNoAlt  = document.getElementById('inputDocNoAlt');
+    if (docNoCoop && docNoAlt) {
+        docNoCoop.disabled = !isCoop;
+        docNoCoop.required = isCoop;
+        docNoAlt.disabled  = isCoop;
+    }
+
+    const custInput = document.getElementById('inputCustomer');
+    const prodInput = document.getElementById('inputProductDesc');
+    if (custInput) custInput.required = isCoop;
+    if (prodInput) prodInput.required = isCoop;
+
+    const titleInput  = document.getElementById('inputDocTitle');
+    const issuedInput = document.getElementById('inputIssuedBy');
+    const prinInput   = document.getElementById('inputPrincipal');
+    if (titleInput)  titleInput.required  = (isComp || isPrin);
+    if (issuedInput) issuedInput.required = (isComp || isPrin);
+    if (prinInput)   prinInput.required   = isPrin;
+
+    // Placeholder dinamis sesuai contoh di form fisik asli
+    if (isComp) {
+        if (titleInput)  titleInput.placeholder  = 'Contoh: Akta Pengangkatan kembali dewan direksi & dewan komisaris / SK Kemenkumham RI';
+        if (docNoAlt)    docNoAlt.placeholder    = 'Contoh: 01 / AHU-AH.01.09-0410712';
+        if (issuedInput) issuedInput.placeholder = 'Contoh: Notaris Putranto';
+    } else if (isPrin) {
+        if (titleInput)  titleInput.placeholder  = 'Contoh: Confidential Disclosure Agreement / Certificate Of Distribution / Letter of Authorization';
+        if (docNoAlt)    docNoAlt.placeholder    = 'Contoh: N/A / SN : Q8-v3-1208007241 / CM 150403';
+        if (issuedInput) issuedInput.placeholder = 'Contoh: Nanik Gunawan - Cedric DEBONTE';
+    }
+
+    // Pastikan validasi Expiry Date mengikuti status checkbox N/A
+    const expNaChecked = document.getElementById('expDateNaCheck').checked;
+    toggleExpNa(expNaChecked);
+}
 
 function formatMedquestDateJS(dateObj) {
     const dd = String(dateObj.getDate()).padStart(2, '0');
@@ -247,6 +486,7 @@ function formatMedquestDateJS(dateObj) {
 
 function toggleCustomDept(val) {
     const el = document.getElementById('customDeptInput');
+    if (!el) return;
     if (val === 'OTHER') {
         el.classList.remove('d-none');
         el.required = true;
@@ -262,49 +502,83 @@ function toggleEffNa(checked) {
     if (checked) inp.value = '';
 }
 
-function setQuickExpiry(days) {
+function toggleExpNa(checked) {
+    const inp = document.getElementById('expDateInput');
+    const star = document.getElementById('expReqStar');
+    const quickBtns = document.getElementById('quickExpiryBtns');
+    inp.disabled = checked;
+    inp.required = !checked;
+    if (star) star.style.display = checked ? 'none' : '';
+    if (quickBtns) quickBtns.style.display = checked ? 'none' : 'flex';
+    if (checked) {
+        inp.value = '';
+        document.getElementById('deadlinePreviewWrapper').style.display = 'none';
+    } else {
+        updateDeadlinePreview();
+    }
+}
+
+function setQuickExpiry(daysFromToday) {
+    const expCheck = document.getElementById('expDateNaCheck');
+    if (expCheck && expCheck.checked) {
+        expCheck.checked = false;
+        toggleExpNa(false);
+    }
     const d = new Date();
-    d.setDate(d.getDate() + days);
+    d.setDate(d.getDate() + daysFromToday);
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    document.getElementById('expDateInput').value = `${yyyy}-${mm}-${dd}`;
+    const inp = document.getElementById('expDateInput');
+    inp.value = `${yyyy}-${mm}-${dd}`;
     updateDeadlinePreview();
 }
 
 function updateDeadlinePreview() {
     const val = document.getElementById('expDateInput').value;
-    const wrap = document.getElementById('deadlinePreviewWrapper');
-    const boxes = document.getElementById('deadlinePreviewBoxes');
+    const wrapper = document.getElementById('deadlinePreviewWrapper');
+    const container = document.getElementById('deadlinePreviewBoxes');
+
     if (!val) {
-        wrap.style.display = 'none';
+        wrapper.style.display = 'none';
         return;
     }
 
     const milestones = [90, 60, 30, 14, 7, 3];
+    const expDate = new Date(val + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
     let html = '';
     milestones.forEach(m => {
-        const expDate = new Date(val + 'T00:00:00');
-        expDate.setDate(expDate.getDate() - m);
+        const target = new Date(expDate);
+        target.setDate(target.getDate() - m);
+
+        let badgeClass = 'bg-white border text-dark';
+        let statusNote = 'Jadwal Pengingat';
+        if (target.getTime() === today.getTime()) {
+            badgeClass = 'bg-danger text-white border-danger shadow-sm';
+            statusNote = 'JATUH HARI INI!';
+        } else if (target < today) {
+            badgeClass = 'bg-secondary bg-opacity-10 text-muted border';
+            statusNote = 'Sudah Lewat';
+        }
+
         html += `
-            <div class="col-4 col-md-2">
-                <div class="p-2 rounded-3 bg-white border shadow-sm">
-                    <div class="fw-bold text-primary small">H-${m}</div>
-                    <div class="fw-bold text-dark" style="font-size:0.78rem;">${formatMedquestDateJS(expDate)}</div>
+            <div class="col-6 col-md-2">
+                <div class="p-2 rounded-3 ${badgeClass}">
+                    <div class="fw-bold small">H-${m}</div>
+                    <div class="fw-bold" style="font-size:0.82rem;">${formatMedquestDateJS(target)}</div>
+                    <div style="font-size:0.68rem;">${statusNote}</div>
                 </div>
             </div>
         `;
     });
-    boxes.innerHTML = html;
-    wrap.style.display = 'block';
+
+    container.innerHTML = html;
+    wrapper.style.display = 'block';
 }
 
-document.getElementById('inputTglCreate')?.addEventListener('change', function() {
-    if (!this.value) return;
-    const parts = this.value.split('-');
-    if (parts.length === 3) {
-        const formatted = `${parts[2]} ${MONTHS_SHORT[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
-        document.getElementById('liveStampBadge').textContent = `<?= htmlspecialchars($user['kode_singkatan']) ?>, ${formatted}`;
-    }
-});
+// Inisialisasi tampilan form sesuai jenis dokumen awal
+selectDocType('<?= htmlspecialchars($selectedDocType) ?>');
 </script>

@@ -2,7 +2,7 @@
 // Set default timezone to WIB (Jakarta)
 date_default_timezone_set('Asia/Jakarta');
 
-if (session_status() === PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     session_start();
 }
 
@@ -45,11 +45,16 @@ try {
 }
 
 /**
- * Pastikan kolom notifikasi H-90, H-60, H-30, H-14, H-7, H-3 tersedia di tabel agreements & email_notifications
+ * Pastikan kolom 3 jenis dokumen & notifikasi H-90, H-60, H-30, H-14, H-7, H-3 tersedia di tabel agreements
  */
 function ensure_deadline_columns(PDO $pdo) {
     $cols = $pdo->query("SHOW COLUMNS FROM agreements")->fetchAll(PDO::FETCH_COLUMN);
     $newCols = [
+        'doc_type'          => "ALTER TABLE agreements ADD COLUMN `doc_type` VARCHAR(30) NOT NULL DEFAULT 'COOPERATION' AFTER `id`",
+        'document_title'    => "ALTER TABLE agreements ADD COLUMN `document_title` TEXT DEFAULT NULL AFTER `department`",
+        'issued_by'         => "ALTER TABLE agreements ADD COLUMN `issued_by` VARCHAR(255) DEFAULT NULL AFTER `document_number`",
+        'principal_name'    => "ALTER TABLE agreements ADD COLUMN `principal_name` VARCHAR(255) DEFAULT NULL AFTER `issued_by`",
+        'expiry_date_na'    => "ALTER TABLE agreements ADD COLUMN `expiry_date_na` TINYINT(1) NOT NULL DEFAULT 0 AFTER `expiry_date`",
         'notif_h90_sent_at' => "ALTER TABLE agreements ADD COLUMN `notif_h90_sent_at` DATETIME DEFAULT NULL AFTER `created_by_log`",
         'notif_h60_sent_at' => "ALTER TABLE agreements ADD COLUMN `notif_h60_sent_at` DATETIME DEFAULT NULL AFTER `notif_h90_sent_at`",
         'notif_h30_sent_at' => "ALTER TABLE agreements ADD COLUMN `notif_h30_sent_at` DATETIME DEFAULT NULL AFTER `notif_h60_sent_at`",
@@ -61,10 +66,12 @@ function ensure_deadline_columns(PDO $pdo) {
             $pdo->exec($alterSql);
         }
     }
+    try {
+        $pdo->exec("ALTER TABLE agreements MODIFY COLUMN `expiry_date` DATE DEFAULT NULL");
+    } catch (Exception $e) {}
     // Ubah tipe_notif di email_notifications menjadi VARCHAR(20) agar mendukung H-90, H-60, H-30, H-14, H-7, H-3, H-1
     $pdo->exec("ALTER TABLE email_notifications MODIFY COLUMN `tipe_notif` VARCHAR(20) NOT NULL");
 }
-
 
 /**
  * Pastikan kolom role superadmin dan status approval tersedia di tabel users
@@ -103,9 +110,6 @@ function initialize_database_schema(PDO $pdo) {
             'ALL',
             'admin'
         ]);
-        $fjrId = (int)$pdo->lastInsertId();
-    } else {
-        $fjrId = (int)$fjr['id'];
     }
 }
 
@@ -125,7 +129,6 @@ function is_superadmin() {
     if (in_array($role, ['superadmin', 'admin'], true)) {
         return true;
     }
-    // Refresh role dari database jika baru diangkat menjadi superadmin
     try {
         if (isset($pdo)) {
             $stmt = $pdo->prepare("SELECT role, status FROM users WHERE id = ? LIMIT 1");
@@ -166,6 +169,42 @@ function get_flash() {
 }
 
 /**
+ * Metadata untuk 3 Jenis Dokumen Resmi Medquest
+ */
+function get_doc_type_meta($doc_type) {
+    $type = strtoupper(trim($doc_type ?: 'COOPERATION'));
+    return match ($type) {
+        'COMPANY' => [
+            'code'         => 'COMPANY',
+            'title'        => 'Original Company Document',
+            'short_title'  => 'Original Company Doc',
+            'form_no'      => 'MJG-FOR-LAC.12-001-04',
+            'badge_bg'     => '#f0fdf4',
+            'badge_color'  => '#166534',
+            'badge_border' => '#bbf7d0'
+        ],
+        'PRINCIPAL' => [
+            'code'         => 'PRINCIPAL',
+            'title'        => 'Log of Principal Document',
+            'short_title'  => 'Principal Document',
+            'form_no'      => 'MJG-FOR-LAC.12-001-09',
+            'badge_bg'     => '#faf5ff',
+            'badge_color'  => '#6b21a8',
+            'badge_border' => '#e9d5ff'
+        ],
+        default => [
+            'code'         => 'COOPERATION',
+            'title'        => 'Log of Cooperation Agreement',
+            'short_title'  => 'Cooperation Agreement',
+            'form_no'      => 'MJG-FOR-LAC.12-001-03',
+            'badge_bg'     => '#eff6ff',
+            'badge_color'  => '#1e40af',
+            'badge_border' => '#bfdbfe'
+        ]
+    };
+}
+
+/**
  * Format tanggal sesuai form Medquest: "21 OCT 2026", "09 DEC 2025", atau "N/A"
  */
 function format_date_medquest($date, $is_na = false) {
@@ -190,6 +229,9 @@ function format_created_by_stamp($kode_singkatan, $date = null) {
  * Hitung selisih hari dari hari ini ke expiry_date
  */
 function get_days_until_expiry($expiry_date) {
+    if (empty($expiry_date) || $expiry_date === '0000-00-00' || strtoupper((string)$expiry_date) === 'N/A') {
+        return 9999;
+    }
     $today = new DateTime(date('Y-m-d'));
     $exp = new DateTime(date('Y-m-d', strtotime($expiry_date)));
     $diff = $today->diff($exp);
@@ -200,8 +242,12 @@ function get_days_until_expiry($expiry_date) {
  * Hitung jadwal tanggal deadline H-90, H-60, H-30, H-14, H-7, dan H-3 dari suatu Expiry Date
  */
 function get_deadline_schedule($expiry_date, array $agreementRow = []): array {
+    if (empty($expiry_date) || $expiry_date === '0000-00-00' || !empty($agreementRow['expiry_date_na'])) {
+        return [];
+    }
     $milestones = DEADLINE_MILESTONES; // [90, 60, 30, 14, 7, 3]
     $expTs = strtotime($expiry_date);
+    if (!$expTs) return [];
     $todayStr = date('Y-m-d');
     $schedule = [];
 
@@ -212,11 +258,11 @@ function get_deadline_schedule($expiry_date, array $agreementRow = []): array {
         $isSent    = !empty($agreementRow[$colSent]);
 
         if ($targetYmd === $todayStr) {
-            $state = 'today'; // Jatuh tepat hari ini!
+            $state = 'today';
         } elseif ($targetYmd < $todayStr) {
-            $state = 'passed'; // Tanggal H-x sudah lewat
+            $state = 'passed';
         } else {
-            $state = 'upcoming'; // Tanggal H-x masih di masa depan
+            $state = 'upcoming';
         }
 
         $schedule["H-{$m}"] = [
@@ -235,9 +281,20 @@ function get_deadline_schedule($expiry_date, array $agreementRow = []): array {
 
 /**
  * Status warna & label yang ramah untuk pengguna baru (Newbie-Friendly)
- * Mendukung tahapan H-90, H-60, H-30, H-14, H-7, H-3
+ * Mendukung tahapan H-90, H-60, H-30, H-14, H-7, H-3 serta N/A
  */
-function get_expiry_info($expiry_date) {
+function get_expiry_info($expiry_date, $expiry_date_na = 0) {
+    if ($expiry_date_na || empty($expiry_date) || $expiry_date === '0000-00-00' || strtoupper((string)$expiry_date) === 'N/A') {
+        return [
+            'status'      => 'active',
+            'row_class'   => 'row-active',
+            'badge_class' => 'badge-active',
+            'label'       => 'Berlaku Permanen (N/A)',
+            'short_label' => 'N/A (Aktif)',
+            'next_stage'  => 'N/A',
+            'days'        => 9999
+        ];
+    }
     $days = get_days_until_expiry($expiry_date);
 
     if ($days < 0) {

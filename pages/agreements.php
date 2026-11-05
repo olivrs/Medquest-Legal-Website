@@ -7,7 +7,7 @@ $uCode = strtoupper($user['kode_singkatan']);
 // Jalankan pengecekan otomatis notifikasi H-90, H-60, H-30, H-14, H-7, H-3
 $autoSentResults = run_auto_expiry_notifications($pdo);
 
-// Handle POST Actions (Hanya boleh mengubah dokumen milik user sendiri)
+// Handle POST Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($newExpiry) {
                 $upd = $pdo->prepare("
                     UPDATE agreements 
-                    SET note = ?, created_by_log = ?, expiry_date = ?,
+                    SET note = ?, created_by_log = ?, expiry_date = ?, expiry_date_na = 0,
                         notif_h90_sent_at = NULL, notif_h60_sent_at = NULL, notif_h30_sent_at = NULL,
                         notif_h14_sent_at = NULL, notif_h7_sent_at = NULL, notif_h3_sent_at = NULL, notif_h1_sent_at = NULL
                     WHERE id = ?
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($action === 'add_department') {
+    if ($action === 'add_department' && is_superadmin()) {
         $kodeDept = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim($_POST['kode_dept'] ?? '')));
         $namaDept = trim($_POST['nama_dept'] ?? '');
         if ($kodeDept !== '' && $namaDept !== '') {
@@ -86,36 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ambil Filter dari URL
-$selectedDept   = strtoupper(trim($_GET['dept'] ?? 'ALL'));
-$selectedStatus = trim($_GET['status'] ?? 'ALL');
-$searchQuery    = trim($_GET['q'] ?? '');
+$selectedDept    = strtoupper(trim($_GET['dept'] ?? 'ALL'));
+$selectedStatus  = trim($_GET['status'] ?? 'ALL');
+$selectedDocType = strtoupper(trim($_GET['doc_type'] ?? 'ALL'));
+$searchQuery     = trim($_GET['q'] ?? '');
 
-// Ambil daftar departemen & jumlah dokumen per departemen KHUSUS MILIK USER YANG LOGIN (misal RYN hanya menghitung dokumen RYN)
-$deptList = $pdo->query("SELECT * FROM departments ORDER BY id ASC")->fetchAll();
-$stmtDeptCounts = $pdo->prepare("
-    SELECT department, COUNT(*) AS total 
-    FROM agreements 
-    WHERE (created_by_user_id = ? OR created_by_code = ?)
-    GROUP BY department
-");
-$stmtDeptCounts->execute([$uId, $uCode]);
-$deptCountsRaw = $stmtDeptCounts->fetchAll();
-
-$deptCounts = [];
-$totalAllDepts = 0;
-foreach ($deptCountsRaw as $dc) {
-    $deptCounts[strtoupper($dc['department'])] = (int)$dc['total'];
-    $totalAllDepts += (int)$dc['total'];
-}
-
-$knownCodes = array_map(fn($d) => strtoupper($d['kode_dept']), $deptList);
-foreach ($deptCounts as $code => $cnt) {
-    if (!in_array($code, $knownCodes, true)) {
-        $deptList[] = ['kode_dept' => $code, 'nama_dept' => 'Divisi ' . $code];
-    }
-}
-
-// Query Data Agreements: HANYA MENAMPILKAN DOKUMEN DENGAN KODE SINGKATAN USER YANG SEDANG LOGIN (contoh: RYN hanya melihat dokumen RYN)
+// Query Data Agreements: HANYA MENAMPILKAN DOKUMEN DENGAN KODE SINGKATAN USER YANG SEDANG LOGIN
 $whereClauses = ["(a.created_by_user_id = ? OR a.created_by_code = ?)"];
 $params = [$uId, $uCode];
 
@@ -124,24 +100,33 @@ if ($selectedDept !== 'ALL' && $selectedDept !== '') {
     $params[] = $selectedDept;
 }
 
+if (in_array($selectedDocType, ['COOPERATION', 'COMPANY', 'PRINCIPAL'], true)) {
+    if ($selectedDocType === 'COOPERATION') {
+        $whereClauses[] = "(a.doc_type = 'COOPERATION' OR a.doc_type IS NULL)";
+    } else {
+        $whereClauses[] = "a.doc_type = ?";
+        $params[] = $selectedDocType;
+    }
+}
+
 if ($searchQuery !== '') {
-    $whereClauses[] = "(a.document_number LIKE ? OR a.customer LIKE ? OR a.product_description LIKE ? OR a.serial_number LIKE ? OR a.created_by_log LIKE ? OR a.note LIKE ?)";
+    $whereClauses[] = "(a.document_number LIKE ? OR a.customer LIKE ? OR a.product_description LIKE ? OR a.document_title LIKE ? OR a.issued_by LIKE ? OR a.principal_name LIKE ? OR a.serial_number LIKE ? OR a.created_by_log LIKE ? OR a.note LIKE ?)";
     $like = '%' . $searchQuery . '%';
-    array_push($params, $like, $like, $like, $like, $like, $like);
+    array_push($params, $like, $like, $like, $like, $like, $like, $like, $like, $like);
 }
 
 if ($selectedStatus === 'EXPIRED') {
-    $whereClauses[] = "DATEDIFF(a.expiry_date, CURDATE()) < 0";
+    $whereClauses[] = "(a.expiry_date_na = 0 AND a.expiry_date IS NOT NULL AND DATEDIFF(a.expiry_date, CURDATE()) < 0)";
 } elseif ($selectedStatus === 'H90_60') {
-    $whereClauses[] = "DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 31 AND 90";
+    $whereClauses[] = "(a.expiry_date_na = 0 AND a.expiry_date IS NOT NULL AND DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 31 AND 90)";
 } elseif ($selectedStatus === 'H30_14') {
-    $whereClauses[] = "DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 8 AND 30";
+    $whereClauses[] = "(a.expiry_date_na = 0 AND a.expiry_date IS NOT NULL AND DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 8 AND 30)";
 } elseif ($selectedStatus === 'H7_3') {
-    $whereClauses[] = "DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 0 AND 7";
+    $whereClauses[] = "(a.expiry_date_na = 0 AND a.expiry_date IS NOT NULL AND DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 0 AND 7)";
 } elseif ($selectedStatus === 'DEADLINE_ALL') {
-    $whereClauses[] = "DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 0 AND 90";
+    $whereClauses[] = "(a.expiry_date_na = 0 AND a.expiry_date IS NOT NULL AND DATEDIFF(a.expiry_date, CURDATE()) BETWEEN 0 AND 90)";
 } elseif ($selectedStatus === 'ACTIVE') {
-    $whereClauses[] = "DATEDIFF(a.expiry_date, CURDATE()) > 90";
+    $whereClauses[] = "(a.expiry_date_na = 1 OR a.expiry_date IS NULL OR DATEDIFF(a.expiry_date, CURDATE()) > 90)";
 }
 
 $whereSql = 'WHERE ' . implode(' AND ', $whereClauses);
@@ -157,7 +142,7 @@ $stmtAgr = $pdo->prepare($sqlAgreements);
 $stmtAgr->execute($params);
 $agreements = $stmtAgr->fetchAll();
 
-// Hitung statistik untuk 4 Kartu Lingkaran Connect Plus
+// Hitung statistik untuk 4 Kartu Lingkaran
 $statTotal    = count($agreements);
 $statSafe     = 0;
 $statDeadline = 0;
@@ -165,6 +150,10 @@ $statUrgent   = 0;
 $statExpired  = 0;
 
 foreach ($agreements as $row) {
+    if (!empty($row['expiry_date_na']) || empty($row['expiry_date'])) {
+        $statSafe++;
+        continue;
+    }
     $d = get_days_until_expiry($row['expiry_date']);
     if ($d < 0) {
         $statExpired++;
@@ -184,7 +173,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
 <!-- 1. OVERVIEW DASHBOARD HEADER & QUICK FILTER PILLS -->
 <div class="cp-header-row no-print">
     <div class="d-flex align-items-center gap-2">
-        <?php if ($selectedDept !== 'ALL' || $selectedStatus !== 'ALL' || $searchQuery !== ''): ?>
+        <?php if ($selectedDept !== 'ALL' || $selectedStatus !== 'ALL' || $selectedDocType !== 'ALL' || $searchQuery !== ''): ?>
             <a href="<?= base_url('?page=agreements') ?>" class="btn btn-sm btn-light border fw-semibold px-2 py-1" style="font-size:0.74rem;">
                 <i class="fas fa-arrow-left me-1"></i> Back
             </a>
@@ -204,9 +193,10 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
             'H90_60' => 'H-60 s/d H-90',
             default  => 'H-7 s/d H-90',
         };
+        $baseFilterUrl = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType);
         ?>
         <div class="cp-pill-group">
-            <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=ALL') ?>"
+            <a href="<?= base_url($baseFilterUrl . '&status=ALL') ?>"
                class="cp-pill-link <?= $selectedStatus === 'ALL' ? 'active' : '' ?>">Semua</a>
 
             <div class="dropdown d-inline-block">
@@ -220,26 +210,26 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                 <ul class="dropdown-menu shadow-sm border p-1 mt-1" style="min-width: 145px; border-radius: 8px;">
                     <li>
                         <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H7_3' ? 'active' : '' ?>"
-                           href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H7_3') ?>">
+                           href="<?= base_url($baseFilterUrl . '&status=H7_3') ?>">
                             H-3 s/d H-7
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H30_14' ? 'active' : '' ?>"
-                           href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H30_14') ?>">
+                           href="<?= base_url($baseFilterUrl . '&status=H30_14') ?>">
                             H-14 s/d H-30
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item rounded-2 small py-1 px-2 fw-semibold <?= $selectedStatus === 'H90_60' ? 'active' : '' ?>"
-                           href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=H90_60') ?>">
+                           href="<?= base_url($baseFilterUrl . '&status=H90_60') ?>">
                             H-60 s/d H-90
                         </a>
                     </li>
                 </ul>
             </div>
 
-            <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=EXPIRED') ?>"
+            <a href="<?= base_url($baseFilterUrl . '&status=EXPIRED') ?>"
                class="cp-pill-link <?= $selectedStatus === 'EXPIRED' ? 'active' : '' ?>">Expired</a>
         </div>
 
@@ -247,75 +237,61 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
             <?= strtoupper(date('d M Y')) ?>
         </div>
 
-        <a href="<?= base_url('?page=create' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>"
-           class="btn btn-sm btn-primary fw-bold text-white px-3 py-2">
-            + Input Agreement
-        </a>
-    </div>
-</div>
-
-<!-- 3. UNDERLINE TABS PER DEPARTEMEN -->
-<div class="d-flex justify-content-between align-items-center border-bottom mb-2 no-print">
-    <div class="d-flex align-items-center flex-wrap" style="min-height: 38px;">
-        <div class="cp-underline-tabs border-bottom-0 mb-0">
-            <a href="<?= base_url('?page=agreements&dept=ALL&status=' . urlencode($selectedStatus)) ?>"
-               class="cp-tab-link <?= $selectedDept === 'ALL' ? 'active' : '' ?>">
-                <span>Semua</span>
-                <span class="cp-tab-badge"><?= $totalAllDepts ?></span>
-            </a>
-        </div>
-
-        <!-- Tombol > Buka/Tutup Kolom Departemen -->
-        <button type="button"
-                id="toggleDeptTabsBtn"
-                class="cp-tab-toggle-btn"
-                title="Buka / Tutup Daftar Departemen">
-            <i class="fas fa-chevron-right dept-toggle-icon <?= ($selectedDept !== 'ALL') ? 'rotate-open' : '' ?>"></i>
-            <span>Departemen</span>
+        <?php if (is_superadmin()): ?>
+        <button type="button" class="btn btn-sm btn-outline-primary fw-semibold px-2 py-1" style="font-size:0.75rem;" data-bs-toggle="modal" data-bs-target="#modalAddDept" title="Tambah Departemen Baru (Khusus Superadmin)">
+            + Dept
         </button>
+        <?php endif; ?>
 
-        <!-- Daftar Departemen yang Muncul Saat Tombol > Dipencet -->
-        <div id="deptTabsContainer" class="dept-tabs-wrapper <?= ($selectedDept !== 'ALL') ? 'is-open' : '' ?>">
-            <div class="cp-underline-tabs border-bottom-0 mb-0">
-                <?php foreach ($deptList as $dept):
-                    $code = strtoupper($dept['kode_dept']);
-                    $cnt  = $deptCounts[$code] ?? 0;
-                ?>
-                    <a href="<?= base_url('?page=agreements&dept=' . urlencode($code) . '&status=' . urlencode($selectedStatus)) ?>"
-                       class="cp-tab-link <?= $selectedDept === $code ? 'active' : '' ?>"
-                       title="<?= htmlspecialchars($dept['nama_dept']) ?>">
-                        <span><?= htmlspecialchars($code) ?></span>
-                        <span class="cp-tab-badge"><?= $cnt ?></span>
+        <!-- Tombol + Input Dokumen dengan 3 Pilihan Jenis Dokumen -->
+        <div class="dropdown">
+            <button class="btn btn-sm btn-primary fw-bold text-white px-3 py-1 dropdown-toggle d-inline-flex align-items-center gap-1"
+                    style="font-size:0.76rem;" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span>+ Input Dokumen</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border p-1 mt-1" style="min-width: 245px; border-radius: 10px;">
+                <li>
+                    <a class="dropdown-item rounded-2 py-2 px-2 fw-semibold small"
+                       href="<?= base_url('?page=create&doc_type=COOPERATION' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
+                        1. Log of Cooperation Agreement
                     </a>
-                <?php endforeach; ?>
-            </div>
+                </li>
+                <li>
+                    <a class="dropdown-item rounded-2 py-2 px-2 fw-semibold small"
+                       href="<?= base_url('?page=create&doc_type=COMPANY' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
+                        2. Original Company Document
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item rounded-2 py-2 px-2 fw-semibold small"
+                       href="<?= base_url('?page=create&doc_type=PRINCIPAL' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>">
+                        3. Log of Principal Document
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
-
-    <button type="button" class="btn btn-sm btn-light border text-secondary py-0 px-2 mb-1" style="font-size:0.7rem;" data-bs-toggle="modal" data-bs-target="#modalAddDept">
-        + Dept
-    </button>
 </div>
 
-<!-- 4. EMPAT KARTU STATISTIK RINGKAS (1 BARIS SLIM) -->
+<!-- 2. EMPAT KARTU STATISTIK RINGKAS (1 BARIS SLIM) -->
 <div class="row g-2 mb-2 no-print">
     <div class="col-6 col-xl-3">
-        <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=ALL') ?>" class="cp-stat-card">
+        <a href="<?= base_url($baseFilterUrl . '&status=ALL') ?>" class="cp-stat-card">
             <div>
-                <div class="cp-stat-title">Total Agreement</div>
+                <div class="cp-stat-title">Total Dokumen</div>
                 <div class="cp-stat-value"><?= $statTotal ?></div>
                 <div class="cp-stat-sublabel"><?= $selectedDept === 'ALL' ? 'Semua Dept' : htmlspecialchars($selectedDept) ?></div>
             </div>
-            <div class="cp-circle-gauge" style="background: conic-gradient(#2458f1 0% 90%, #dce6f5 90% 100%);">
-                <div class="cp-circle-inner"><i class="fas fa-file-contract" style="color:#2458f1;"></i></div>
+            <div class="cp-circle-gauge" style="background: conic-gradient(#2b579a 0% 90%, #e2e8f0 90% 100%);">
+                <div class="cp-circle-inner"><i class="fas fa-file-contract" style="color:#2b579a;"></i></div>
             </div>
         </a>
     </div>
 
     <div class="col-6 col-xl-3">
-        <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=DEADLINE_ALL') ?>" class="cp-stat-card">
+        <a href="<?= base_url($baseFilterUrl . '&status=ACTIVE') ?>" class="cp-stat-card">
             <div>
-                <div class="cp-stat-title">Kontrak Berlaku</div>
+                <div class="cp-stat-title">Dokumen Berlaku</div>
                 <div class="cp-stat-value"><?= $statSafe ?></div>
                 <div class="cp-stat-sublabel"><?= $pctSafe ?>% Aktif</div>
             </div>
@@ -326,7 +302,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
     </div>
 
     <div class="col-6 col-xl-3">
-        <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=DEADLINE_ALL') ?>" class="cp-stat-card">
+        <a href="<?= base_url($baseFilterUrl . '&status=DEADLINE_ALL') ?>" class="cp-stat-card">
             <div>
                 <div class="cp-stat-title">Deadline</div>
                 <div class="cp-stat-value"><?= $statDeadline ?></div>
@@ -339,7 +315,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
     </div>
 
     <div class="col-6 col-xl-3">
-        <a href="<?= base_url('?page=agreements&dept=' . urlencode($selectedDept) . '&status=EXPIRED') ?>" class="cp-stat-card">
+        <a href="<?= base_url($baseFilterUrl . '&status=EXPIRED') ?>" class="cp-stat-card">
             <div>
                 <div class="cp-stat-title">Sudah Expired</div>
                 <div class="cp-stat-value"><?= $statExpired ?></div>
@@ -352,17 +328,39 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
     </div>
 </div>
 
-<!-- 5. PANEL BAWAH: TABEL DATA AGREEMENT -->
+<!-- 3. PANEL BAWAH: TABEL DATA DOKUMEN -->
+<?php
+$activeTableTitle = match ($selectedDocType) {
+    'COMPANY'     => 'Original Company Document',
+    'PRINCIPAL'   => 'Log of Principal Document',
+    'COOPERATION' => 'Log of Cooperation Agreement',
+    default       => 'Daftar Dokumen Legal Medquest',
+};
+$typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status=' . urlencode($selectedStatus);
+?>
 <div class="cp-table-card">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-        <h6 class="fw-bold text-dark mb-0">
-            Log of Cooperation Agreement <?= $selectedDept !== 'ALL' ? ('&mdash; ' . htmlspecialchars($selectedDept)) : '' ?>
-        </h6>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <h6 class="fw-bold text-dark mb-0 me-2">
+                <?= htmlspecialchars($activeTableTitle) ?>
+            </h6>
+            <!-- Filter Tab Jenis Dokumen -->
+            <div class="cp-pill-group no-print">
+                <a href="<?= base_url($typeFilterBase . '&doc_type=ALL') ?>"
+                   class="cp-pill-link <?= $selectedDocType === 'ALL' ? 'active' : '' ?>">Semua Jenis</a>
+                <a href="<?= base_url($typeFilterBase . '&doc_type=COOPERATION') ?>"
+                   class="cp-pill-link <?= $selectedDocType === 'COOPERATION' ? 'active' : '' ?>">Cooperation Agreement</a>
+                <a href="<?= base_url($typeFilterBase . '&doc_type=COMPANY') ?>"
+                   class="cp-pill-link <?= $selectedDocType === 'COMPANY' ? 'active' : '' ?>">Original Company Doc</a>
+                <a href="<?= base_url($typeFilterBase . '&doc_type=PRINCIPAL') ?>"
+                   class="cp-pill-link <?= $selectedDocType === 'PRINCIPAL' ? 'active' : '' ?>">Principal Document</a>
+            </div>
+        </div>
 
         <div class="d-flex align-items-center gap-3 small no-print">
-            <span><span class="d-inline-block rounded-circle me-1" style="width:9px;height:9px;background:#10b981;"></span> Aktif</span>
-            <span><span class="d-inline-block rounded-circle me-1" style="width:9px;height:9px;background:#f59e0b;"></span> Akan Expired</span>
-            <span><span class="d-inline-block rounded-circle me-1" style="width:9px;height:9px;background:#ef4444;"></span> Expired</span>
+            <span><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#10b981;"></span> Aktif</span>
+            <span><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#f59e0b;"></span> Akan Expired</span>
+            <span><span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:#ef4444;"></span> Expired</span>
         </div>
     </div>
 
@@ -371,11 +369,22 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
             <thead>
                 <tr>
                     <th style="width:90px;">Dept / No</th>
-                    <th style="width:220px;">Customer &amp; Document No</th>
-                    <th style="width:190px;">Product &amp; S/N</th>
-                    <th style="width:280px;">Tanggal Kontrak &amp; Deadline</th>
-                    <th style="width:210px;">Note</th>
-                    <th style="width:165px;">Created By</th>
+                    <?php if ($selectedDocType === 'COMPANY'): ?>
+                        <th style="width:250px;">Document Title &amp; Document No.</th>
+                        <th style="width:190px;">Issued By</th>
+                    <?php elseif ($selectedDocType === 'PRINCIPAL'): ?>
+                        <th style="width:240px;">Document Title &amp; Document No.</th>
+                        <th style="width:200px;">Issued By &amp; Principal</th>
+                    <?php elseif ($selectedDocType === 'COOPERATION'): ?>
+                        <th style="width:230px;">Customer &amp; Document No</th>
+                        <th style="width:195px;">Product &amp; S/N</th>
+                    <?php else: ?>
+                        <th style="width:240px;">Dokumen / Customer &amp; No</th>
+                        <th style="width:200px;">Detail (Product / Issued By / Principal)</th>
+                    <?php endif; ?>
+                    <th style="width:270px;">Effective, Expiry &amp; Deadline</th>
+                    <th style="width:200px;">Note</th>
+                    <th style="width:160px;">Created By</th>
                 </tr>
             </thead>
             <tbody>
@@ -383,43 +392,68 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                     <tr>
                         <td colspan="6" class="text-center py-5 text-muted">
                             <i class="fas fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
-                            Belum ada dokumen dengan kode <strong><?= htmlspecialchars($uCode) ?></strong> pada filter departemen <strong><?= htmlspecialchars($selectedDept) ?></strong>.
+                            Belum ada dokumen dengan kode <strong><?= htmlspecialchars($uCode) ?></strong> pada filter ini.
                             <div class="mt-3">
-                                <a href="<?= base_url('?page=create' . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>" class="btn btn-sm btn-primary fw-bold px-3 py-2">
-                                    <i class="fas fa-plus-circle me-1"></i> + Input Dokumen Baru (<?= htmlspecialchars($uCode) ?>)
+                                <a href="<?= base_url('?page=create' . ($selectedDocType !== 'ALL' ? '&doc_type=' . urlencode($selectedDocType) : '') . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>" class="btn btn-sm btn-primary fw-bold px-3 py-2">
+                                    <i class="fas fa-plus-circle me-1"></i> + Input Dokumen Baru
                                 </a>
                             </div>
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($agreements as $row):
-                        $expInfo = get_expiry_info($row['expiry_date']);
+                        $rowType = strtoupper(trim($row['doc_type'] ?? 'COOPERATION'));
+                        $typeMeta = get_doc_type_meta($rowType);
+                        $isExpNa = !empty($row['expiry_date_na']) || empty($row['expiry_date']);
+                        $expInfo = get_expiry_info($row['expiry_date'], $isExpNa);
                         $effFormatted = format_date_medquest($row['effective_date'], $row['effective_date_na']);
-                        $expFormatted = format_date_medquest($row['expiry_date'], false);
-                        $schedule = get_deadline_schedule($row['expiry_date'], $row);
+                        $expFormatted = format_date_medquest($row['expiry_date'], $isExpNa);
+                        $displayTitle = ($rowType === 'COOPERATION')
+                            ? ($row['customer'] ?: '-')
+                            : ($row['document_title'] ?: $row['product_description'] ?: '-');
                     ?>
                         <tr class="<?= $expInfo['row_class'] ?>">
-                            <!-- 1. Dept & No -->
+                            <!-- 1. Dept, No & Jenis Form -->
                             <td>
                                 <a href="<?= base_url('?page=agreements&dept=' . urlencode($row['department'])) ?>"
-                                   class="badge mq-dept-badge text-decoration-none px-2 py-1 mb-1 d-inline-block" style="font-size:0.76rem;">
+                                   class="badge mq-dept-badge text-decoration-none px-2 py-1 mb-1 d-inline-block" style="font-size:0.74rem;">
                                     <?= htmlspecialchars($row['department']) ?>
                                 </a>
                                 <div class="text-muted small fw-semibold">#<?= htmlspecialchars($row['no_urut_dokumen'] ?: $row['id']) ?></div>
+                                <?php if ($selectedDocType === 'ALL'): ?>
+                                    <span class="badge mt-1" style="background:<?= $typeMeta['badge_bg'] ?>;color:<?= $typeMeta['badge_color'] ?>;border:1px solid <?= $typeMeta['badge_border'] ?>;font-size:0.62rem;">
+                                        <?= htmlspecialchars($typeMeta['short_title']) ?>
+                                    </span>
+                                <?php endif; ?>
                             </td>
 
-                            <!-- 2. Customer & Document Number -->
+                            <!-- 2. Document Title / Customer & Document Number -->
                             <td>
-                                <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($row['customer']) ?></div>
-                                <div class="text-secondary small" style="white-space:pre-line;font-size:0.78rem;"><?= htmlspecialchars($row['document_number']) ?></div>
+                                <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($displayTitle) ?></div>
+                                <div class="text-secondary small" style="white-space:pre-line;font-size:0.76rem;">
+                                    <span class="text-muted">No:</span> <?= htmlspecialchars($row['document_number'] ?: 'N/A') ?>
+                                </div>
                             </td>
 
-                            <!-- 3. Product Description & Serial Number -->
+                            <!-- 3. Product & S/N ATAU Issued By & Principal -->
                             <td>
-                                <div class="fw-semibold text-dark mb-1"><?= htmlspecialchars($row['product_description']) ?></div>
-                                <span class="badge bg-light text-secondary border" style="font-size:0.72rem;">
-                                    S/N: <?= htmlspecialchars($row['serial_number'] ?: 'N/A') ?>
-                                </span>
+                                <?php if ($rowType === 'COMPANY'): ?>
+                                    <div class="small text-muted">Issued By:</div>
+                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($row['issued_by'] ?: $row['customer'] ?: '-') ?></div>
+                                <?php elseif ($rowType === 'PRINCIPAL'): ?>
+                                    <div class="mb-1">
+                                        <span class="text-muted small">Principal:</span>
+                                        <div class="fw-bold text-dark"><?= htmlspecialchars($row['principal_name'] ?: $row['customer'] ?: '-') ?></div>
+                                    </div>
+                                    <div class="small text-secondary">
+                                        <span class="text-muted">Issued By:</span> <?= htmlspecialchars($row['issued_by'] ?: '-') ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="fw-semibold text-dark mb-1"><?= htmlspecialchars($row['product_description']) ?></div>
+                                    <span class="badge bg-light text-secondary border" style="font-size:0.7rem;">
+                                        S/N: <?= htmlspecialchars($row['serial_number'] ?: 'N/A') ?>
+                                    </span>
+                                <?php endif; ?>
                             </td>
 
                             <!-- 4. Effective Date, Expiry Date & Status Deadline -->
@@ -427,7 +461,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                                 <div class="small mb-1">
                                     <span class="text-muted">Effective:</span> <strong><?= $effFormatted ?></strong>
                                     <span class="mx-1 text-muted">&rarr;</span>
-                                    <span class="text-danger fw-bold">Expiry: <?= $expFormatted ?></span>
+                                    <span class="<?= $isExpNa ? 'text-secondary' : 'text-danger' ?> fw-bold">Expiry: <?= $expFormatted ?></span>
                                 </div>
                                 <div>
                                     <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
@@ -441,11 +475,11 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                                 <div class="small text-secondary mb-2" style="white-space:pre-line;max-height:85px;overflow-y:auto;"><?= htmlspecialchars($row['note'] ?: 'N/A') ?></div>
                                 <button type="button"
                                         class="btn btn-sm btn-outline-primary py-0 px-2 no-print"
-                                        style="font-size:0.74rem;font-weight:600;"
+                                        style="font-size:0.72rem;font-weight:600;"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modalAddNote"
                                         data-id="<?= $row['id'] ?>"
-                                        data-customer="<?= htmlspecialchars($row['customer']) ?>"
+                                        data-customer="<?= htmlspecialchars($displayTitle) ?>"
                                         data-docno="<?= htmlspecialchars($row['document_number']) ?>">
                                     <i class="fas fa-plus me-1"></i> + Note
                                 </button>
@@ -461,7 +495,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
                                     <a href="<?= base_url('?page=edit&id=' . $row['id']) ?>" class="btn btn-sm btn-light border py-0 px-2 small" title="Edit">
                                         <i class="fas fa-edit text-secondary"></i>
                                     </a>
-                                    <form method="POST" action="<?= base_url('?page=agreements') ?>" class="d-inline" onsubmit="return confirm('Hapus dokumen <?= htmlspecialchars(addslashes($row['customer'])) ?>?')">
+                                    <form method="POST" action="<?= base_url('?page=agreements') ?>" class="d-inline" onsubmit="return confirm('Hapus dokumen <?= htmlspecialchars(addslashes($displayTitle)) ?>?')">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="agreement_id" value="<?= $row['id'] ?>">
                                         <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
@@ -489,33 +523,29 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
 
             <div class="modal-header mq-modal-header text-white">
                 <h6 class="modal-title fw-bold">
-                    <i class="fas fa-comment-medical me-1"></i> Tambah Note &amp; Stempel Created By
+                    <i class="fas fa-sticky-note me-2"></i> Tambah Note / Riwayat Tindak Lanjut
                 </h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body p-4">
-                <div class="p-3 rounded-3 bg-light border mb-3 small">
-                    <div class="mb-1"><strong>Customer:</strong> <span id="noteModalCustomer"></span></div>
-                    <div><strong>Doc. Number:</strong> <span id="noteModalDocNo"></span></div>
+                <div class="p-2 rounded bg-light border mb-3 small">
+                    <div class="fw-bold text-dark" id="noteModalCustomer"></div>
+                    <div class="text-muted" id="noteModalDocNo"></div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small">Tanggal Input Note</label>
+                    <label class="form-label fw-semibold small">Tanggal Catatan Baru <span class="text-danger">*</span></label>
                     <input type="date" name="tanggal_input" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                    <div class="form-text small">
-                        Otomatis tertulis di kolom <strong>Created By</strong>:
-                        <span class="badge bg-dark font-monospace ms-1"><?= htmlspecialchars($uCode) ?>, <?= strtoupper(date('d M Y')) ?></span>
-                    </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small">Isi Catatan Baru <span class="text-danger">*</span></label>
-                    <textarea name="catatan_baru" class="form-control" rows="3" placeholder="Contoh: Email ke MKT / Hard dokumen KKO baru balik ke LAC..." required></textarea>
+                    <label class="form-label fw-semibold small">Isi Catatan Tindak Lanjut <span class="text-danger">*</span></label>
+                    <textarea name="catatan_baru" class="form-control" rows="3" placeholder="Contoh: Masih proses review oleh legal customer..." required></textarea>
                 </div>
 
                 <div class="mb-1">
-                    <label class="form-label fw-semibold small">Perbarui Tanggal Expiry Date? (Opsional)</label>
+                    <label class="form-label fw-semibold small">Perpanjang Tanggal Berakhir / Expiry Date Baru (Opsional)</label>
                     <input type="date" name="new_expiry_date" class="form-control">
                 </div>
             </div>
@@ -528,7 +558,8 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
     </div>
 </div>
 
-<!-- Modal Tambah Departemen Baru -->
+<?php if (is_superadmin()): ?>
+<!-- Modal Tambah Departemen Baru (Khusus Superadmin) -->
 <div class="modal fade no-print" id="modalAddDept" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-4 border-0 shadow">
@@ -553,6 +584,7 @@ $pctExpired  = $statTotal > 0 ? round(($statExpired / $statTotal) * 100) : 0;
         </form>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 const modalAddNote = document.getElementById('modalAddNote');
@@ -562,18 +594,6 @@ if (modalAddNote) {
         document.getElementById('noteModalAgrId').value = button.getAttribute('data-id');
         document.getElementById('noteModalCustomer').textContent = button.getAttribute('data-customer');
         document.getElementById('noteModalDocNo').textContent = button.getAttribute('data-docno');
-    });
-}
-const toggleDeptBtn = document.getElementById('toggleDeptTabsBtn');
-const deptTabsWrapper = document.getElementById('deptTabsContainer');
-if (toggleDeptBtn && deptTabsWrapper) {
-    toggleDeptBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        deptTabsWrapper.classList.toggle('is-open');
-        const icon = toggleDeptBtn.querySelector('.dept-toggle-icon');
-        if (icon) {
-            icon.classList.toggle('rotate-open');
-        }
     });
 }
 </script>
