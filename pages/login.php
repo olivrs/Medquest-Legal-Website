@@ -88,8 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="text-center">
                 <p class="mb-2 text-muted small">Belum punya akun atau ingin mendaftarkan singkatan nama &amp; email pribadi?</p>
-                <a href="<?= base_url('?page=register') ?>" class="btn btn-outline-primary w-100 fw-semibold">
-                    <i class="fas fa-user-plus me-1"></i> Buat Akun Baru (Wajib Email &amp; Singkatan Nama)
+                <a href="<?= base_url('?page=register') ?>" class="btn btn-sm btn-outline-primary py-1 px-4 fw-semibold" style="font-size:0.82rem;">
+                    <i class="fas fa-user-plus me-1"></i> Buat Akun Baru
                 </a>
             </div>
 
