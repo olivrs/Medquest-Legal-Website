@@ -20,6 +20,7 @@ class User extends Authenticatable
         'email',
         'password',
         'departemen_default',
+        'allowed_departments',
         'role',
         'status',
     ];

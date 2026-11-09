@@ -28,14 +28,55 @@ if (!function_exists('current_user')) {
             return null;
         }
         return [
-            'id'                 => $user->id,
-            'nama_lengkap'       => $user->nama_lengkap,
-            'kode_singkatan'     => strtoupper((string) $user->kode_singkatan),
-            'email'              => $user->email,
-            'departemen_default' => $user->departemen_default,
-            'role'               => $user->role,
-            'status'             => $user->status,
+            'id'                  => $user->id,
+            'nama_lengkap'        => $user->nama_lengkap,
+            'kode_singkatan'      => strtoupper((string) $user->kode_singkatan),
+            'email'               => $user->email,
+            'departemen_default'  => $user->departemen_default,
+            'allowed_departments' => $user->allowed_departments ?? null,
+            'role'                => $user->role,
+            'status'              => $user->status,
         ];
+    }
+}
+
+if (!function_exists('get_user_allowed_departments')) {
+    /**
+     * Ambil daftar kode departemen yang diizinkan untuk seorang user:
+     * - Jika role adalah superadmin / admin: mengembalikan ['ALL']
+     * - Jika user biasa dan kolom allowed_departments sudah diatur:
+     *   - Jika bernilai 'NONE': mengembalikan [] (tidak ada departemen yang dicentang)
+     *   - Selain itu: pecah string koma menjadi array kode departemen (contoh: ['GA', 'MHO'])
+     * - Jika allowed_departments masih NULL (belum pernah diubah): fallback ke departemen_default
+     */
+    function get_user_allowed_departments(?array $userRow): array
+    {
+        if (!$userRow) {
+            return [];
+        }
+        $role = strtolower(trim((string) ($userRow['role'] ?? 'user')));
+        if (in_array($role, ['superadmin', 'admin'], true)) {
+            return ['ALL'];
+        }
+
+        $rawAllowed = $userRow['allowed_departments'] ?? null;
+        if ($rawAllowed !== null && trim((string) $rawAllowed) !== '') {
+            $trimmed = strtoupper(trim((string) $rawAllowed));
+            if ($trimmed === 'NONE') {
+                return [];
+            }
+            return array_values(array_filter(array_map('trim', explode(',', $trimmed))));
+        }
+
+        $defaultDept = strtoupper(trim((string) ($userRow['departemen_default'] ?? '')));
+        if ($defaultDept === '' || $defaultDept === 'NONE') {
+            return [];
+        }
+        if ($defaultDept === 'ALL') {
+            return ['ALL'];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $defaultDept))));
     }
 }
 

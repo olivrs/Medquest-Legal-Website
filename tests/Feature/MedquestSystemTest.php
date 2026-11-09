@@ -143,5 +143,36 @@ class MedquestSystemTest extends TestCase
         $respSuper->assertSee('Vendor Gedung Khusus GA');
         $respSuper->assertSee('RS Khusus Onkologi MHO');
         $respSuper->assertSee('UDD PMI Kota Surabaya');
+
+        // 4. Superadmin mencentang departemen GA dan MHO untuk user RYN dari halaman Persetujuan Akun
+        $this->post('/?page=user_approvals', [
+            'action'      => 'update_departments',
+            'user_id'     => $userGa->id,
+            'departments' => ['GA', 'MHO'],
+        ])->assertRedirect();
+
+        // Sekarang RYN (masih role USER) langsung bisa melihat dokumen departemen MHO yang baru dicentang, tapi tetap tidak melihat MBB
+        $this->actingAs($userGa->fresh());
+        $respGaMulti = $this->get('/agreements');
+        $respGaMulti->assertStatus(200);
+        $respGaMulti->assertSee('Vendor Gedung Khusus GA');
+        $respGaMulti->assertSee('RS Khusus Onkologi MHO');
+        $respGaMulti->assertDontSee('UDD PMI Kota Surabaya');
+
+        // 5. Superadmin mengubah Role RYN dari USER menjadi ADMIN di halaman Persetujuan Akun
+        $this->actingAs($superadmin);
+        $this->post('/?page=user_approvals', [
+            'action'   => 'set_role',
+            'user_id'  => $userGa->id,
+            'new_role' => 'admin',
+        ])->assertRedirect();
+
+        // Sekarang RYN sudah menjadi ADMIN dan langsung bisa melihat SELURUH dokumen termasuk MBB (UDD PMI Kota Surabaya)!
+        $this->actingAs($userGa->fresh());
+        $respGaAdmin = $this->get('/agreements');
+        $respGaAdmin->assertStatus(200);
+        $respGaAdmin->assertSee('Vendor Gedung Khusus GA');
+        $respGaAdmin->assertSee('RS Khusus Onkologi MHO');
+        $respGaAdmin->assertSee('UDD PMI Kota Surabaya');
     }
 }

@@ -20,6 +20,7 @@ return new class extends Migration
                 $table->string('email', 150)->unique()->comment('Email pribadi untuk notifikasi deadline');
                 $table->string('password');
                 $table->string('departemen_default', 30)->default('ALL');
+                $table->text('allowed_departments')->nullable()->comment('Daftar kode departemen yang diizinkan untuk User (dipisah koma)');
                 $table->enum('role', ['superadmin', 'admin', 'user'])->default('user');
                 $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
                 $table->rememberToken();
@@ -27,6 +28,9 @@ return new class extends Migration
             });
         } else {
             Schema::table('users', function (Blueprint $table) {
+                if (!Schema::hasColumn('users', 'allowed_departments')) {
+                    $table->text('allowed_departments')->nullable();
+                }
                 if (!Schema::hasColumn('users', 'remember_token')) {
                     $table->rememberToken();
                 }

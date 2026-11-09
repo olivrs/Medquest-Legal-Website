@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Hash;
 class MedquestController extends Controller
 {
     /**
-     * Pastikan tabel database sudah terbuat (otomatis jalankan migrate --seed jika database CloudPanel masih kosong)
+     * Pastikan tabel database sudah terbuat & kolom allowed_departments tersedia
      */
     protected function ensureDatabaseReady(): void
     {
@@ -27,6 +27,10 @@ class MedquestController extends Controller
                     '--seed'  => true,
                     '--force' => true,
                 ]);
+            } elseif (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'allowed_departments')) {
+                \Illuminate\Support\Facades\Schema::table('users', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    $table->text('allowed_departments')->nullable();
+                });
             }
         } catch (\Throwable $e) {
             // Abaikan jika koneksi belum diatur di .env
@@ -59,8 +63,8 @@ class MedquestController extends Controller
 
     /**
      * Terapkan hak akses dokumen:
-     * - Superadmin: dapat melihat & mengakses SELURUH dokumen dari semua akun & semua departemen.
-     * - User biasa: hanya dapat mengakses dokumen yang dibuat oleh dirinya sendiri ATAU dokumen departemennya.
+     * - Superadmin / Admin: dapat melihat & mengakses SELURUH dokumen dari semua akun & semua departemen.
+     * - User biasa: hanya dapat mengakses dokumen yang dibuat oleh dirinya sendiri ATAU dokumen departemen yang dicentang/diizinkan.
      */
     protected function applyAgreementAccessScope($query, string $alias = '')
     {
@@ -68,18 +72,22 @@ class MedquestController extends Controller
             return $query;
         }
 
-        $prefix = $alias !== '' ? $alias . '.' : '';
-        $user   = current_user();
-        $uId    = (int) ($user['id'] ?? 0);
-        $uCode  = strtoupper(trim((string) ($user['kode_singkatan'] ?? '')));
-        $uDept  = strtoupper(trim((string) ($user['departemen_default'] ?? '')));
+        $prefix       = $alias !== '' ? $alias . '.' : '';
+        $user         = current_user();
+        $uId          = (int) ($user['id'] ?? 0);
+        $uCode        = strtoupper(trim((string) ($user['kode_singkatan'] ?? '')));
+        $allowedDepts = get_user_allowed_departments($user);
 
-        return $query->where(function ($q) use ($prefix, $uId, $uCode, $uDept) {
+        if (in_array('ALL', $allowedDepts, true)) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($prefix, $uId, $uCode, $allowedDepts) {
             $q->where($prefix . 'created_by_user_id', $uId)
               ->orWhere($prefix . 'created_by_code', $uCode);
 
-            if ($uDept !== '' && $uDept !== 'ALL') {
-                $q->orWhere($prefix . 'department', $uDept);
+            if (!empty($allowedDepts)) {
+                $q->orWhereIn($prefix . 'department', $allowedDepts);
             }
         });
     }
@@ -89,6 +97,7 @@ class MedquestController extends Controller
      */
     protected function getLayoutData(Request $request, string $currPage): array
     {
+        $this->ensureDatabaseReady();
         $currDept = strtoupper(trim((string) $request->query('dept', 'ALL')));
         $user = current_user();
 
@@ -100,9 +109,9 @@ class MedquestController extends Controller
         $pendingApprovalsCount = 0;
 
         if (Auth::check() && $user) {
-            $uId   = (int) $user['id'];
-            $uCode = strtoupper($user['kode_singkatan']);
-            $uDept = strtoupper(trim((string) ($user['departemen_default'] ?? '')));
+            $uId          = (int) $user['id'];
+            $uCode        = strtoupper($user['kode_singkatan']);
+            $allowedDepts = get_user_allowed_departments($user);
 
             $allDocsQuery = Agreement::query();
             $this->applyAgreementAccessScope($allDocsQuery);
@@ -135,13 +144,13 @@ class MedquestController extends Controller
             }
 
             $allDepts = Department::orderBy('id', 'asc')->get()->map->toArray()->all();
-            if (is_superadmin() || $uDept === '' || $uDept === 'ALL') {
+            if (is_superadmin() || in_array('ALL', $allowedDepts, true)) {
                 $sidebarDepts = $allDepts;
             } else {
-                // Untuk user biasa dengan departemen spesifik, tampilkan departemennya (serta departemen tempat dokumen miliknya berada)
-                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($uDept, $userDeptCounts) {
+                // Untuk user biasa, tampilkan departemen yang sudah dicentang untuknya (serta departemen tempat dokumen buatannya berada)
+                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($allowedDepts, $userDeptCounts) {
                     $code = strtoupper((string) ($d['kode_dept'] ?? ''));
-                    return $code === $uDept || !empty($userDeptCounts[$code]);
+                    return in_array($code, $allowedDepts, true) || !empty($userDeptCounts[$code]);
                 }));
             }
 
@@ -929,14 +938,16 @@ class MedquestController extends Controller
             ->select('e.*', 'a.department', 'a.customer', 'a.document_number', 'a.expiry_date');
 
         if (!is_superadmin()) {
-            $uDept = strtoupper(trim((string) ($user['departemen_default'] ?? '')));
-            $emailLogsQuery->where(function ($q) use ($uId, $uCode, $uDept) {
-                $q->where('e.user_id', $uId)
-                  ->orWhere('e.recipient_code', $uCode);
-                if ($uDept !== '' && $uDept !== 'ALL') {
-                    $q->orWhere('a.department', $uDept);
-                }
-            });
+            $allowedDepts = get_user_allowed_departments($user);
+            if (!in_array('ALL', $allowedDepts, true)) {
+                $emailLogsQuery->where(function ($q) use ($uId, $uCode, $allowedDepts) {
+                    $q->where('e.user_id', $uId)
+                      ->orWhere('e.recipient_code', $uCode);
+                    if (!empty($allowedDepts)) {
+                        $q->orWhereIn('a.department', $allowedDepts);
+                    }
+                });
+            }
         }
 
         $emailLogs = $emailLogsQuery
@@ -1054,6 +1065,8 @@ class MedquestController extends Controller
 
     public function userApprovalsPage(Request $request)
     {
+        $this->ensureDatabaseReady();
+
         if (!Auth::check()) {
             return redirect(base_url('?page=login'));
         }
@@ -1089,11 +1102,36 @@ class MedquestController extends Controller
                             set_flash('success', "<i class='fas fa-trash-alt me-1'></i> Akun <strong>{$targetName} ({$targetCode})</strong> berhasil dihapus.");
                         }
                     } elseif ($action === 'set_role') {
-                        $newRole = in_array($request->input('new_role'), ['superadmin', 'admin', 'user'], true)
-                            ? (string) $request->input('new_role')
-                            : 'user';
+                        $rawRole = strtolower(trim((string) $request->input('new_role', 'user')));
+                        $newRole = in_array($rawRole, ['superadmin', 'admin', 'user'], true) ? $rawRole : 'user';
                         $targetUser->update(['role' => $newRole]);
-                        set_flash('success', "Role user <strong>{$targetName}</strong> berhasil diubah menjadi <strong>{$newRole}</strong>.");
+
+                        if (in_array($newRole, ['superadmin', 'admin'], true)) {
+                            set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>ADMIN</strong>. Akun tersebut kini dapat melihat seluruh dokumen dari semua departemen.");
+                        } else {
+                            // Jika diubah ke USER dan allowed_departments masih kosong/ALL, inisialisasi dari departemen_default
+                            if (empty($targetUser->allowed_departments) && strtoupper((string) $targetUser->departemen_default) !== 'ALL') {
+                                $targetUser->update(['allowed_departments' => strtoupper((string) $targetUser->departemen_default)]);
+                            }
+                            set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>USER</strong>. Silakan centang departemen yang diizinkan pada kolom Akses Departemen.");
+                        }
+                    } elseif ($action === 'update_departments') {
+                        $rawDepts = (array) $request->input('departments', []);
+                        $cleanDepts = array_values(array_unique(array_filter(array_map(function ($d) {
+                            return strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) $d)));
+                        }, $rawDepts))));
+
+                        if (!empty($cleanDepts)) {
+                            $allowedStr = implode(',', $cleanDepts);
+                            $targetUser->update([
+                                'allowed_departments' => $allowedStr,
+                                'departemen_default'  => $cleanDepts[0],
+                            ]);
+                            set_flash('success', "Akses departemen untuk User <strong>{$targetName} ({$targetCode})</strong> berhasil diperbarui: <strong>" . implode(', ', $cleanDepts) . "</strong>.");
+                        } else {
+                            $targetUser->update(['allowed_departments' => 'NONE']);
+                            set_flash('info', "Seluruh centang departemen untuk <strong>{$targetName} ({$targetCode})</strong> dilepas. User hanya dapat melihat dokumen yang ia buat sendiri.");
+                        }
                     }
                 }
             }
@@ -1131,9 +1169,11 @@ class MedquestController extends Controller
             ->map->toArray()
             ->all();
 
+        $allDepartments = Department::orderBy('id', 'asc')->get()->map->toArray()->all();
+
         return view('pages.user_approvals', array_merge(
             $this->getLayoutData($request, 'user_approvals'),
-            compact('countPending', 'countApproved', 'countRejected', 'countTotal', 'tab', 'search', 'usersList')
+            compact('countPending', 'countApproved', 'countRejected', 'countTotal', 'tab', 'search', 'usersList', 'allDepartments')
         ));
     }
 

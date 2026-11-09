@@ -143,15 +143,15 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light text-secondary small text-uppercase">
                     <tr>
-                        <th class="ps-3" style="width:50px;">No</th>
+                        <th class="ps-3" style="width:45px;">No</th>
                         <th>User &amp; Nama Lengkap</th>
-                        <th>Kode Singkatan</th>
-                        <th>Departemen</th>
+                        <th>Kode</th>
+                        <th>Role Akses (Edit)</th>
+                        <th style="min-width:290px;">Akses Departemen (Centang untuk User)</th>
                         <th>Email Pribadi</th>
-                        <th>Role Akses</th>
-                        <th>Waktu Mendaftar</th>
+                        <th>Waktu Daftar</th>
                         <th>Status</th>
-                        <th class="text-end pe-3" style="min-width:220px;">Aksi Superadmin</th>
+                        <th class="text-end pe-3" style="min-width:190px;">Aksi Superadmin</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -173,16 +173,19 @@
                         </tr>
                     <?php else: ?>
                         <?php foreach ($usersList as $idx => $u):
-                            $uStatus = $u['status'] ?? 'approved';
-                            $uRole   = strtolower($u['role'] ?? 'user');
-                            $isSelf  = ((int)$u['id'] === (int)$user['id']);
+                            $uStatus         = $u['status'] ?? 'approved';
+                            $uRole           = strtolower($u['role'] ?? 'user');
+                            $isAdminRole     = in_array($uRole, ['superadmin', 'admin'], true);
+                            $isSelf          = ((int)$u['id'] === (int)$user['id']);
+                            $userAllowedDepts = get_user_allowed_departments($u);
+                            $hasAllDepts     = in_array('ALL', $userAllowedDepts, true);
                         ?>
                             <tr class="<?= $uStatus === 'pending' ? 'table-warning' : '' ?>" style="<?= $uStatus === 'pending' ? 'background-color: #fffdf5;' : '' ?>">
                                 <td class="ps-3 fw-bold text-muted small"><?= $idx + 1 ?></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="sidebar-avatar rounded-0 text-white fw-bold d-flex align-items-center justify-content-center"
-                                             style="width:36px;height:36px;font-size:0.8rem;background: <?= $uRole === 'superadmin' ? '#2b579a' : '#64748b' ?>;">
+                                             style="width:36px;height:36px;font-size:0.8rem;background: <?= $isAdminRole ? '#2b579a' : '#64748b' ?>;">
                                             <?= htmlspecialchars($u['kode_singkatan']) ?>
                                         </div>
                                         <div>
@@ -199,29 +202,60 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-primary border fw-semibold px-2 py-1">
-                                        <i class="fas fa-building me-1"></i><?= htmlspecialchars($u['departemen_default'] ?: 'ALL') ?>
-                                    </span>
+                                    <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline-block">
+                                        @csrf
+                                        <input type="hidden" name="action" value="set_role">
+                                        <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                                        <select name="new_role"
+                                                class="form-select form-select-sm fw-bold rounded-0 <?= $isAdminRole ? 'border-primary text-primary bg-primary-subtle' : 'border-secondary text-dark bg-light' ?>"
+                                                style="min-width:120px;font-size:0.76rem;cursor:pointer;"
+                                                onchange="this.form.submit()"
+                                                <?= $isSelf ? 'title="Role akun Anda sendiri"' : 'title="Ubah Role antara USER atau ADMIN"' ?>>
+                                            <option value="user" <?= !$isAdminRole ? 'selected' : '' ?>>USER</option>
+                                            <option value="admin" <?= $isAdminRole ? 'selected' : '' ?>>ADMIN</option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <?php if ($isAdminRole): ?>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size:0.74rem;">
+                                            <i class="fas fa-unlock-alt me-1"></i> Semua Departemen (Akses Penuh Admin)
+                                        </span>
+                                    <?php else: ?>
+                                        <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="m-0">
+                                            @csrf
+                                            <input type="hidden" name="action" value="update_departments">
+                                            <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                                            <div class="d-flex flex-wrap gap-1 align-items-center">
+                                                <?php foreach (($allDepartments ?? []) as $deptItem):
+                                                    $dCode = strtoupper(trim((string)($deptItem['kode_dept'] ?? '')));
+                                                    if ($dCode === '') continue;
+                                                    $isChecked = $hasAllDepts || in_array($dCode, $userAllowedDepts, true);
+                                                    $chkId = 'dept_chk_' . (int)$u['id'] . '_' . $dCode;
+                                                ?>
+                                                    <label for="<?= $chkId ?>"
+                                                           class="d-inline-flex align-items-center gap-1 px-2 py-1 border small fw-bold user-select-none"
+                                                           style="cursor:pointer;font-size:0.72rem;background:<?= $isChecked ? '#eff6ff' : '#f8fafc' ?>;color:<?= $isChecked ? '#1e40af' : '#64748b' ?>;border-color:<?= $isChecked ? '#93c5fd' : '#e2e8f0' ?> !important;"
+                                                           title="<?= htmlspecialchars($deptItem['nama_dept'] ?? $dCode) ?>">
+                                                        <input type="checkbox"
+                                                               id="<?= $chkId ?>"
+                                                               name="departments[]"
+                                                               value="<?= htmlspecialchars($dCode) ?>"
+                                                               class="form-check-input m-0"
+                                                               style="width:13px;height:13px;cursor:pointer;"
+                                                               onchange="this.form.submit()"
+                                                               <?= $isChecked ? 'checked' : '' ?>>
+                                                        <span><?= htmlspecialchars($dCode) ?></span>
+                                                    </label>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <div class="small text-dark">
                                         <i class="fas fa-envelope text-muted me-1"></i><?= htmlspecialchars($u['email']) ?>
                                     </div>
-                                </td>
-                                <td>
-                                    <?php if ($uRole === 'superadmin'): ?>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
-                                            <i class="fas fa-shield-alt me-1"></i> Superadmin
-                                        </span>
-                                    <?php elseif ($uRole === 'admin'): ?>
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                            <i class="fas fa-user-shield me-1"></i> Admin
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
-                                            <i class="fas fa-user me-1"></i> User
-                                        </span>
-                                    <?php endif; ?>
                                 </td>
                                 <td class="small text-muted">
                                     <i class="far fa-calendar-alt me-1"></i><?= !empty($u['created_at']) ? strtoupper(date('d M Y H:i', strtotime($u['created_at']))) : '-' ?>
