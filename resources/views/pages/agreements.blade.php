@@ -168,7 +168,14 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
             </div>
         </div>
 
-        <div class="d-flex align-items-center gap-3 small no-print">
+        <div class="d-flex flex-wrap align-items-center gap-3 small no-print">
+            <button type="button"
+                    id="btnBulkDelete"
+                    class="btn btn-sm btn-danger fw-bold px-3 py-1 d-none align-items-center gap-1 shadow-sm"
+                    style="font-size:0.75rem;border-radius:0;"
+                    onclick="submitBulkDelete()">
+                <i class="fas fa-trash-alt me-1"></i> Hapus Terpilih (<span id="selectedDocCount">0</span>)
+            </button>
             <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#10b981;"></span> Aktif</span>
             <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#f59e0b;"></span> Akan Expired</span>
             <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#ef4444;"></span> Expired</span>
@@ -179,6 +186,13 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
         <table class="cp-table">
             <thead>
                 <tr>
+                    <th style="width:38px;" class="text-center no-print">
+                        <input type="checkbox"
+                               id="selectAllDocs"
+                               class="form-check-input m-0"
+                               style="width:15px;height:15px;cursor:pointer;"
+                               title="Pilih Semua Dokumen di Halaman Ini">
+                    </th>
                     <th style="width:90px;">Dept / No</th>
                     <?php if ($selectedDocType === 'COMPANY'): ?>
                         <th style="width:250px;">Document Title &amp; Document No.</th>
@@ -247,7 +261,7 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
             <tbody>
                 <?php if (empty($agreements)): ?>
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="fas fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
                             <?php if (is_superadmin()): ?>
                                 Belum ada dokumen yang ditemukan pada filter ini.
@@ -274,6 +288,13 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                             : ($row['document_title'] ?: $row['product_description'] ?: '-');
                     ?>
                         <tr class="<?= $expInfo['row_class'] ?>">
+                            <td class="text-center no-print" style="vertical-align:middle;">
+                                <input type="checkbox"
+                                       class="form-check-input doc-row-checkbox m-0"
+                                       value="<?= (int)$row['id'] ?>"
+                                       style="width:15px;height:15px;cursor:pointer;"
+                                       title="Centang untuk pilih dokumen <?= htmlspecialchars($displayTitle) ?>">
+                            </td>
                             <td>
                                 <a href="<?= base_url('?page=agreements&dept=' . urlencode($row['department'])) ?>"
                                    class="badge mq-dept-badge text-decoration-none px-2 py-1 mb-1 d-inline-block" style="font-size:0.74rem;">
@@ -493,6 +514,16 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
 </div>
 <?php endif; ?>
 
+<form id="bulkDeleteForm" method="POST" action="<?= base_url('?page=agreements') ?>" class="d-none">
+    @csrf
+    <input type="hidden" name="action" value="bulk_delete">
+    <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
+    <input type="hidden" name="return_doc_type" value="<?= htmlspecialchars($selectedDocType) ?>">
+    <input type="hidden" name="return_status" value="<?= htmlspecialchars($selectedStatus) ?>">
+    <input type="hidden" name="return_sort" value="<?= htmlspecialchars($selectedSort) ?>">
+    <div id="bulkDeleteInputsContainer"></div>
+</form>
+
 <script>
 const modalAddNote = document.getElementById('modalAddNote');
 if (modalAddNote) {
@@ -502,6 +533,72 @@ if (modalAddNote) {
         document.getElementById('noteModalCustomer').textContent = button.getAttribute('data-customer');
         document.getElementById('noteModalDocNo').textContent = button.getAttribute('data-docno');
     });
+}
+
+(function () {
+    const selectAllEl = document.getElementById('selectAllDocs');
+    const rowCheckboxes = Array.from(document.querySelectorAll('.doc-row-checkbox'));
+    const btnBulkDelete = document.getElementById('btnBulkDelete');
+    const countSpan = document.getElementById('selectedDocCount');
+
+    function updateBulkDeleteState() {
+        const checkedBoxes = rowCheckboxes.filter(cb => cb.checked);
+        const count = checkedBoxes.length;
+        if (countSpan) {
+            countSpan.textContent = String(count);
+        }
+        if (btnBulkDelete) {
+            if (count > 0) {
+                btnBulkDelete.classList.remove('d-none');
+                btnBulkDelete.classList.add('d-inline-flex');
+            } else {
+                btnBulkDelete.classList.add('d-none');
+                btnBulkDelete.classList.remove('d-inline-flex');
+            }
+        }
+        if (selectAllEl && rowCheckboxes.length > 0) {
+            selectAllEl.checked = (count === rowCheckboxes.length);
+            selectAllEl.indeterminate = (count > 0 && count < rowCheckboxes.length);
+        }
+    }
+
+    if (selectAllEl) {
+        selectAllEl.addEventListener('change', function () {
+            const isChecked = selectAllEl.checked;
+            rowCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateBulkDeleteState();
+        });
+    }
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkDeleteState);
+    });
+})();
+
+function submitBulkDelete() {
+    const checkedBoxes = Array.from(document.querySelectorAll('.doc-row-checkbox:checked'));
+    if (checkedBoxes.length === 0) {
+        return;
+    }
+    if (!confirm('Yakin ingin menghapus ' + checkedBoxes.length + ' dokumen yang dicentang secara permanen?')) {
+        return;
+    }
+    const container = document.getElementById('bulkDeleteInputsContainer');
+    const form = document.getElementById('bulkDeleteForm');
+    if (!container || !form) return;
+
+    container.innerHTML = '';
+    checkedBoxes.forEach(cb => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'agreement_ids[]';
+        inp.value = cb.value;
+        container.appendChild(inp);
+    });
+
+    form.submit();
 }
 </script>
 @endsection

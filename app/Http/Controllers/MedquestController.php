@@ -395,6 +395,32 @@ class MedquestController extends Controller
                 return redirect(base_url('?page=agreements&dept=' . urlencode((string) $request->input('return_dept', 'ALL'))));
             }
 
+            if ($action === 'bulk_delete') {
+                $rawIds = (array) $request->input('agreement_ids', []);
+                $ids = array_values(array_unique(array_filter(array_map('intval', $rawIds), fn ($v) => $v > 0)));
+
+                if (!empty($ids)) {
+                    $delQuery = Agreement::whereIn('id', $ids);
+                    $this->applyAgreementAccessScope($delQuery);
+                    $deletedCount = $delQuery->delete();
+
+                    if ($deletedCount > 0) {
+                        set_flash('success', "Berhasil menghapus <strong>{$deletedCount} dokumen</strong> yang dipilih.");
+                    } else {
+                        set_flash('error', 'Tidak ada dokumen yang dapat dihapus.');
+                    }
+                } else {
+                    set_flash('error', 'Silakan centang minimal 1 dokumen terlebih dahulu untuk dihapus.');
+                }
+
+                $retDept = urlencode((string) $request->input('return_dept', 'ALL'));
+                $retType = urlencode((string) $request->input('return_doc_type', 'ALL'));
+                $retStat = urlencode((string) $request->input('return_status', 'ALL'));
+                $retSort = urlencode((string) $request->input('return_sort', 'default'));
+
+                return redirect(base_url("?page=agreements&dept={$retDept}&doc_type={$retType}&status={$retStat}&sort={$retSort}"));
+            }
+
             if ($action === 'add_department' && is_superadmin()) {
                 $kodeDept = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) $request->input('kode_dept', ''))));
                 $namaDept = trim((string) $request->input('nama_dept', ''));

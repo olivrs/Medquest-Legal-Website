@@ -174,5 +174,20 @@ class MedquestSystemTest extends TestCase
         $respGaAdmin->assertSee('Vendor Gedung Khusus GA');
         $respGaAdmin->assertSee('RS Khusus Onkologi MHO');
         $respGaAdmin->assertSee('UDD PMI Kota Surabaya');
+
+        // 6. Uji fitur Bulk Delete (Hapus Sekaligus Banyak Dokumen yang Dicentang)
+        $idsToDelete = \App\Models\Agreement::whereIn('document_number', ['DOC-GA-801', 'DOC-MHO-802'])->pluck('id')->all();
+        $this->assertCount(2, $idsToDelete);
+
+        $this->post('/?page=agreements', [
+            'action'        => 'bulk_delete',
+            'agreement_ids' => $idsToDelete,
+        ])->assertRedirect();
+
+        $respAfterBulkDelete = $this->get('/agreements');
+        $respAfterBulkDelete->assertStatus(200);
+        $respAfterBulkDelete->assertDontSee('Vendor Gedung Khusus GA');
+        $respAfterBulkDelete->assertDontSee('RS Khusus Onkologi MHO');
+        $respAfterBulkDelete->assertSee('UDD PMI Kota Surabaya');
     }
 }
