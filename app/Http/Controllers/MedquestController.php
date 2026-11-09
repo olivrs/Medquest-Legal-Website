@@ -17,10 +17,28 @@ use Illuminate\Support\Facades\Hash;
 class MedquestController extends Controller
 {
     /**
+     * Pastikan tabel database sudah terbuat (otomatis jalankan migrate --seed jika database CloudPanel masih kosong)
+     */
+    protected function ensureDatabaseReady(): void
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('users')) {
+                \Illuminate\Support\Facades\Artisan::call('migrate', [
+                    '--seed'  => true,
+                    '--force' => true,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Abaikan jika koneksi belum diatur di .env
+        }
+    }
+
+    /**
      * Entrypoint utama yang mendukung ?page=... maupun route Laravel langsung
      */
     public function handleRoot(Request $request)
     {
+        $this->ensureDatabaseReady();
         $page = $request->query('page', Auth::check() ? 'agreements' : 'login');
 
         return match ($page) {
@@ -102,6 +120,7 @@ class MedquestController extends Controller
 
     public function loginPage(Request $request)
     {
+        $this->ensureDatabaseReady();
         if (Auth::check()) {
             return redirect(base_url('?page=agreements'));
         }
