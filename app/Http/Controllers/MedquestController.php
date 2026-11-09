@@ -58,6 +58,33 @@ class MedquestController extends Controller
     }
 
     /**
+     * Terapkan hak akses dokumen:
+     * - Superadmin: dapat melihat & mengakses SELURUH dokumen dari semua akun & semua departemen.
+     * - User biasa: hanya dapat mengakses dokumen yang dibuat oleh dirinya sendiri ATAU dokumen departemennya.
+     */
+    protected function applyAgreementAccessScope($query, string $alias = '')
+    {
+        if (is_superadmin()) {
+            return $query;
+        }
+
+        $prefix = $alias !== '' ? $alias . '.' : '';
+        $user   = current_user();
+        $uId    = (int) ($user['id'] ?? 0);
+        $uCode  = strtoupper(trim((string) ($user['kode_singkatan'] ?? '')));
+        $uDept  = strtoupper(trim((string) ($user['departemen_default'] ?? '')));
+
+        return $query->where(function ($q) use ($prefix, $uId, $uCode, $uDept) {
+            $q->where($prefix . 'created_by_user_id', $uId)
+              ->orWhere($prefix . 'created_by_code', $uCode);
+
+            if ($uDept !== '' && $uDept !== 'ALL') {
+                $q->orWhere($prefix . 'department', $uDept);
+            }
+        });
+    }
+
+    /**
      * Siapkan variabel layout global untuk header/sidebar
      */
     protected function getLayoutData(Request $request, string $currPage): array
@@ -73,13 +100,13 @@ class MedquestController extends Controller
         $pendingApprovalsCount = 0;
 
         if (Auth::check() && $user) {
-            $uId = (int) $user['id'];
+            $uId   = (int) $user['id'];
             $uCode = strtoupper($user['kode_singkatan']);
+            $uDept = strtoupper(trim((string) ($user['departemen_default'] ?? '')));
 
-            $allUserDocs = Agreement::where(function ($q) use ($uId, $uCode) {
-                $q->where('created_by_user_id', $uId)
-                  ->orWhere('created_by_code', $uCode);
-            })->get(['id', 'department', 'expiry_date', 'expiry_date_na']);
+            $allDocsQuery = Agreement::query();
+            $this->applyAgreementAccessScope($allDocsQuery);
+            $allUserDocs = $allDocsQuery->get(['id', 'department', 'expiry_date', 'expiry_date_na']);
 
             foreach ($allUserDocs as $doc) {
                 $dCode = strtoupper((string) $doc->department);
@@ -94,11 +121,29 @@ class MedquestController extends Controller
                 }
             }
 
-            $totalNotifCount = EmailNotification::where('user_id', $uId)
-                ->orWhere('recipient_code', $uCode)
-                ->count();
+            if (is_superadmin()) {
+                $totalNotifCount = EmailNotification::count();
+            } else {
+                $accessibleIds = $allUserDocs->pluck('id')->all();
+                $totalNotifCount = EmailNotification::where(function ($q) use ($uId, $uCode, $accessibleIds) {
+                    $q->where('user_id', $uId)
+                      ->orWhere('recipient_code', $uCode);
+                    if (!empty($accessibleIds)) {
+                        $q->orWhereIn('agreement_id', $accessibleIds);
+                    }
+                })->count();
+            }
 
-            $sidebarDepts = Department::orderBy('id', 'asc')->get()->map->toArray()->all();
+            $allDepts = Department::orderBy('id', 'asc')->get()->map->toArray()->all();
+            if (is_superadmin() || $uDept === '' || $uDept === 'ALL') {
+                $sidebarDepts = $allDepts;
+            } else {
+                // Untuk user biasa dengan departemen spesifik, tampilkan departemennya (serta departemen tempat dokumen miliknya berada)
+                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($uDept, $userDeptCounts) {
+                    $code = strtoupper((string) ($d['kode_dept'] ?? ''));
+                    return $code === $uDept || !empty($userDeptCounts[$code]);
+                }));
+            }
 
             if (is_superadmin()) {
                 $pendingApprovalsCount = User::where('status', 'pending')->count();
@@ -271,11 +316,9 @@ class MedquestController extends Controller
                 $tglInput    = $request->filled('tanggal_input') ? (string) $request->input('tanggal_input') : date('Y-m-d');
                 $newExpiry   = $request->filled('new_expiry_date') ? (string) $request->input('new_expiry_date') : null;
 
-                $agr = Agreement::where('id', $agrId)
-                    ->where(function ($q) use ($uId, $uCode) {
-                        $q->where('created_by_user_id', $uId)
-                          ->orWhere('created_by_code', $uCode);
-                    })->first();
+                $agrQuery = Agreement::where('id', $agrId);
+                $this->applyAgreementAccessScope($agrQuery);
+                $agr = $agrQuery->first();
 
                 if ($agr && $catatanBaru !== '') {
                     $tglFormatted = format_date_medquest($tglInput, false);
@@ -335,11 +378,9 @@ class MedquestController extends Controller
 
             if ($action === 'delete') {
                 $agrId = (int) $request->input('agreement_id', 0);
-                Agreement::where('id', $agrId)
-                    ->where(function ($q) use ($uId, $uCode) {
-                        $q->where('created_by_user_id', $uId)
-                          ->orWhere('created_by_code', $uCode);
-                    })->delete();
+                $delQuery = Agreement::where('id', $agrId);
+                $this->applyAgreementAccessScope($delQuery);
+                $delQuery->delete();
 
                 set_flash('success', 'Data dokumen berhasil dihapus.');
                 return redirect(base_url('?page=agreements&dept=' . urlencode((string) $request->input('return_dept', 'ALL'))));
@@ -369,11 +410,8 @@ class MedquestController extends Controller
 
         $query = DB::table('agreements as a')
             ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
-            ->select('a.*', 'u.nama_lengkap as creator_name', 'u.email as creator_email')
-            ->where(function ($q) use ($uId, $uCode) {
-                $q->where('a.created_by_user_id', $uId)
-                  ->orWhere('a.created_by_code', $uCode);
-            });
+            ->select('a.*', 'u.nama_lengkap as creator_name', 'u.email as creator_email');
+        $this->applyAgreementAccessScope($query, 'a');
 
         if ($selectedDept !== 'ALL' && $selectedDept !== '') {
             $query->where('a.department', $selectedDept);
@@ -676,11 +714,9 @@ class MedquestController extends Controller
         $uId   = (int) $user['id'];
         $uCode = strtoupper($user['kode_singkatan']);
 
-        $agrModel = Agreement::where('id', $id)
-            ->where(function ($q) use ($uId, $uCode) {
-                $q->where('created_by_user_id', $uId)
-                  ->orWhere('created_by_code', $uCode);
-            })->first();
+        $agrQuery = Agreement::where('id', $id);
+        $this->applyAgreementAccessScope($agrQuery);
+        $agrModel = $agrQuery->first();
 
         if (!$agrModel) {
             set_flash('error', 'Data dokumen tidak ditemukan.');
@@ -793,14 +829,12 @@ class MedquestController extends Controller
         $uId   = (int) $user['id'];
         $uCode = strtoupper($user['kode_singkatan']);
 
-        $agrRow = DB::table('agreements as a')
+        $agrQuery = DB::table('agreements as a')
             ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
             ->select('a.*', 'u.nama_lengkap as creator_name', 'u.email as creator_email')
-            ->where('a.id', $id)
-            ->where(function ($q) use ($uId, $uCode) {
-                $q->where('a.created_by_user_id', $uId)
-                  ->orWhere('a.created_by_code', $uCode);
-            })->first();
+            ->where('a.id', $id);
+        $this->applyAgreementAccessScope($agrQuery, 'a');
+        $agrRow = $agrQuery->first();
 
         if (!$agrRow) {
             set_flash('error', 'Data dokumen tidak ditemukan.');
@@ -860,20 +894,22 @@ class MedquestController extends Controller
         NotificationService::runAutoExpiryNotifications();
 
         if ($request->isMethod('post') && $request->input('action') === 'clear_logs') {
-            EmailNotification::where('user_id', $uId)
-                ->orWhere('recipient_code', $uCode)
-                ->delete();
+            if (is_superadmin()) {
+                EmailNotification::query()->delete();
+            } else {
+                EmailNotification::where('user_id', $uId)
+                    ->orWhere('recipient_code', $uCode)
+                    ->delete();
+            }
             set_flash('success', 'Riwayat log email berhasil dibersihkan.');
             return redirect(base_url('?page=notifications'));
         }
 
-        $allUserAgreements = DB::table('agreements as a')
+        $agrQuery = DB::table('agreements as a')
             ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
-            ->select('a.*', 'u.nama_lengkap', 'u.email as user_email')
-            ->where(function ($q) use ($uId, $uCode) {
-                $q->where('a.created_by_user_id', $uId)
-                  ->orWhere('a.created_by_code', $uCode);
-            })->get()->map(fn ($r) => (array) $r)->all();
+            ->select('a.*', 'u.nama_lengkap', 'u.email as user_email');
+        $this->applyAgreementAccessScope($agrQuery, 'a');
+        $allUserAgreements = $agrQuery->get()->map(fn ($r) => (array) $r)->all();
 
         $upcomingH = [];
         foreach ($allUserAgreements as $item) {
@@ -888,13 +924,22 @@ class MedquestController extends Controller
         }
         usort($upcomingH, fn ($a, $b) => $a['sisa_hari'] <=> $b['sisa_hari']);
 
-        $emailLogs = DB::table('email_notifications as e')
+        $emailLogsQuery = DB::table('email_notifications as e')
             ->leftJoin('agreements as a', 'e.agreement_id', '=', 'a.id')
-            ->select('e.*', 'a.department', 'a.customer', 'a.document_number', 'a.expiry_date')
-            ->where(function ($q) use ($uId, $uCode) {
+            ->select('e.*', 'a.department', 'a.customer', 'a.document_number', 'a.expiry_date');
+
+        if (!is_superadmin()) {
+            $uDept = strtoupper(trim((string) ($user['departemen_default'] ?? '')));
+            $emailLogsQuery->where(function ($q) use ($uId, $uCode, $uDept) {
                 $q->where('e.user_id', $uId)
                   ->orWhere('e.recipient_code', $uCode);
-            })
+                if ($uDept !== '' && $uDept !== 'ALL') {
+                    $q->orWhere('a.department', $uDept);
+                }
+            });
+        }
+
+        $emailLogs = $emailLogsQuery
             ->orderByDesc('e.id')
             ->limit(100)
             ->get()

@@ -249,7 +249,11 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                     <tr>
                         <td colspan="6" class="text-center py-5 text-muted">
                             <i class="fas fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
-                            Belum ada dokumen dengan kode <strong><?= htmlspecialchars($uCode) ?></strong> pada filter ini.
+                            <?php if (is_superadmin()): ?>
+                                Belum ada dokumen yang ditemukan pada filter ini.
+                            <?php else: ?>
+                                Belum ada dokumen untuk akun <strong><?= htmlspecialchars($uCode) ?></strong> atau departemen Anda pada filter ini.
+                            <?php endif; ?>
                             <div class="mt-3">
                                 <a href="<?= base_url('?page=create' . ($selectedDocType !== 'ALL' ? '&doc_type=' . urlencode($selectedDocType) : '') . ($selectedDept !== 'ALL' ? '&dept=' . urlencode($selectedDept) : '')) ?>" class="btn btn-sm btn-primary fw-bold px-3 py-2">
                                     <i class="fas fa-plus-circle me-1"></i> + Input Dokumen Baru
