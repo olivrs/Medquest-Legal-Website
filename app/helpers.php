@@ -41,14 +41,6 @@ if (!function_exists('current_user')) {
 }
 
 if (!function_exists('get_user_allowed_departments')) {
-    /**
-     * Ambil daftar kode departemen yang diizinkan untuk seorang user:
-     * - Jika role adalah superadmin / admin: mengembalikan ['ALL']
-     * - Jika user biasa dan kolom allowed_departments sudah diatur:
-     *   - Jika bernilai 'NONE': mengembalikan [] (tidak ada departemen yang dicentang)
-     *   - Selain itu: pecah string koma menjadi array kode departemen (contoh: ['GA', 'MHO'])
-     * - Jika allowed_departments masih NULL (belum pernah diubah): fallback ke departemen_default
-     */
     function get_user_allowed_departments(?array $userRow): array
     {
         if (!$userRow) {

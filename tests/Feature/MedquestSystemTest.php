@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -82,7 +82,6 @@ class MedquestSystemTest extends TestCase
             'status'             => 'approved',
         ]);
 
-        // Dokumen yang dibuat oleh RYN (GA)
         \App\Models\Agreement::create([
             'doc_type'            => 'COOPERATION',
             'no_urut_dokumen'     => 801,
@@ -101,7 +100,6 @@ class MedquestSystemTest extends TestCase
             'created_by_log'      => 'RYN, 09 NOV 2026',
         ]);
 
-        // Dokumen yang dibuat oleh BDI (MHO)
         \App\Models\Agreement::create([
             'doc_type'            => 'COOPERATION',
             'no_urut_dokumen'     => 802,
@@ -120,14 +118,12 @@ class MedquestSystemTest extends TestCase
             'created_by_log'      => 'BDI, 09 NOV 2026',
         ]);
 
-        // 1. Login sebagai User GA (RYN): Hanya bisa melihat dokumen GA/miliknya, TIDAK bisa melihat dokumen MHO milik BDI
         $this->actingAs($userGa);
         $respGa = $this->get('/agreements');
         $respGa->assertStatus(200);
         $respGa->assertSee('Vendor Gedung Khusus GA');
         $respGa->assertDontSee('RS Khusus Onkologi MHO');
 
-        // 2. Login sebagai User MHO (BDI): Bisa melihat dokumen miliknya & dokumen departemen MHO (termasuk RSUP Dr. Sardjito Yogyakarta yang dibuat FJR di MHO), tapi TIDAK bisa melihat dokumen GA
         $this->actingAs($userMho);
         $respMho = $this->get('/agreements');
         $respMho->assertStatus(200);
@@ -135,7 +131,6 @@ class MedquestSystemTest extends TestCase
         $respMho->assertSee('RSUP Dr. Sardjito Yogyakarta');
         $respMho->assertDontSee('Vendor Gedung Khusus GA');
 
-        // 3. Login sebagai Superadmin (FJR): Bisa melihat SELURUH dokumen dari semua user & departemen!
         $superadmin = \App\Models\User::where('kode_singkatan', 'FJR')->first();
         $this->actingAs($superadmin);
         $respSuper = $this->get('/agreements');
@@ -144,14 +139,12 @@ class MedquestSystemTest extends TestCase
         $respSuper->assertSee('RS Khusus Onkologi MHO');
         $respSuper->assertSee('UDD PMI Kota Surabaya');
 
-        // 4. Superadmin mencentang departemen GA dan MHO untuk user RYN dari halaman Persetujuan Akun
         $this->post('/?page=user_approvals', [
             'action'      => 'update_departments',
             'user_id'     => $userGa->id,
             'departments' => ['GA', 'MHO'],
         ])->assertRedirect();
 
-        // Sekarang RYN (masih role USER) langsung bisa melihat dokumen departemen MHO yang baru dicentang, tapi tetap tidak melihat MBB
         $this->actingAs($userGa->fresh());
         $respGaMulti = $this->get('/agreements');
         $respGaMulti->assertStatus(200);
@@ -159,7 +152,6 @@ class MedquestSystemTest extends TestCase
         $respGaMulti->assertSee('RS Khusus Onkologi MHO');
         $respGaMulti->assertDontSee('UDD PMI Kota Surabaya');
 
-        // 5. Superadmin mengubah Role RYN dari USER menjadi ADMIN di halaman Persetujuan Akun
         $this->actingAs($superadmin);
         $this->post('/?page=user_approvals', [
             'action'   => 'set_role',
@@ -167,7 +159,6 @@ class MedquestSystemTest extends TestCase
             'new_role' => 'admin',
         ])->assertRedirect();
 
-        // Sekarang RYN sudah menjadi ADMIN dan langsung bisa melihat SELURUH dokumen termasuk MBB (UDD PMI Kota Surabaya)!
         $this->actingAs($userGa->fresh());
         $respGaAdmin = $this->get('/agreements');
         $respGaAdmin->assertStatus(200);
@@ -175,7 +166,6 @@ class MedquestSystemTest extends TestCase
         $respGaAdmin->assertSee('RS Khusus Onkologi MHO');
         $respGaAdmin->assertSee('UDD PMI Kota Surabaya');
 
-        // 6. Uji fitur Bulk Delete (Hapus Sekaligus Banyak Dokumen yang Dicentang)
         $idsToDelete = \App\Models\Agreement::whereIn('document_number', ['DOC-GA-801', 'DOC-MHO-802'])->pluck('id')->all();
         $this->assertCount(2, $idsToDelete);
 

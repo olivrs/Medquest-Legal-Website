@@ -5,7 +5,6 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// Jika file .env belum ada di server baru, otomatis salin dari .env.example
 if (!file_exists(__DIR__.'/../.env') && file_exists(__DIR__.'/../.env.example')) {
     @copy(__DIR__.'/../.env.example', __DIR__.'/../.env');
 }

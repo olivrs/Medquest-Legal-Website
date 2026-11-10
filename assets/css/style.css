@@ -252,7 +252,7 @@ a:hover {
     color: #ffffff;
 }
 
-/* Submenu Departemen di Sidebar (Ringkas 2 Kolom Tanpa Scroll) */
+
 .sidebar-submenu {
     padding: 2px 4px 6px 10px;
 }
@@ -805,7 +805,7 @@ a:hover {
     background-color: #f8fafc;
 }
 
-/* Dokumen Masuk Fase H-3 s/d H-0: Latar Merah Sangat Lembut & Nyaman di Mata */
+
 .cp-table tbody tr.row-urgent td,
 .cp-table tbody tr.row-h3 td {
     background-color: #fff5f5;
@@ -822,7 +822,7 @@ a:hover {
     border-left: 3px solid #ef4444;
 }
 
-/* Dokumen Sudah Expired */
+
 .cp-table tbody tr.row-expired td {
     background-color: #fafafa;
     border-bottom: 1px solid #f1f5f9;
@@ -840,7 +840,7 @@ a:hover {
 .cp-table tbody tr.row-warning-soft td:first-child { border-left: 3px solid #f59e0b; }
 .cp-table tbody tr.row-active td:first-child  { border-left: 3px solid #10b981; }
 
-/* Soft Department Badge (Tidak Silau) */
+
 .mq-dept-badge {
     background-color: #eff6ff !important;
     color: #1e40af !important;
@@ -864,7 +864,7 @@ a:hover {
     color: #ffffff !important;
 }
 
-/* Soft Status Badges (Pastel dengan kontras teks nyaman) */
+
 .expiry-pill {
     display: inline-flex;
     align-items: center;
@@ -1181,7 +1181,7 @@ a:hover {
    6. RESPONSIVE & MOBILE ERGONOMICS (DESKTOP TETAP AMAN 100%)
    ============================================================================ */
 
-/* Desktop defaults: sembunyikan elemen pendukung mobile */
+
 .sidebar-backdrop {
     display: none;
 }
@@ -1191,7 +1191,7 @@ a:hover {
 
 /* Tablet & Mobile Screens (<= 991.98px) */
 @media (max-width: 991.98px) {
-    /* Mobile Drawer Sidebar: mengambang, halus, tidak mendorong layout */
+    
     .sidebar-backdrop {
         display: block;
         position: fixed;
@@ -1257,7 +1257,7 @@ a:hover {
         border-color: transparent !important;
     }
 
-    /* Hilangkan efek collapsed desktop pada mobile */
+    
     .app-layout.sidebar-collapsed .app-sidebar {
         display: block !important;
         width: 280px !important;
@@ -1289,7 +1289,7 @@ a:hover {
         touch-action: none !important;
     }
 
-    /* Topbar Mobile */
+    
     .app-topbar {
         padding: 8px 12px !important;
         min-height: 52px !important;
@@ -1311,7 +1311,7 @@ a:hover {
         font-size: 0.72rem !important;
     }
 
-    /* Content & Spacing Mobile */
+    
     .app-content {
         padding: 12px !important;
     }
@@ -1338,7 +1338,7 @@ a:hover {
         justify-content: center !important;
     }
 
-    /* Horizontal scroll untuk filter pills di mobile */
+    
     .cp-pill-group {
         display: flex !important;
         flex-wrap: nowrap !important;
@@ -1354,7 +1354,7 @@ a:hover {
         white-space: nowrap !important;
     }
 
-    /* Kartu Statistik */
+    
     .cp-stat-card {
         padding: 12px 14px !important;
     }
@@ -1364,7 +1364,7 @@ a:hover {
         font-size: 1.35rem !important;
     }
 
-    /* Footer Mobile */
+    
     .mq-footer {
         padding: 24px 16px 16px !important;
     }
@@ -1390,7 +1390,7 @@ a:hover {
         padding-left: 0 !important;
     }
 
-    /* Mobile Card Layout untuk Tabel Agreement & Deadline */
+    
     .mq-mobile-cards {
         display: block !important;
         width: 100% !important;
@@ -1499,19 +1499,19 @@ a:hover {
         margin-left: 6px;
     }
 
-    /* Tabel biasa tetap touch scroll horizontal lancar */
+    
     .table-responsive {
         border: none !important;
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
     }
 
-    /* Modal dialog pas di layar sentuh */
+    
     .modal-dialog {
         margin: 12px !important;
     }
 
-    /* Auth card responsive */
+    
     .auth-wrapper {
         padding: 16px 12px !important;
     }
@@ -1572,7 +1572,7 @@ a:hover {
     }
 }
 
-/* Toggle Buka/Tutup Kolom Departemen di Samping Semua */
+
 .cp-tab-toggle-btn {
     border: 1px solid var(--mq-border);
     background: #f8fafc;
@@ -1660,7 +1660,7 @@ input, button, select, textarea,
     border-radius: 0 !important;
 }
 
-/* Hilangkan Latar Putih Di Belakang Logo Medquest */
+
 .sidebar-logo-centered,
 .sidebar-brand,
 .mq-footer-logo-box,
@@ -1673,14 +1673,14 @@ input, button, select, textarea,
     box-shadow: none !important;
 }
 
-/* Pengecualian: Gauge lingkaran di kartu statistik tetap bulat seperti sebelumnya */
+
 .cp-stat-card .cp-circle-gauge,
 .cp-stat-card .cp-circle-inner {
     border-radius: 50% !important;
 }
 
 
-/* Badge H-3 & Mendesak: Merah Nyala Terang Tegas & Glowing */
+
 .badge-h3,
 span.badge-h3,
 .expiry-pill.badge-h3 {

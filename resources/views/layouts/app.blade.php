@@ -307,7 +307,6 @@
     const mobileQuery = window.matchMedia('(max-width: 991.98px)');
     const isMobile = () => mobileQuery.matches;
 
-    // Desktop: ingat status sidebar tertutup/terbuka
     if (localStorage.getItem('mq_sidebar_collapsed') === '1') {
         layoutEl.classList.add('sidebar-collapsed');
     }
@@ -319,7 +318,6 @@
 
     toggleBtn.addEventListener('click', function() {
         if (isMobile()) {
-            // HP / Tablet: sidebar muncul sebagai menu geser (drawer)
             const willOpen = !layoutEl.classList.contains('sidebar-mobile-open');
             layoutEl.classList.toggle('sidebar-mobile-open', willOpen);
             document.body.classList.toggle('mq-no-scroll', willOpen);
@@ -333,7 +331,6 @@
     if (backdrop) backdrop.addEventListener('click', closeMobileSidebar);
     if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
 
-    // Tutup drawer otomatis setelah memilih menu (kecuali tombol buka/tutup submenu Departemen)
     document.querySelectorAll('.app-sidebar a').forEach(function(link) {
         link.addEventListener('click', function() {
             if (isMobile() && link.getAttribute('data-bs-toggle') !== 'collapse') {
@@ -342,7 +339,6 @@
         });
     });
 
-    // Jika layar diperbesar kembali ke ukuran desktop, pastikan drawer tertutup
     mobileQuery.addEventListener('change', function(e) {
         if (!e.matches) closeMobileSidebar();
     });

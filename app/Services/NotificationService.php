@@ -237,7 +237,6 @@ class NotificationService
         $subject = "[MEDQUEST {$tipeNotif}] Pengingat Deadline ({$expFormatted}) - Dept {$agreement['department']} - {$agreement['customer']}";
         $htmlBody = self::buildExpiryEmailHtml($agreement, $creatorArr, $tipeNotif, $days);
 
-        // 1. Simpan arsip HTML di storage/app/mail_outbox
         $outboxDir = storage_path('app/mail_outbox');
         if (!is_dir($outboxDir)) {
             @mkdir($outboxDir, 0775, true);
@@ -245,7 +244,6 @@ class NotificationService
         $safeFile = 'email_' . strtolower(str_replace('-', '', $tipeNotif)) . '_agr' . $agreement['id'] . '_' . date('Ymd_His') . '.html';
         @file_put_contents($outboxDir . '/' . $safeFile, $htmlBody);
 
-        // 2. Coba kirim via SMTP (jika aktif) atau Cloud Relay
         $smtp = SmtpSetting::find(1);
         $smtpErr = null;
         $sentOk = false;
@@ -339,7 +337,6 @@ class NotificationService
                 }
             }
         } catch (\Throwable $e) {
-            // Abaikan error saat koneksi/migrasi awal
         }
 
         return $results;

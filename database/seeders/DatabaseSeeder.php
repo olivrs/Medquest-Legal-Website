@@ -12,12 +12,8 @@ use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // 1. Seed 7 Official Medquest Departments
         $departments = [
             ['kode_dept' => 'MHO', 'nama_dept' => 'Medical Healthcare & Oncology (MHO)', 'deskripsi' => 'Divisi MHO'],
             ['kode_dept' => 'MBB', 'nama_dept' => 'Medical Blood Bank (MBB)', 'deskripsi' => 'Divisi MBB - Palang Merah & UDD'],
@@ -38,7 +34,6 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 2. Seed Default SMTP Settings
         SmtpSetting::updateOrCreate(
             ['id' => 1],
             [
@@ -53,7 +48,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 3. Seed Default Superadmin Account (FJR)
         $fjr = User::updateOrCreate(
             ['kode_singkatan' => 'FJR'],
             [
@@ -66,7 +60,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 4. Seed Sample Legal Documents if Agreements table is empty
         if (Agreement::count() === 0) {
             $samples = [
                 [

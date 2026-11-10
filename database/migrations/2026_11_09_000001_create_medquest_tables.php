@@ -4,11 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Skema inti Medquest Legal Document System Monitoring.
- * Struktur kolom sengaja dibuat sama dengan versi PHP native (db_medquest_log)
- * agar data lama bisa digunakan langsung atau diimpor ke database baru di CloudPanel.
- */
 return new class extends Migration
 {
     public function up(): void

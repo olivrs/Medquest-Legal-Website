@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -16,9 +16,6 @@ use Illuminate\Support\Facades\Hash;
 
 class MedquestController extends Controller
 {
-    /**
-     * Pastikan tabel database sudah terbuat & kolom allowed_departments tersedia
-     */
     protected function ensureDatabaseReady(): void
     {
         try {
@@ -40,13 +37,8 @@ class MedquestController extends Controller
                 });
             }
         } catch (\Throwable $e) {
-            // Abaikan jika koneksi belum diatur di .env
-        }
+$1        }
     }
-
-    /**
-     * Entrypoint utama yang mendukung ?page=... maupun route Laravel langsung
-     */
     public function handleRoot(Request $request)
     {
         $this->ensureDatabaseReady();
@@ -67,12 +59,6 @@ class MedquestController extends Controller
             default            => Auth::check() ? $this->agreementsPage($request) : $this->loginPage($request),
         };
     }
-
-    /**
-     * Terapkan hak akses dokumen:
-     * - Superadmin / Admin: dapat melihat & mengakses SELURUH dokumen dari semua akun & semua departemen.
-     * - User biasa: hanya dapat mengakses dokumen yang dibuat oleh dirinya sendiri ATAU dokumen departemen yang dicentang/diizinkan.
-     */
     protected function applyAgreementAccessScope($query, string $alias = '')
     {
         if (is_superadmin()) {
@@ -98,10 +84,6 @@ class MedquestController extends Controller
             }
         });
     }
-
-    /**
-     * Siapkan variabel layout global untuk header/sidebar
-     */
     protected function getLayoutData(Request $request, string $currPage): array
     {
         $this->ensureDatabaseReady();
@@ -154,8 +136,7 @@ class MedquestController extends Controller
             if (is_superadmin() || in_array('ALL', $allowedDepts, true)) {
                 $sidebarDepts = $allDepts;
             } else {
-                // Untuk user biasa, tampilkan departemen yang sudah dicentang untuknya (serta departemen tempat dokumen buatannya berada)
-                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($allowedDepts, $userDeptCounts) {
+$1                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($allowedDepts, $userDeptCounts) {
                     $code = strtoupper((string) ($d['kode_dept'] ?? ''));
                     return in_array($code, $allowedDepts, true) || !empty($userDeptCounts[$code]);
                 }));
@@ -495,8 +476,7 @@ class MedquestController extends Controller
 
         $fetchedRows = $query->get()->map(fn ($r) => (array) $r)->all();
 
-        // Filter berdasarkan status menggunakan fungsi perhitungan tanggal PHP agar identik di MySQL & SQLite
-        $allMatchingAgreements = array_values(array_filter($fetchedRows, function (array $row) use ($selectedStatus) {
+$1        $allMatchingAgreements = array_values(array_filter($fetchedRows, function (array $row) use ($selectedStatus) {
             if ($selectedStatus === 'ALL' || $selectedStatus === '') {
                 return true;
             }
@@ -1142,8 +1122,7 @@ class MedquestController extends Controller
                         if (in_array($newRole, ['superadmin', 'admin'], true)) {
                             set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>ADMIN</strong>. Akun tersebut kini dapat melihat seluruh dokumen dari semua departemen.");
                         } else {
-                            // Jika diubah ke USER dan allowed_departments masih kosong/ALL, inisialisasi dari departemen_default
-                            if (empty($targetUser->allowed_departments) && strtoupper((string) $targetUser->departemen_default) !== 'ALL') {
+$1                            if (empty($targetUser->allowed_departments) && strtoupper((string) $targetUser->departemen_default) !== 'ALL') {
                                 $targetUser->update(['allowed_departments' => strtoupper((string) $targetUser->departemen_default)]);
                             }
                             set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>USER</strong>. Silakan centang departemen yang diizinkan pada kolom Akses Departemen.");
