@@ -183,7 +183,7 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
     </div>
 
     <div class="table-responsive">
-        <table class="cp-table">
+        <table class="cp-table mq-mobile-cards">
             <thead>
                 <tr>
                     <th style="width:38px;" class="text-center no-print">
@@ -288,14 +288,14 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                             : ($row['document_title'] ?: $row['product_description'] ?: '-');
                     ?>
                         <tr class="<?= $expInfo['row_class'] ?>">
-                            <td class="text-center no-print" style="vertical-align:middle;">
+                            <td class="text-center no-print mc-check" style="vertical-align:middle;">
                                 <input type="checkbox"
                                        class="form-check-input doc-row-checkbox m-0"
                                        value="<?= (int)$row['id'] ?>"
                                        style="width:15px;height:15px;cursor:pointer;"
                                        title="Centang untuk pilih dokumen <?= htmlspecialchars($displayTitle) ?>">
                             </td>
-                            <td>
+                            <td class="mc-dept">
                                 <a href="<?= base_url('?page=agreements&dept=' . urlencode($row['department'])) ?>"
                                    class="badge mq-dept-badge text-decoration-none px-2 py-1 mb-1 d-inline-block" style="font-size:0.74rem;">
                                     <?= htmlspecialchars($row['department']) ?>
@@ -308,7 +308,7 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                                 <?php endif; ?>
                             </td>
 
-                            <td>
+                            <td class="mc-title">
                                 <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($displayTitle) ?></div>
                                 <div class="text-secondary small" style="white-space:pre-line;font-size:0.76rem;">
                                     <span class="text-muted">No:</span> <?= htmlspecialchars($row['document_number'] ?: 'N/A') ?>
@@ -335,7 +335,7 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                                 <?php endif; ?>
                             </td>
 
-                            <td>
+                            <td class="mc-dates" data-label="Masa Berlaku">
                                 <div class="small mb-1">
                                     <span class="text-muted">Effective:</span> <strong><?= $effFormatted ?></strong>
                                     <span class="mx-1 text-muted">&rarr;</span>
@@ -348,7 +348,7 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                                 </div>
                             </td>
 
-                            <td>
+                            <td class="mc-note" data-label="Note">
                                 <div class="small text-secondary mb-2" style="white-space:pre-line;max-height:85px;overflow-y:auto;"><?= htmlspecialchars($row['note'] ?: 'N/A') ?></div>
                                 <button type="button"
                                         class="btn btn-sm btn-outline-primary py-0 px-2 no-print"
@@ -362,7 +362,7 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                                 </button>
                             </td>
 
-                            <td>
+                            <td class="mc-created" data-label="Created By">
                                 <div class="fw-bold text-dark font-monospace small mb-2" style="white-space:pre-line;"><?= htmlspecialchars($row['created_by_log']) ?></div>
                                 <div class="d-flex gap-1 no-print">
                                     <a href="<?= base_url('?page=detail&id=' . $row['id']) ?>" class="btn btn-sm btn-light border py-0 px-2 small text-primary" title="Inspect / Lihat Detail Dokumen">

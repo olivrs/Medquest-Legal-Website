@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v4" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v5_mobile" rel="stylesheet">
 </head>
 <body>
 
@@ -19,7 +19,11 @@
     $isDeptOpen = ($currPage === 'agreements' && $currDept !== 'ALL');
 ?>
 <div class="app-layout">
+    <div class="sidebar-backdrop no-print" id="sidebarBackdrop"></div>
     <aside class="app-sidebar no-print">
+        <button type="button" class="sidebar-close-mobile" id="sidebarCloseBtn" aria-label="Tutup Menu">
+            <i class="fas fa-times"></i>
+        </button>
         <a href="<?= base_url('?page=agreements') ?>" class="sidebar-brand justify-content-center">
             <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest Logo" class="sidebar-logo-centered">
         </a>
@@ -129,7 +133,7 @@
             </div>
 
             <div class="topbar-actions">
-                <div class="dropdown">
+                <div class="dropdown mq-topbar-dept">
                     <button class="btn btn-sm btn-light border fw-semibold text-dark dropdown-toggle d-inline-flex align-items-center gap-2 px-3" style="font-size:0.76rem;border-radius: 0;" type="button" data-bs-toggle="dropdown">
                         <i class="fas fa-building text-primary" style="font-size:0.72rem;"></i>
                         <span>Departemen: <strong><?= $currDept === 'ALL' ? 'Semua' : htmlspecialchars($currDept) ?></strong></span>
@@ -156,7 +160,7 @@
                     </ul>
                 </div>
 
-                <div class="d-flex align-items-center gap-2 border-start ps-3">
+                <div class="d-flex align-items-center gap-2 border-start ps-3 mq-topbar-user">
                     <div class="sidebar-avatar" style="width:28px;height:28px;font-size:0.7rem;background:#2b579a;">
                         <?= htmlspecialchars($user['kode_singkatan']) ?>
                     </div>
@@ -296,16 +300,51 @@
 (function() {
     const layoutEl = document.querySelector('.app-layout');
     const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
     if (!layoutEl || !toggleBtn) return;
 
+    const mobileQuery = window.matchMedia('(max-width: 991.98px)');
+    const isMobile = () => mobileQuery.matches;
+
+    // Desktop: ingat status sidebar tertutup/terbuka
     if (localStorage.getItem('mq_sidebar_collapsed') === '1') {
         layoutEl.classList.add('sidebar-collapsed');
     }
 
+    function closeMobileSidebar() {
+        layoutEl.classList.remove('sidebar-mobile-open');
+        document.body.classList.remove('mq-no-scroll');
+    }
+
     toggleBtn.addEventListener('click', function() {
+        if (isMobile()) {
+            // HP / Tablet: sidebar muncul sebagai menu geser (drawer)
+            const willOpen = !layoutEl.classList.contains('sidebar-mobile-open');
+            layoutEl.classList.toggle('sidebar-mobile-open', willOpen);
+            document.body.classList.toggle('mq-no-scroll', willOpen);
+            return;
+        }
         layoutEl.classList.toggle('sidebar-collapsed');
         const isCollapsed = layoutEl.classList.contains('sidebar-collapsed');
         localStorage.setItem('mq_sidebar_collapsed', isCollapsed ? '1' : '0');
+    });
+
+    if (backdrop) backdrop.addEventListener('click', closeMobileSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+
+    // Tutup drawer otomatis setelah memilih menu (kecuali tombol buka/tutup submenu Departemen)
+    document.querySelectorAll('.app-sidebar a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (isMobile() && link.getAttribute('data-bs-toggle') !== 'collapse') {
+                closeMobileSidebar();
+            }
+        });
+    });
+
+    // Jika layar diperbesar kembali ke ukuran desktop, pastikan drawer tertutup
+    mobileQuery.addEventListener('change', function(e) {
+        if (!e.matches) closeMobileSidebar();
     });
 })();
 

@@ -16,7 +16,7 @@
         <span class="badge bg-light text-dark border px-3 py-1"><?= count($upcomingH) ?> Dokumen</span>
     </div>
     <div class="table-responsive">
-        <table class="cp-table">
+        <table class="cp-table mq-mobile-cards">
             <thead>
                 <tr>
                     <th style="width: 48px;" class="text-center">Buka</th>
@@ -39,7 +39,7 @@
                         $displaySub   = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
                     ?>
                         <tr class="<?= $expInfo['row_class'] ?>">
-                            <td class="text-center" style="vertical-align: middle;">
+                            <td class="text-center mc-open" style="vertical-align: middle;">
                                 <a href="<?= base_url('?page=detail&id=' . $item['id']) ?>"
                                    class="btn btn-sm btn-primary py-1 px-2 text-white d-inline-flex align-items-center justify-content-center"
                                    style="width: 32px; height: 32px; font-size: 0.85rem;"
@@ -47,22 +47,22 @@
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             </td>
-                            <td style="vertical-align: middle;">
+                            <td class="mc-dept" style="vertical-align: middle;">
                                 <span class="badge mq-dept-badge px-2 py-1"><?= htmlspecialchars($item['department']) ?></span>
                             </td>
-                            <td style="vertical-align: middle;">
+                            <td class="mc-title" style="vertical-align: middle;">
                                 <div class="fw-bold text-dark"><?= htmlspecialchars($displayTitle) ?></div>
                                 <div class="text-muted small"><?= htmlspecialchars($displaySub) ?></div>
                             </td>
-                            <td class="fw-bold text-danger" style="vertical-align: middle;">
+                            <td class="fw-bold text-danger" data-label="Expiry Date" style="vertical-align: middle;">
                                 <?= format_date_medquest($item['expiry_date']) ?>
                             </td>
-                            <td style="vertical-align: middle;">
+                            <td data-label="Status" style="vertical-align: middle;">
                                 <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
                                     <?= htmlspecialchars($expInfo['short_label']) ?>
                                 </span>
                             </td>
-                            <td style="vertical-align: middle;">
+                            <td data-label="Created By" style="vertical-align: middle;">
                                 <div class="fw-bold font-monospace small"><?= htmlspecialchars($item['created_by_code']) ?></div>
                                 <div class="small text-muted"><?= htmlspecialchars($item['user_email'] ?? '-') ?></div>
                             </td>

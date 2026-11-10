@@ -22,6 +22,13 @@ class MedquestController extends Controller
     protected function ensureDatabaseReady(): void
     {
         try {
+            $revMarker = storage_path('framework/medquest_rev.txt');
+            $currentRev = '2026-11-10-v5-mobile';
+            if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
+                \Illuminate\Support\Facades\Artisan::call('view:clear');
+                @file_put_contents($revMarker, $currentRev);
+            }
+
             if (!\Illuminate\Support\Facades\Schema::hasTable('users')) {
                 \Illuminate\Support\Facades\Artisan::call('migrate', [
                     '--seed'  => true,
