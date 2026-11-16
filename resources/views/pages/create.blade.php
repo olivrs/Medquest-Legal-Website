@@ -55,7 +55,7 @@
                     </div>
 
                     <div class="col-md-7">
-                        <label class="form-label fw-bold small text-dark mb-1">Status Alur Proses Dokumen <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Status <span class="text-danger">*</span></label>
                         <div class="d-flex flex-wrap align-items-center gap-3 p-2 bg-light border" style="border-radius:4px;">
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="statusPengajuan" value="PENGAJUAN" checked onchange="toggleTglSelesai(this.value)">

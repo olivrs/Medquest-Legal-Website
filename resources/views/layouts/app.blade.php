@@ -70,8 +70,6 @@
                 </div>
             </div>
 
-            <div class="sidebar-section-title mt-3">STATUS ALUR PROSES</div>
-
             <a href="<?= base_url('?page=agreements&proses=PENGAJUAN' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
                class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'PENGAJUAN') ? 'active' : '' ?>">
                 <div class="d-flex align-items-center gap-2">

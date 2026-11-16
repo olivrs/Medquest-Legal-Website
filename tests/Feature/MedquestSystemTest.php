@@ -38,12 +38,16 @@ class MedquestSystemTest extends TestCase
         $agrResp = $this->get('/agreements');
         $agrResp->assertStatus(200);
         $agrResp->assertSee('UDD PMI Kota Surabaya');
+        $agrResp->assertSee('MENU INTERNAL');
+        $agrResp->assertDontSee('STATUS ALUR PROSES');
 
         $sortResp = $this->get('/agreements?sort=newest&doc_type=ALL');
         $sortResp->assertStatus(200);
 
         $createResp = $this->get('/create');
         $createResp->assertStatus(200);
+        $createResp->assertDontSee('Status Alur Proses');
+        $createResp->assertSee('Status <span class="text-danger">*</span>', false);
 
         $notifResp = $this->get('/notifications');
         $notifResp->assertStatus(200);

@@ -36,7 +36,7 @@
                     </div>
 
                     <div class="col-md-7">
-                        <label class="form-label fw-semibold">Status Alur Proses Dokumen <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
                         <?php $currStatusProses = strtoupper(trim((string)($agr['status_proses'] ?? 'PENGAJUAN'))); ?>
                         <div class="d-flex flex-wrap align-items-center gap-3 p-2 bg-light border" style="border-radius:4px;">
                             <div class="form-check mb-0">
