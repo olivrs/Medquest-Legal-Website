@@ -20,7 +20,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-16-v8-sidebar-label';
+            $currentRev = '2026-11-16-v9-table-headers';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {

@@ -43,6 +43,10 @@ class MedquestSystemTest extends TestCase
 
         $sortResp = $this->get('/agreements?sort=newest&doc_type=ALL');
         $sortResp->assertStatus(200);
+        $sortResp->assertDontSee('Dokumen / Customer');
+        $sortResp->assertDontSee('Detail (Product / Issued By / Principal)');
+        $sortResp->assertSee('<th style="width:240px;">Document No</th>', false);
+        $sortResp->assertSee('<th style="width:200px;">Detail</th>', false);
 
         $createResp = $this->get('/create');
         $createResp->assertStatus(200);

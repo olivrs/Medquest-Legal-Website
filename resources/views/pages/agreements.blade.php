@@ -231,8 +231,8 @@ $activeTableTitle = match ($selectedDocType) {
                         <th style="width:230px;">Customer &amp; Document No</th>
                         <th style="width:195px;">Product &amp; S/N</th>
                     <?php else: ?>
-                        <th style="width:240px;">Dokumen / Customer &amp; No</th>
-                        <th style="width:200px;">Detail (Product / Issued By / Principal)</th>
+                        <th style="width:240px;">Document No</th>
+                        <th style="width:200px;">Detail</th>
                     <?php endif; ?>
                     <th style="min-width:275px;">
                         <div class="d-flex align-items-center justify-content-between gap-1">
