@@ -610,7 +610,6 @@ $activeTableTitle = match ($selectedDocType) {
     <div id="bulkDeleteInputsContainer"></div>
 </form>
 
-<!-- Modal Set Selesai -->
 <div class="modal fade no-print" id="modalSetSelesai" tabindex="-1" aria-labelledby="modalSetSelesaiLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
@@ -661,7 +660,6 @@ $activeTableTitle = match ($selectedDocType) {
     </div>
 </div>
 
-<!-- Form Hidden untuk Quick Status Switch (Pengajuan / Berjalan) -->
 <form id="formQuickStatus" method="POST" action="<?= base_url('?page=agreements') ?>" style="display:none;">
     @csrf
     <input type="hidden" name="action" value="update_process_status">

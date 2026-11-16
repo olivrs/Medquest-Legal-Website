@@ -179,5 +179,25 @@ class MedquestSystemTest extends TestCase
         $respAfterBulkDelete->assertDontSee('Vendor Gedung Khusus GA');
         $respAfterBulkDelete->assertDontSee('RS Khusus Onkologi MHO');
         $respAfterBulkDelete->assertSee('UDD PMI Kota Surabaya');
+
+        $targetAgr = \App\Models\Agreement::where('customer', 'UDD PMI Kota Surabaya')->first();
+        $this->assertNotNull($targetAgr);
+
+        $this->post('/?page=agreements', [
+            'action'        => 'update_process_status',
+            'agreement_id'  => $targetAgr->id,
+            'status_proses' => 'BERJALAN',
+        ])->assertRedirect();
+
+        $this->assertSame('BERJALAN', $targetAgr->fresh()->status_proses);
+
+        $this->post('/?page=detail&id=' . $targetAgr->id, [
+            'action'          => 'update_process_status',
+            'status_proses'   => 'SELESAI',
+            'tanggal_selesai' => '2026-11-16',
+            'catatan_status'  => 'Dokumen selesai diparaf',
+        ])->assertRedirect();
+
+        $this->assertSame('SELESAI', $targetAgr->fresh()->status_proses);
     }
 }

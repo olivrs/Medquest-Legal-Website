@@ -42,7 +42,6 @@
                     </div>
                 </div>
 
-                <!-- Kontrol 3 Tombol Status Proses -->
                 <div class="p-2 mb-3 bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2 no-print">
                     <div class="d-flex align-items-center gap-1">
                         <span class="small fw-bold text-secondary me-1">Pilihan Status:</span>
@@ -248,7 +247,6 @@
     </div>
 </div>
 
-<!-- Modal Set Selesai di Halaman Detail -->
 <div class="modal fade no-print" id="modalDetailSetSelesai" tabindex="-1" aria-labelledby="modalDetailSetSelesaiLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="modal-content rounded-0 border-0 shadow">

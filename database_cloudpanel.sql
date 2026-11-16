@@ -20,7 +20,7 @@ CREATE TABLE `agreement_histories` (
   `kode_singkatan` varchar(20) NOT NULL,
   `tanggal_input` date NOT NULL,
   `catatan` text,
-  `aksi` varchar(50) DEFAULT 'CREATE',
+  `aksi` varchar(50) NOT NULL DEFAULT 'CREATE',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `agreement_id` (`agreement_id`),

@@ -20,9 +20,15 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-10-v5-mobile';
+            $currentRev = '2026-11-16-v6-status-fix';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
+                if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {
+                    try {
+                        DB::statement("ALTER TABLE agreement_histories MODIFY COLUMN aksi VARCHAR(50) NOT NULL DEFAULT 'CREATE'");
+                    } catch (\Throwable $e) {
+                    }
+                }
                 @file_put_contents($revMarker, $currentRev);
             }
 
@@ -49,13 +55,46 @@ class MedquestController extends Controller
                         });
                     }
                 }
-                if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {
-                    try {
-                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `agreement_histories` MODIFY `aksi` VARCHAR(50) NOT NULL DEFAULT 'CREATE'");
-                    } catch (\Throwable $e) {}
-                }
             }
         } catch (\Throwable $e) {
+        }
+    }
+
+    protected function logAgreementHistory(int $agreementId, int $userId, string $kodeSingkatan, string $tanggalInput, string $catatan, string $aksi): void
+    {
+        try {
+            AgreementHistory::create([
+                'agreement_id'   => $agreementId,
+                'user_id'        => $userId,
+                'kode_singkatan' => $kodeSingkatan,
+                'tanggal_input'  => $tanggalInput,
+                'catatan'        => $catatan,
+                'aksi'           => $aksi,
+            ]);
+        } catch (\Throwable $e) {
+            try {
+                DB::statement("ALTER TABLE agreement_histories MODIFY COLUMN aksi VARCHAR(50) NOT NULL DEFAULT 'CREATE'");
+                AgreementHistory::create([
+                    'agreement_id'   => $agreementId,
+                    'user_id'        => $userId,
+                    'kode_singkatan' => $kodeSingkatan,
+                    'tanggal_input'  => $tanggalInput,
+                    'catatan'        => $catatan,
+                    'aksi'           => $aksi,
+                ]);
+            } catch (\Throwable $e2) {
+                try {
+                    AgreementHistory::create([
+                        'agreement_id'   => $agreementId,
+                        'user_id'        => $userId,
+                        'kode_singkatan' => $kodeSingkatan,
+                        'tanggal_input'  => $tanggalInput,
+                        'catatan'        => $catatan,
+                        'aksi'           => 'EDIT',
+                    ]);
+                } catch (\Throwable $e3) {
+                }
+            }
         }
     }
     public function handleRoot(Request $request)
@@ -337,6 +376,7 @@ class MedquestController extends Controller
 
     public function agreementsPage(Request $request)
     {
+        $this->ensureDatabaseReady();
         if (!Auth::check()) {
             return redirect(base_url('?page=login'));
         }
@@ -489,27 +529,14 @@ class MedquestController extends Controller
                         $logMsg .= "\nCatatan: " . $catatanStatus;
                     }
 
-                    try {
-                        AgreementHistory::create([
-                            'agreement_id'   => $agrId,
-                            'user_id'        => $uId,
-                            'kode_singkatan' => $uCode,
-                            'tanggal_input'  => date('Y-m-d'),
-                            'catatan'        => $logMsg,
-                            'aksi'           => 'STATUS_' . $newStatus,
-                        ]);
-                    } catch (\Throwable $e) {
-                        try {
-                            AgreementHistory::create([
-                                'agreement_id'   => $agrId,
-                                'user_id'        => $uId,
-                                'kode_singkatan' => $uCode,
-                                'tanggal_input'  => date('Y-m-d'),
-                                'catatan'        => $logMsg,
-                                'aksi'           => 'EDIT',
-                            ]);
-                        } catch (\Throwable $ignored) {}
-                    }
+                    $this->logAgreementHistory(
+                        $agrId,
+                        $uId,
+                        $uCode,
+                        date('Y-m-d'),
+                        $logMsg,
+                        'STATUS_' . $newStatus
+                    );
 
                     set_flash('success', "Status alur dokumen #<strong>" . ($agr->no_urut_dokumen ?: $agr->id) . "</strong> berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
                 }
@@ -712,6 +739,7 @@ class MedquestController extends Controller
 
     public function createPage(Request $request)
     {
+        $this->ensureDatabaseReady();
         if (!Auth::check()) {
             return redirect(base_url('?page=login'));
         }
@@ -891,6 +919,7 @@ class MedquestController extends Controller
 
     public function editPage(Request $request, ?int $routeId = null)
     {
+        $this->ensureDatabaseReady();
         if (!Auth::check()) {
             return redirect(base_url('?page=login'));
         }
@@ -1016,6 +1045,7 @@ class MedquestController extends Controller
 
     public function detailPage(Request $request, ?int $routeId = null)
     {
+        $this->ensureDatabaseReady();
         if (!Auth::check()) {
             return redirect(base_url('?page=login'));
         }
@@ -1096,27 +1126,14 @@ class MedquestController extends Controller
                         $logMsg .= "\nCatatan: " . $catatanStatus;
                     }
 
-                    try {
-                        AgreementHistory::create([
-                            'agreement_id'   => $id,
-                            'user_id'        => $uId,
-                            'kode_singkatan' => $uCode,
-                            'tanggal_input'  => date('Y-m-d'),
-                            'catatan'        => $logMsg,
-                            'aksi'           => 'STATUS_' . $newStatus,
-                        ]);
-                    } catch (\Throwable $e) {
-                        try {
-                            AgreementHistory::create([
-                                'agreement_id'   => $id,
-                                'user_id'        => $uId,
-                                'kode_singkatan' => $uCode,
-                                'tanggal_input'  => date('Y-m-d'),
-                                'catatan'        => $logMsg,
-                                'aksi'           => 'EDIT',
-                            ]);
-                        } catch (\Throwable $ignored) {}
-                    }
+                    $this->logAgreementHistory(
+                        $id,
+                        $uId,
+                        $uCode,
+                        date('Y-m-d'),
+                        $logMsg,
+                        'STATUS_' . $newStatus
+                    );
 
                     set_flash('success', "Status alur dokumen berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
                 }
