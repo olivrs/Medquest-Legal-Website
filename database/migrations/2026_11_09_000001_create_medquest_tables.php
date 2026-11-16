@@ -22,9 +22,9 @@ return new class extends Migration
             Schema::create('agreements', function (Blueprint $table) {
                 $table->id();
                 $table->string('doc_type', 30)->default('COOPERATION');
-                $table->string('status_proses', 30)->default('PENGAJUAN')->index()->comment('PENGAJUAN, BERJALAN, SELESAI');
-                $table->date('tanggal_selesai')->nullable()->index()->comment('Tanggal dokumen ditandai selesai');
-                $table->integer('no_urut_dokumen')->nullable()->comment('Nomor urut form, contoh 731, 732');
+                $table->string('status_proses', 30)->default('PENGAJUAN')->index();
+                $table->date('tanggal_selesai')->nullable()->index();
+                $table->integer('no_urut_dokumen')->nullable();
                 $table->string('department', 30)->index();
                 $table->text('document_title')->nullable();
                 $table->text('document_number');
@@ -40,8 +40,8 @@ return new class extends Migration
                 $table->text('note')->nullable();
                 $table->string('file_attachment', 255)->nullable();
                 $table->unsignedBigInteger('created_by_user_id')->index();
-                $table->string('created_by_code', 20)->comment('Singkatan pembuat data, misal FJR');
-                $table->text('created_by_log')->comment('Riwayat tanda input, misal: FJR, 21 OCT 2026');
+                $table->string('created_by_code', 20);
+                $table->text('created_by_log');
                 foreach ([90, 60, 30, 14, 7, 3, 1] as $h) {
                     $table->dateTime("notif_h{$h}_sent_at")->nullable();
                 }
@@ -88,7 +88,7 @@ return new class extends Migration
                 $table->integer('smtp_port')->default(587);
                 $table->string('smtp_encryption', 20)->default('tls');
                 $table->string('smtp_username', 150)->nullable()->default('');
-                $table->text('smtp_password')->nullable()->comment('Disimpan di database pengaturan SMTP');
+                $table->text('smtp_password')->nullable();
                 $table->string('sender_name', 150)->default('Medquest Agreement Reminder');
                 $table->string('sender_email', 150)->default('noreply@medquest.co.id');
                 $table->timestamp('updated_at')->nullable();

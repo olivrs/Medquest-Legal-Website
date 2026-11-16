@@ -315,11 +315,19 @@ class NotificationService
         ];
     }
 
-    public static function runAutoExpiryNotifications(): array
+    public static function runAutoExpiryNotifications(bool $force = false): array
     {
         $results = [];
 
         try {
+            if (!$force) {
+                $lastRun = cache()->get('medquest_last_auto_notify');
+                if ($lastRun && (time() - (int) $lastRun) < 300) {
+                    return [];
+                }
+                cache()->put('medquest_last_auto_notify', time(), 600);
+            }
+
             $agreements = Agreement::where('expiry_date_na', 0)
                 ->whereNotNull('expiry_date')
                 ->get();

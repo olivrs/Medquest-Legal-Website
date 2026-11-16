@@ -20,7 +20,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-16-v6-status-fix';
+            $currentRev = '2026-11-16-v7-final-clean';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {
@@ -73,27 +73,15 @@ class MedquestController extends Controller
             ]);
         } catch (\Throwable $e) {
             try {
-                DB::statement("ALTER TABLE agreement_histories MODIFY COLUMN aksi VARCHAR(50) NOT NULL DEFAULT 'CREATE'");
                 AgreementHistory::create([
                     'agreement_id'   => $agreementId,
                     'user_id'        => $userId,
                     'kode_singkatan' => $kodeSingkatan,
                     'tanggal_input'  => $tanggalInput,
                     'catatan'        => $catatan,
-                    'aksi'           => $aksi,
+                    'aksi'           => 'EDIT',
                 ]);
             } catch (\Throwable $e2) {
-                try {
-                    AgreementHistory::create([
-                        'agreement_id'   => $agreementId,
-                        'user_id'        => $userId,
-                        'kode_singkatan' => $kodeSingkatan,
-                        'tanggal_input'  => $tanggalInput,
-                        'catatan'        => $catatan,
-                        'aksi'           => 'EDIT',
-                    ]);
-                } catch (\Throwable $e3) {
-                }
             }
         }
     }
@@ -385,7 +373,10 @@ class MedquestController extends Controller
         $uId   = (int) $user['id'];
         $uCode = strtoupper($user['kode_singkatan']);
 
-        NotificationService::runAutoExpiryNotifications();
+        try {
+            NotificationService::runAutoExpiryNotifications();
+        } catch (\Throwable $e) {
+        }
 
         if ($request->isMethod('post')) {
             $action = (string) $request->input('action', '');
@@ -1027,8 +1018,22 @@ class MedquestController extends Controller
 
             $agrModel->update($updatePayload);
 
-            if (!$expiry_date_na && $expiry_date) {
-                NotificationService::runAutoExpiryNotifications();
+            $oldStatusProses = strtoupper(trim((string) ($agr['status_proses'] ?? 'PENGAJUAN')));
+            if ($status_proses !== $oldStatusProses) {
+                $statusMeta = get_process_status_meta($status_proses);
+                $oldStatusMeta = get_process_status_meta($oldStatusProses);
+                $logMsg = "Status alur diubah dari [{$oldStatusMeta['label']}] menjadi [{$statusMeta['label']}].";
+                if ($status_proses === 'SELESAI' && $tanggal_selesai) {
+                    $logMsg .= " (Tanggal Selesai: " . format_date_medquest($tanggal_selesai) . ")";
+                }
+                $this->logAgreementHistory($id, $uId, $uCode, date('Y-m-d'), $logMsg, 'STATUS_' . $status_proses);
+            }
+
+            try {
+                if (!$expiry_date_na && $expiry_date) {
+                    NotificationService::runAutoExpiryNotifications();
+                }
+            } catch (\Throwable $e) {
             }
 
             set_flash('success', 'Data dokumen berhasil diperbarui.');
@@ -1170,7 +1175,10 @@ class MedquestController extends Controller
         $uId   = (int) $user['id'];
         $uCode = strtoupper($user['kode_singkatan']);
 
-        NotificationService::runAutoExpiryNotifications();
+        try {
+            NotificationService::runAutoExpiryNotifications();
+        } catch (\Throwable $e) {
+        }
 
         if ($request->isMethod('post') && $request->input('action') === 'clear_logs') {
             if (is_superadmin()) {

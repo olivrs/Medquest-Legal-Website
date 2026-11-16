@@ -13,7 +13,6 @@ return new class extends Migration
             try {
                 DB::statement("ALTER TABLE `agreement_histories` MODIFY `aksi` VARCHAR(50) NOT NULL DEFAULT 'CREATE'");
             } catch (\Throwable $e) {
-                // Ignore if not supported
             }
         }
     }
@@ -24,7 +23,6 @@ return new class extends Migration
             try {
                 DB::statement("ALTER TABLE `agreement_histories` MODIFY `aksi` ENUM('CREATE', 'ADD_NOTE', 'EDIT') NOT NULL DEFAULT 'CREATE'");
             } catch (\Throwable $e) {
-                // Ignore
             }
         }
     }

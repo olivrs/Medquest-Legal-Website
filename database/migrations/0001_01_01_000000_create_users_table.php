@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Tabel Users Medquest (wajib Email Pribadi & Kode Singkatan Nama, contoh: FJR)
         if (!Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
                 $table->string('nama_lengkap', 120);
-                $table->string('kode_singkatan', 20)->unique()->comment('Singkatan nama Medquest, contoh: FJR');
-                $table->string('email', 150)->unique()->comment('Email pribadi untuk notifikasi deadline');
+                $table->string('kode_singkatan', 20)->unique();
+                $table->string('email', 150)->unique();
                 $table->string('password');
                 $table->string('departemen_default', 30)->default('ALL');
-                $table->text('allowed_departments')->nullable()->comment('Daftar kode departemen yang diizinkan untuk User (dipisah koma)');
+                $table->text('allowed_departments')->nullable();
                 $table->enum('role', ['superadmin', 'admin', 'user'])->default('user');
                 $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
                 $table->rememberToken();

@@ -191,6 +191,21 @@ class MedquestSystemTest extends TestCase
 
         $this->assertSame('BERJALAN', $targetAgr->fresh()->status_proses);
 
+        $editResp = $this->post('/?page=edit&id=' . $targetAgr->id, [
+            'department'          => $targetAgr->department,
+            'status_proses'       => 'BERJALAN',
+            'no_urut_dokumen'     => $targetAgr->no_urut_dokumen,
+            'document_number'     => $targetAgr->document_number,
+            'customer'            => $targetAgr->customer,
+            'product_description' => $targetAgr->product_description,
+            'serial_number'       => $targetAgr->serial_number,
+            'expiry_date'         => $targetAgr->expiry_date,
+            'note'                => $targetAgr->note,
+            'created_by_log'      => $targetAgr->created_by_log,
+        ]);
+        $editResp->assertRedirect();
+        $this->get($editResp->headers->get('Location'))->assertStatus(200);
+
         $this->post('/?page=detail&id=' . $targetAgr->id, [
             'action'          => 'update_process_status',
             'status_proses'   => 'SELESAI',
