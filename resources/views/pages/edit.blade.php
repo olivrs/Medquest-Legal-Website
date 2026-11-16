@@ -31,7 +31,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">No. Urut Baris Form (No.)</label>
+                        <label class="form-label fw-semibold">Form Sequence No.</label>
                         <input type="number" name="no_urut_dokumen" class="form-control" value="<?= htmlspecialchars((string) $agr['no_urut_dokumen']) ?>">
                     </div>
 
@@ -42,19 +42,19 @@
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="editStatusPengajuan" value="PENGAJUAN" <?= $currStatusProses === 'PENGAJUAN' ? 'checked' : '' ?> onchange="toggleEditTglSelesai(this.value)">
                                 <label class="form-check-label small fw-semibold" for="editStatusPengajuan" style="color:#b45309;">
-                                    <i class="fas fa-file-signature me-1"></i> Pengajuan
+                                    <i class="fas fa-file-signature me-1"></i> Submission
                                 </label>
                             </div>
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="editStatusBerjalan" value="BERJALAN" <?= $currStatusProses === 'BERJALAN' ? 'checked' : '' ?> onchange="toggleEditTglSelesai(this.value)">
                                 <label class="form-check-label small fw-semibold text-primary" for="editStatusBerjalan">
-                                    <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                                    <i class="fas fa-spinner fa-spin me-1"></i> In Progress
                                 </label>
                             </div>
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="editStatusSelesai" value="SELESAI" <?= $currStatusProses === 'SELESAI' ? 'checked' : '' ?> onchange="toggleEditTglSelesai(this.value)">
                                 <label class="form-check-label small fw-semibold text-success" for="editStatusSelesai">
-                                    <i class="fas fa-check-circle me-1"></i> Sudah Selesai
+                                    <i class="fas fa-check-circle me-1"></i> Completed
                                 </label>
                             </div>
                         </div>
@@ -62,10 +62,10 @@
 
                     <div class="col-md-5 <?= $currStatusProses === 'SELESAI' ? '' : 'd-none' ?>" id="editColTglSelesai">
                         <label class="form-label fw-semibold text-success">
-                            <i class="fas fa-calendar-check me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                            <i class="fas fa-calendar-check me-1"></i> Completion Date <span class="text-danger">*</span>
                         </label>
                         <input type="date" name="tanggal_selesai" id="editInputTglSelesai" class="form-control" value="<?= htmlspecialchars($agr['tanggal_selesai'] ?? date('Y-m-d')) ?>">
-                        <div class="text-muted small" style="font-size:0.7rem;">Tanggal resmi saat proses dokumen rampung</div>
+                        <div class="text-muted small" style="font-size:0.7rem;">Official date when the document process was completed</div>
                     </div>
 
                     <?php if ($docType === 'COMPANY' || $docType === 'PRINCIPAL'): ?>
@@ -135,17 +135,17 @@
                     </div>
 
                     <div class="col-md-7">
-                        <label class="form-label fw-semibold">Note (Riwayat Catatan)</label>
+                        <label class="form-label fw-semibold">Note (History Log)</label>
                         <textarea name="note" class="form-control" rows="4"><?= htmlspecialchars($agr['note'] ?? '') ?></textarea>
                     </div>
 
                     <div class="col-md-5">
-                        <label class="form-label fw-semibold">Kolom Created By (Riwayat Singkatan &amp; Tgl)</label>
+                        <label class="form-label fw-semibold">Created By Log (Initial Code &amp; Date)</label>
                         <textarea name="created_by_log" class="form-control font-monospace fw-bold" rows="4"><?= htmlspecialchars($agr['created_by_log']) ?></textarea>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" name="append_my_stamp" id="appendStampCheck" checked>
                             <label class="form-check-label small" for="appendStampCheck">
-                                Tambahkan tanda hari ini: <strong><?= format_created_by_stamp($user['kode_singkatan']) ?></strong>
+                                Append today's stamp: <strong><?= format_created_by_stamp($user['kode_singkatan']) ?></strong>
                             </label>
                         </div>
                     </div>
@@ -153,9 +153,9 @@
 
                 <hr class="my-4">
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="<?= base_url('?page=agreements&dept=' . urlencode($agr['department']) . '&doc_type=' . urlencode($docType)) ?>" class="btn btn-light border px-4">Batal</a>
+                    <a href="<?= base_url('?page=agreements&dept=' . urlencode($agr['department']) . '&doc_type=' . urlencode($docType)) ?>" class="btn btn-light border px-4">Cancel</a>
                     <button type="submit" class="btn btn-primary fw-bold px-4">
-                        <i class="fas fa-save me-1"></i> Simpan Perubahan
+                        <i class="fas fa-save me-1"></i> Save Changes
                     </button>
                 </div>
             </form>

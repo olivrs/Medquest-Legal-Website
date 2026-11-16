@@ -223,8 +223,8 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'active',
                 'row_class'   => 'row-active',
                 'badge_class' => 'badge-active',
-                'label'       => 'Berlaku Permanen (N/A)',
-                'short_label' => 'N/A (Aktif)',
+                'label'       => 'Permanent / No Expiry (N/A)',
+                'short_label' => 'N/A (Active)',
                 'next_stage'  => 'N/A',
                 'days'        => 9999,
             ];
@@ -236,9 +236,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'expired',
                 'row_class'   => 'row-expired',
                 'badge_class' => 'badge-expired',
-                'label'       => 'Sudah Expired (' . abs($days) . ' hari lalu)',
-                'short_label' => 'EXPIRED (' . abs($days) . ' hr lalu)',
-                'next_stage'  => 'Kontrak Habis',
+                'label'       => 'Expired (' . abs($days) . ' days ago)',
+                'short_label' => 'EXPIRED (' . abs($days) . 'd ago)',
+                'next_stage'  => 'Expired',
                 'days'        => $days,
             ];
         } elseif ($days === 0) {
@@ -246,9 +246,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-urgent row-h3',
                 'badge_class' => 'badge-h3',
-                'label'       => 'Expired Hari Ini! ⚠️',
-                'short_label' => 'Hari Ini Expired ⚠️',
-                'next_stage'  => 'Hari Ini',
+                'label'       => 'Expires Today! ⚠️',
+                'short_label' => 'Expires Today ⚠️',
+                'next_stage'  => 'Today',
                 'days'        => 0,
             ];
         } elseif ($days <= 3) {
@@ -256,9 +256,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-urgent row-h3',
                 'badge_class' => 'badge-h3',
-                'label'       => "Mendesak: Sisa {$days} Hari ⚠️",
-                'short_label' => "Sisa {$days} Hari ⚠️",
-                'next_stage'  => 'Sisa 3 Hari',
+                'label'       => "Urgent: {$days} Days Left ⚠️",
+                'short_label' => "{$days} Days Left ⚠️",
+                'next_stage'  => '3 Days Left',
                 'days'        => $days,
             ];
         } elseif ($days <= 7) {
@@ -266,9 +266,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-warning',
                 'badge_class' => 'badge-h7',
-                'label'       => "Segera Expired (Sisa {$days} Hari)",
-                'short_label' => "Sisa {$days} Hari",
-                'next_stage'  => 'Sisa 7 Hari',
+                'label'       => "Expiring Soon ({$days} Days Left)",
+                'short_label' => "{$days} Days Left",
+                'next_stage'  => '7 Days Left',
                 'days'        => $days,
             ];
         } elseif ($days <= 14) {
@@ -276,9 +276,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-warning',
                 'badge_class' => 'badge-h14',
-                'label'       => "Sisa {$days} Hari",
-                'short_label' => "Sisa {$days} Hari",
-                'next_stage'  => 'Sisa 14 Hari',
+                'label'       => "{$days} Days Left",
+                'short_label' => "{$days} Days Left",
+                'next_stage'  => '14 Days Left',
                 'days'        => $days,
             ];
         } elseif ($days <= 30) {
@@ -286,9 +286,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-warning-soft',
                 'badge_class' => 'badge-h30',
-                'label'       => "Sisa {$days} Hari",
-                'short_label' => "Sisa {$days} Hari",
-                'next_stage'  => 'Sisa 30 Hari',
+                'label'       => "{$days} Days Left",
+                'short_label' => "{$days} Days Left",
+                'next_stage'  => '30 Days Left',
                 'days'        => $days,
             ];
         } elseif ($days <= 60) {
@@ -296,9 +296,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-warning-soft',
                 'badge_class' => 'badge-h60',
-                'label'       => "Sisa {$days} Hari",
-                'short_label' => "Sisa {$days} Hari",
-                'next_stage'  => 'Sisa 60 Hari',
+                'label'       => "{$days} Days Left",
+                'short_label' => "{$days} Days Left",
+                'next_stage'  => '60 Days Left',
                 'days'        => $days,
             ];
         } elseif ($days <= 90) {
@@ -306,9 +306,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'warning',
                 'row_class'   => 'row-warning-soft',
                 'badge_class' => 'badge-h90',
-                'label'       => "Sisa {$days} Hari",
-                'short_label' => "Sisa {$days} Hari",
-                'next_stage'  => 'Sisa 90 Hari',
+                'label'       => "{$days} Days Left",
+                'short_label' => "{$days} Days Left",
+                'next_stage'  => '90 Days Left',
                 'days'        => $days,
             ];
         } else {
@@ -316,9 +316,9 @@ if (!function_exists('get_expiry_info')) {
                 'status'      => 'active',
                 'row_class'   => 'row-active',
                 'badge_class' => 'badge-active',
-                'label'       => "Aman (Sisa {$days} Hari)",
-                'short_label' => "Aman ({$days} hari)",
-                'next_stage'  => 'Menunggu Deadline',
+                'label'       => "Active ({$days} Days Left)",
+                'short_label' => "Active ({$days} days)",
+                'next_stage'  => 'On Track',
                 'days'        => $days,
             ];
         }
@@ -332,7 +332,7 @@ if (!function_exists('get_process_status_meta')) {
         return match ($st) {
             'BERJALAN' => [
                 'code'             => 'BERJALAN',
-                'label'            => 'Sedang Berjalan',
+                'label'            => 'In Progress',
                 'badge_class'      => 'badge-berjalan',
                 'badge_bg'         => '#eff6ff',
                 'badge_color'      => '#1d4ed8',
@@ -344,7 +344,7 @@ if (!function_exists('get_process_status_meta')) {
             ],
             'SELESAI' => [
                 'code'             => 'SELESAI',
-                'label'            => 'Sudah Selesai',
+                'label'            => 'Completed',
                 'badge_class'      => 'badge-selesai',
                 'badge_bg'         => '#f0fdf4',
                 'badge_color'      => '#15803d',
@@ -356,7 +356,7 @@ if (!function_exists('get_process_status_meta')) {
             ],
             default => [
                 'code'             => 'PENGAJUAN',
-                'label'            => 'Pengajuan',
+                'label'            => 'Submission',
                 'badge_class'      => 'badge-pengajuan',
                 'badge_bg'         => '#fffbeb',
                 'badge_color'      => '#b45309',

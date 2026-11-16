@@ -44,25 +44,25 @@
 
                 <div class="p-2 mb-3 bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2 no-print">
                     <div class="d-flex align-items-center gap-1">
-                        <span class="small fw-bold text-secondary me-1">Pilihan Status:</span>
+                        <span class="small fw-bold text-secondary me-1">Status Options:</span>
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" onclick="openDetailChangeStatus('PENGAJUAN')" class="btn btn-sm <?= ($agr['status_proses'] ?? 'PENGAJUAN') === 'PENGAJUAN' ? 'btn-warning text-dark fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
-                                <i class="fas fa-file-signature me-1"></i> Pengajuan
+                                <i class="fas fa-file-signature me-1"></i> Submission
                             </button>
 
                             <button type="button" onclick="openDetailChangeStatus('BERJALAN')" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'BERJALAN' ? 'btn-primary text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
-                                <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                                <i class="fas fa-spinner fa-spin me-1"></i> In Progress
                             </button>
 
                             <button type="button" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'SELESAI' ? 'btn-success text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;" data-bs-toggle="modal" data-bs-target="#modalDetailSetSelesai">
-                                <i class="fas fa-check-circle me-1"></i> Sudah Selesai
+                                <i class="fas fa-check-circle me-1"></i> Completed
                             </button>
                         </div>
                     </div>
 
                     <?php if (strtoupper(trim((string)($agr['status_proses'] ?? ''))) === 'SELESAI'): ?>
                         <div class="text-success small fw-bold">
-                            <i class="fas fa-calendar-check me-1"></i> Selesai Tanggal: <?= format_date_medquest($agr['tanggal_selesai']) ?>
+                            <i class="fas fa-calendar-check me-1"></i> Completion Date: <?= format_date_medquest($agr['tanggal_selesai']) ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -71,7 +71,7 @@
                     <table class="table table-bordered mq-detail-table mb-0">
                         <tbody>
                             <tr class="mq-row-compact">
-                                <th class="bg-light text-secondary" style="width:32%;">Jenis Dokumen</th>
+                                <th class="bg-light text-secondary" style="width:32%;">Document Type</th>
                                 <td>
                                     <span class="badge" style="background:<?= $typeMeta['badge_bg'] ?>;color:<?= $typeMeta['badge_color'] ?>;border:1px solid <?= $typeMeta['badge_border'] ?>;">
                                         <?= htmlspecialchars($typeMeta['title']) ?>
@@ -79,7 +79,7 @@
                                 </td>
                             </tr>
                             <tr class="mq-row-compact">
-                                <th class="bg-light text-secondary">No. Urut Form (No.)</th>
+                                <th class="bg-light text-secondary">Form Sequence No.</th>
                                 <td class="fw-bold">#<?= htmlspecialchars((string) ($agr['no_urut_dokumen'] ?: $agr['id'])) ?></td>
                             </tr>
                             <tr class="mq-row-compact">
@@ -87,7 +87,7 @@
                                 <td class="fw-bold text-primary"><?= htmlspecialchars($agr['department']) ?></td>
                             </tr>
                             <tr class="mq-row-compact">
-                                <th class="bg-light text-secondary">Status Proses Alur</th>
+                                <th class="bg-light text-secondary">Status</th>
                                 <td>
                                     <span class="badge px-2 py-1" style="background:<?= $statusMeta['badge_bg'] ?>;color:<?= $statusMeta['badge_color'] ?>;border:1px solid <?= $statusMeta['badge_border'] ?>;font-size:0.75rem;">
                                         <i class="<?= $statusMeta['icon_static'] ?> me-1"></i><?= htmlspecialchars($statusMeta['label']) ?>
@@ -96,7 +96,7 @@
                             </tr>
                             <?php if (strtoupper(trim((string)($agr['status_proses'] ?? ''))) === 'SELESAI'): ?>
                             <tr class="mq-row-compact">
-                                <th class="bg-light text-success fw-bold">Selesai Tanggal</th>
+                                <th class="bg-light text-success fw-bold">Completion Date</th>
                                 <td class="fw-bold text-success font-monospace" style="font-size:0.86rem;">
                                     <i class="fas fa-calendar-check me-1"></i><?= format_date_medquest($agr['tanggal_selesai']) ?>
                                 </td>
@@ -177,7 +177,7 @@
         <div class="col-lg-4 d-flex flex-column gap-3">
             <div class="cp-table-card mt-0">
                 <div class="fw-bold text-dark border-bottom pb-2 mb-3" style="font-size:0.84rem;">
-                    <i class="fas fa-paperclip text-primary me-1"></i> File Lampiran Dokumen
+                    <i class="fas fa-paperclip text-primary me-1"></i> Attached Document File
                 </div>
 
                 <?php if (!empty($agr['file_attachment'])):
@@ -187,18 +187,18 @@
                     <div class="p-2 rounded-0 bg-light border mb-2 d-flex justify-content-between align-items-center">
                         <span class="small text-truncate me-2"><i class="far fa-file-pdf text-danger me-1"></i><?= htmlspecialchars($agr['file_attachment']) ?></span>
                         <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-primary py-0 px-2" style="font-size:0.72rem;">
-                            Buka File
+                            Open File
                         </a>
                     </div>
                     <?php if (in_array($ext, ['jpg', 'jpeg', 'png'], true)): ?>
-                        <img src="<?= $fileUrl ?>" alt="Lampiran" class="img-fluid rounded-0 border mb-2">
+                        <img src="<?= $fileUrl ?>" alt="Attachment" class="img-fluid rounded-0 border mb-2">
                     <?php elseif ($ext === 'pdf'): ?>
                         <iframe src="<?= $fileUrl ?>" style="width:100%;height:210px;border:1px solid #e2e8f0;border-radius: 0;" class="mb-2"></iframe>
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="mq-empty-upload-box mb-3">
                         <i class="fas fa-file-upload text-primary opacity-50 mb-1" style="font-size:1.35rem;"></i>
-                        <div class="text-muted small">Belum ada file scan/dokumen yang diunggah.</div>
+                        <div class="text-muted small">No scan/document file uploaded yet.</div>
                     </div>
                 <?php endif; ?>
 
@@ -209,16 +209,16 @@
                         <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
                         <button type="submit" class="btn btn-outline-primary fw-semibold">Upload</button>
                     </div>
-                    <div class="text-muted mt-1" style="font-size:0.7rem;">Mendukung PDF, JPG, PNG, Word, Excel</div>
+                    <div class="text-muted mt-1" style="font-size:0.7rem;">Supports PDF, JPG, PNG, Word, Excel</div>
                 </form>
             </div>
 
             <div class="cp-table-card mt-0 flex-grow-1 d-flex flex-column">
                 <div class="fw-bold text-dark border-bottom pb-2 mb-3" style="font-size:0.84rem;">
-                    <i class="fas fa-history text-primary me-1"></i> Riwayat Log Input (<?= htmlspecialchars($uCode) ?>)
+                    <i class="fas fa-history text-primary me-1"></i> Activity &amp; Input History (<?= htmlspecialchars($uCode) ?>)
                 </div>
                 <?php if (empty($histories)): ?>
-                    <div class="text-muted small">Belum ada riwayat tercatat.</div>
+                    <div class="text-muted small">No history recorded yet.</div>
                 <?php else: ?>
                     <div class="d-flex flex-column gap-2 overflow-auto" style="max-height:360px;">
                         <?php foreach ($histories as $h): ?>
@@ -246,40 +246,39 @@
 
             <div class="modal-header bg-success text-white py-2 px-3">
                 <h6 class="modal-title fw-bold" id="modalDetailSetSelesaiLabel">
-                    <i class="fas fa-check-circle me-1"></i> Tandai Dokumen Sudah Selesai
+                    <i class="fas fa-check-circle me-1"></i> Mark Document as Completed
                 </h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-3">
                 <div class="alert alert-light border mb-3 p-2 small">
-                    <div class="text-muted small">Dokumen:</div>
+                    <div class="text-muted small">Document:</div>
                     <strong class="text-dark">#<?= htmlspecialchars((string) ($agr['no_urut_dokumen'] ?: $agr['id'])) ?> &mdash; <?= htmlspecialchars($agr['customer'] ?: ($agr['document_title'] ?? 'N/A')) ?></strong>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">
-                        <i class="fas fa-calendar-alt text-success me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                        <i class="fas fa-calendar-alt text-success me-1"></i> Completion Date <span class="text-danger">*</span>
                     </label>
                     <input type="date" name="tanggal_selesai" class="form-control" value="<?= htmlspecialchars($agr['tanggal_selesai'] ?: date('Y-m-d')) ?>" required>
-                    <div class="form-text small text-muted">Tanggal resmi saat proses dokumen ini selesai diproses/diarsipkan.</div>
+                    <div class="form-text small text-muted">Official date when this document was completed/archived.</div>
                 </div>
 
                 <div class="mb-2">
-                    <label class="form-label small fw-bold text-dark">Catatan Tambahan (Opsional)</label>
-                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="Contoh: Seluruh paraf dan tanda tangan telah lengkap"></textarea>
+                    <label class="form-label small fw-bold text-dark">Additional Note (Optional)</label>
+                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="e.g., All signatures and approvals completed"></textarea>
                 </div>
             </div>
             <div class="modal-footer py-2 px-3 bg-light">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
-                    <i class="fas fa-check me-1"></i> Simpan Status Selesai
+                    <i class="fas fa-check me-1"></i> Save Completed Status
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal Ganti Status Proses di Halaman Detail -->
 <div class="modal fade no-print" id="modalDetailChangeProcessStatus" tabindex="-1" aria-labelledby="modalDetailChangeProcessStatusLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="modal-content rounded-0 border-0 shadow">
@@ -289,29 +288,29 @@
 
             <div class="modal-header text-white py-2 px-3" id="modalDetailStatusHeader">
                 <h6 class="modal-title fw-bold" id="modalDetailStatusTitle">
-                    <i id="modalDetailStatusIcon" class="fas fa-play-circle me-1"></i> <span id="modalDetailStatusHeaderLabel">Ubah Status Proses</span>
+                    <i id="modalDetailStatusIcon" class="fas fa-play-circle me-1"></i> <span id="modalDetailStatusHeaderLabel">Change Status</span>
                 </h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-3">
                 <div class="alert alert-light border mb-3 p-2 small">
-                    <div class="text-muted small">Dokumen:</div>
+                    <div class="text-muted small">Document:</div>
                     <strong class="text-dark">#<?= htmlspecialchars((string) ($agr['no_urut_dokumen'] ?: $agr['id'])) ?> &mdash; <?= htmlspecialchars($agr['customer'] ?: ($agr['document_title'] ?? 'N/A')) ?></strong>
                 </div>
 
                 <p class="mb-3 small text-secondary">
-                    Apakah Anda yakin ingin mengubah status dokumen ini menjadi <strong id="modalDetailTargetLabel"></strong>?
+                    Are you sure you want to change this document's status to <strong id="modalDetailTargetLabel"></strong>?
                 </p>
 
                 <div class="mb-1">
-                    <label class="form-label small fw-bold text-dark">Catatan Perubahan (Opsional)</label>
-                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="Contoh: Dokumen mulai direview dan diproses"></textarea>
+                    <label class="form-label small fw-bold text-dark">Change Note (Optional)</label>
+                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="e.g., Document review and processing started"></textarea>
                 </div>
             </div>
             <div class="modal-footer py-2 px-3 bg-light">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-sm fw-bold px-3" id="modalDetailStatusSubmitBtn">
-                    <i class="fas fa-check me-1"></i> Ya, Ubah Status
+                    <i class="fas fa-check me-1"></i> Yes, Update Status
                 </button>
             </div>
         </form>
@@ -329,20 +328,20 @@ function openDetailChangeStatus(status) {
 
     if (status === 'BERJALAN') {
         headerEl.className = 'modal-header bg-primary text-white py-2 px-3';
-        titleEl.textContent = 'Ubah Status: Sedang Berjalan';
+        titleEl.textContent = 'Change Status: In Progress';
         iconEl.className = 'fas fa-spinner fa-spin me-1';
-        targetEl.textContent = 'Sedang Berjalan';
+        targetEl.textContent = 'In Progress';
         targetEl.style.color = '#1d4ed8';
         submitBtn.className = 'btn btn-sm btn-primary fw-bold px-3';
-        submitBtn.innerHTML = '<i class="fas fa-play me-1"></i> Ya, Ubah Menjadi Sedang Berjalan';
+        submitBtn.innerHTML = '<i class="fas fa-play me-1"></i> Yes, Set to In Progress';
     } else {
         headerEl.className = 'modal-header bg-warning text-dark py-2 px-3';
-        titleEl.textContent = 'Ubah Status: Pengajuan';
+        titleEl.textContent = 'Change Status: Submission';
         iconEl.className = 'fas fa-file-signature me-1';
-        targetEl.textContent = 'Pengajuan';
+        targetEl.textContent = 'Submission';
         targetEl.style.color = '#b45309';
         submitBtn.className = 'btn btn-sm btn-warning text-dark fw-bold px-3';
-        submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Ya, Ubah Menjadi Pengajuan';
+        submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Yes, Set to Submission';
     }
 
     const modalEl = document.getElementById('modalDetailChangeProcessStatus');

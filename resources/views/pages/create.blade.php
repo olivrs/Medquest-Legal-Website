@@ -9,7 +9,7 @@
                     <i class="fas fa-arrow-left me-1"></i> Back
                 </a>
                 <div>
-                    <h1 class="cp-page-title ms-1">Input Dokumen Baru</h1>
+                    <h1 class="cp-page-title ms-1">Add New Document</h1>
                 </div>
             </div>
         </div>
@@ -19,7 +19,7 @@
                 @csrf
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label fw-bold small text-dark mb-1">Type Dokumen <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Document Type <span class="text-danger">*</span></label>
                         <select name="doc_type" id="inputDocType" class="form-select fw-bold text-primary" required onchange="selectDocType(this.value)">
                             <option value="COOPERATION" <?= $selectedDocType === 'COOPERATION' ? 'selected' : '' ?>>1. COOPERATION AGREEMENT</option>
                             <option value="COMPANY" <?= $selectedDocType === 'COMPANY' ? 'selected' : '' ?>>2. ORIGINAL COMPANY DOC</option>
@@ -28,7 +28,7 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label fw-bold small text-dark mb-1">Departemen / Divisi <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Department / Division <span class="text-danger">*</span></label>
                         <select name="department" id="selectDept" class="form-select fw-semibold" required onchange="toggleCustomDept(this.value)">
                             <?php foreach ($departments as $d): ?>
                                 <option value="<?= htmlspecialchars($d['kode_dept']) ?>" <?= ($preselectedDept === strtoupper($d['kode_dept'])) ? 'selected' : '' ?>>
@@ -36,21 +36,21 @@
                                 </option>
                             <?php endforeach; ?>
                             <?php if (is_superadmin()): ?>
-                                <option value="OTHER">+ Tambah Departemen Lainnya...</option>
+                                <option value="OTHER">+ Add Another Department...</option>
                             <?php endif; ?>
                         </select>
                         <?php if (is_superadmin()): ?>
-                            <input type="text" name="custom_dept" id="customDeptInput" class="form-control mt-1 text-uppercase d-none" placeholder="Ketik singkatan departemen baru (contoh: FIN)">
+                            <input type="text" name="custom_dept" id="customDeptInput" class="form-control mt-1 text-uppercase d-none" placeholder="Enter new department code (e.g. FIN)">
                         <?php endif; ?>
                     </div>
 
                     <div class="col-md-2">
-                        <label class="form-label fw-bold small text-dark mb-1">No. Urut (No.)</label>
+                        <label class="form-label fw-bold small text-dark mb-1">Seq. No. (No.)</label>
                         <input type="number" name="no_urut_dokumen" id="inputNoUrut" class="form-control fw-bold" value="<?= $nextNums[$selectedDocType] ?>">
                     </div>
 
                     <div class="col-md-2">
-                        <label class="form-label fw-bold small text-dark mb-1">Tanggal Input <span class="text-danger">*</span></label>
+                        <label class="form-label fw-bold small text-dark mb-1">Input Date <span class="text-danger">*</span></label>
                         <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
                     </div>
 
@@ -60,19 +60,19 @@
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="statusPengajuan" value="PENGAJUAN" checked onchange="toggleTglSelesai(this.value)">
                                 <label class="form-check-label small fw-semibold" for="statusPengajuan" style="color:#b45309;">
-                                    <i class="fas fa-file-signature me-1"></i> Pengajuan
+                                    <i class="fas fa-file-signature me-1"></i> Submission
                                 </label>
                             </div>
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="statusBerjalan" value="BERJALAN" onchange="toggleTglSelesai(this.value)">
                                 <label class="form-check-label small fw-semibold text-primary" for="statusBerjalan">
-                                    <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                                    <i class="fas fa-spinner fa-spin me-1"></i> In Progress
                                 </label>
                             </div>
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="radio" name="status_proses" id="statusSelesai" value="SELESAI" onchange="toggleTglSelesai(this.value)">
                                 <label class="form-check-label small fw-semibold text-success" for="statusSelesai">
-                                    <i class="fas fa-check-circle me-1"></i> Sudah Selesai
+                                    <i class="fas fa-check-circle me-1"></i> Completed
                                 </label>
                             </div>
                         </div>
@@ -80,58 +80,58 @@
 
                     <div class="col-md-5 d-none" id="colTanggalSelesai">
                         <label class="form-label fw-bold small text-success mb-1">
-                            <i class="fas fa-calendar-check me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                            <i class="fas fa-calendar-check me-1"></i> Completion Date <span class="text-danger">*</span>
                         </label>
                         <input type="date" name="tanggal_selesai" id="inputTglSelesai" class="form-control" value="<?= date('Y-m-d') ?>">
-                        <div class="text-muted small" style="font-size:0.7rem;">Tanggal resmi saat proses dokumen rampung</div>
+                        <div class="text-muted small" style="font-size:0.7rem;">Official date when the document process was completed</div>
                     </div>
 
                     <div class="col-md-7 field-company-principal">
                         <label class="form-label fw-bold small text-dark mb-1">Document Title <span class="text-danger">*</span></label>
                         <input type="text" name="document_title" id="inputDocTitle" class="form-control"
-                               placeholder="Contoh: Akta Pengangkatan kembali dewan direksi / Confidential Disclosure Agreement">
+                               placeholder="e.g., Deed of Board Appointment / Confidential Disclosure Agreement">
                     </div>
 
                     <div class="col-md-5 field-company-principal">
                         <label class="form-label fw-bold small text-dark mb-1">Document No.</label>
                         <input type="text" name="document_number" id="inputDocNoAlt" class="form-control"
-                               placeholder="Contoh: AHU-AH.01.09-0410712 / SN : Q8-v3-1208007241 / ketik N/A jika tidak ada">
+                               placeholder="e.g., AHU-AH.01.09-0410712 / SN : Q8-v3-1208007241 / enter N/A if none">
                     </div>
 
                     <div class="col-md-6 field-company-principal" id="colIssuedBy">
                         <label class="form-label fw-bold small text-dark mb-1">Issued By <span class="text-danger">*</span></label>
                         <input type="text" name="issued_by" id="inputIssuedBy" class="form-control"
-                               placeholder="Contoh: Notaris Putranto / Nanik Gunawan - Cedric DEBONTE">
+                               placeholder="e.g., Notary Putranto / Nanik Gunawan - Cedric DEBONTE">
                     </div>
 
                     <div class="col-md-6 field-principal-only">
                         <label class="form-label fw-bold small text-dark mb-1">Principal <span class="text-danger">*</span></label>
                         <input type="text" name="principal_name" id="inputPrincipal" class="form-control"
-                               placeholder="Contoh: Cepheid Europe S.A.S / Diagast / Tecan / Novartis V & D">
+                               placeholder="e.g., Cepheid Europe S.A.S / Diagast / Tecan / Novartis V & D">
                     </div>
 
                     <div class="col-md-6 field-cooperation-only">
                         <label class="form-label fw-bold small text-dark mb-1">Document Number <span class="text-danger">*</span></label>
                         <input type="text" name="document_number" id="inputDocNoCoop" class="form-control"
-                               placeholder="Contoh: 087/KKO.PL/MBB/MJG/XII/2025">
+                               placeholder="e.g., 087/KKO.PL/MBB/MJG/XII/2025">
                     </div>
 
                     <div class="col-md-6 field-cooperation-only">
                         <label class="form-label fw-bold small text-dark mb-1">Customer <span class="text-danger">*</span></label>
                         <input type="text" name="customer" id="inputCustomer" class="form-control"
-                               placeholder="Contoh: Palang Merah Indonesia Provinsi DKI Jakarta">
+                               placeholder="e.g., Palang Merah Indonesia Provinsi DKI Jakarta">
                     </div>
 
                     <div class="col-md-8 field-cooperation-only">
                         <label class="form-label fw-bold small text-dark mb-1">Product (Description) <span class="text-danger">*</span></label>
                         <input type="text" name="product_description" id="inputProductDesc" class="form-control"
-                               placeholder="Contoh: Fibroscan 530 Compact / Hemocue Hb 301 / NDA">
+                               placeholder="e.g., Fibroscan 530 Compact / Hemocue Hb 301 / NDA">
                     </div>
 
                     <div class="col-md-4 field-cooperation-only">
                         <label class="form-label fw-bold small text-dark mb-1">Serial Number (S/N)</label>
                         <input type="text" name="serial_number" id="inputSerialNo" class="form-control" value="N/A"
-                               placeholder="Ketik S/N atau biarkan N/A">
+                               placeholder="Enter S/N or keep N/A">
                     </div>
 
                     <div class="col-md-6">
@@ -158,28 +158,28 @@
 
                     <div class="col-md-7">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-bold small text-dark mb-0">Catatan (Note)</label>
+                            <label class="form-label fw-bold small text-dark mb-0">Note</label>
                             <div class="form-check form-switch small mb-0">
                                 <input class="form-check-input" type="checkbox" name="prefix_date_note" id="prefixDateCheck">
-                                <label class="form-check-label text-muted small" for="prefixDateCheck">Beri tanggal di awal catatan</label>
+                                <label class="form-check-label text-muted small" for="prefixDateCheck">Add date prefix to note</label>
                             </div>
                         </div>
-                        <textarea name="note" class="form-control" rows="2" placeholder="Kosongkan jika N/A, atau ketik catatan (contoh: Distributed as on 02 OCT 2009)..."></textarea>
+                        <textarea name="note" class="form-control" rows="2" placeholder="Leave blank for N/A, or enter note (e.g., Distributed as on 02 OCT 2009)..."></textarea>
                     </div>
 
                     <div class="col-md-5">
-                        <label class="form-label fw-bold small text-dark mb-1">Upload File Dokumen (Opsional)</label>
+                        <label class="form-label fw-bold small text-dark mb-1">Upload Document File (Optional)</label>
                         <input type="file" name="file_dokumen" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-                        <div class="text-muted mt-1" style="font-size:0.7rem;">Mendukung berkas format PDF, Word, Excel, JPG, atau PNG</div>
+                        <div class="text-muted mt-1" style="font-size:0.7rem;">Supports PDF, Word, Excel, JPG, or PNG formats</div>
                     </div>
                 </div>
 
                 <hr class="my-4">
 
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="<?= base_url('?page=agreements') ?>" class="btn btn-light border fw-semibold px-4 py-2">Batal</a>
+                    <a href="<?= base_url('?page=agreements') ?>" class="btn btn-light border fw-semibold px-4 py-2">Cancel</a>
                     <button type="submit" class="btn btn-primary fw-bold px-5 py-2">
-                        <i class="fas fa-save me-1"></i> Simpan Dokumen
+                        <i class="fas fa-save me-1"></i> Save Document
                     </button>
                 </div>
             </form>
@@ -250,13 +250,13 @@ function selectDocType(type) {
     if (prinInput)   prinInput.required   = isPrin;
 
     if (isComp) {
-        if (titleInput)  titleInput.placeholder  = 'Contoh: Akta Pengangkatan kembali dewan direksi & dewan komisaris / SK Kemenkumham RI';
-        if (docNoAlt)    docNoAlt.placeholder    = 'Contoh: 01 / AHU-AH.01.09-0410712';
-        if (issuedInput) issuedInput.placeholder = 'Contoh: Notaris Putranto';
+        if (titleInput)  titleInput.placeholder  = 'e.g., Deed of Board Appointment / Ministry Decree';
+        if (docNoAlt)    docNoAlt.placeholder    = 'e.g., 01 / AHU-AH.01.09-0410712';
+        if (issuedInput) issuedInput.placeholder = 'e.g., Notary Putranto';
     } else if (isPrin) {
-        if (titleInput)  titleInput.placeholder  = 'Contoh: Confidential Disclosure Agreement / Certificate Of Distribution / Letter of Authorization';
-        if (docNoAlt)    docNoAlt.placeholder    = 'Contoh: N/A / SN : Q8-v3-1208007241 / CM 150403';
-        if (issuedInput) issuedInput.placeholder = 'Contoh: Nanik Gunawan - Cedric DEBONTE';
+        if (titleInput)  titleInput.placeholder  = 'e.g., Confidential Disclosure Agreement / Certificate Of Distribution / Letter of Authorization';
+        if (docNoAlt)    docNoAlt.placeholder    = 'e.g., N/A / SN : Q8-v3-1208007241 / CM 150403';
+        if (issuedInput) issuedInput.placeholder = 'e.g., Nanik Gunawan - Cedric DEBONTE';
     }
 
     const expNaChecked = document.getElementById('expDateNaCheck').checked;

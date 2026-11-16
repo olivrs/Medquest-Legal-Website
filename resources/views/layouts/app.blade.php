@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +21,7 @@
 <div class="app-layout">
     <div class="sidebar-backdrop no-print" id="sidebarBackdrop"></div>
     <aside class="app-sidebar no-print">
-        <button type="button" class="sidebar-close-mobile" id="sidebarCloseBtn" aria-label="Tutup Menu">
+        <button type="button" class="sidebar-close-mobile" id="sidebarCloseBtn" aria-label="Close Menu">
             <i class="fas fa-times"></i>
         </button>
         <a href="<?= base_url('?page=agreements') ?>" class="sidebar-brand justify-content-center">
@@ -29,7 +29,7 @@
         </a>
 
         <div class="sidebar-menu">
-            <div class="sidebar-section-title">MENU INTERNAL</div>
+            <div class="sidebar-section-title">INTERNAL MENU</div>
 
             <a href="<?= base_url('?page=agreements') ?>"
                class="sidebar-link <?= ($currPage === 'agreements' && $currDept === 'ALL') ? 'active' : '' ?>">
@@ -42,7 +42,7 @@
                aria-expanded="<?= $isDeptOpen ? 'true' : 'false' ?>" aria-controls="deptSubmenu">
                 <div class="d-flex align-items-center gap-2">
                     <span class="s-icon"><i class="fas fa-building"></i></span>
-                    <span>Departemen</span>
+                    <span>Departments</span>
                 </div>
                 <i class="fas fa-chevron-down" style="font-size:0.68rem;opacity:0.75;"></i>
             </a>
@@ -51,7 +51,7 @@
                 <div class="sidebar-submenu">
                     <a href="<?= base_url('?page=agreements&dept=ALL') ?>"
                        class="sidebar-sublink sidebar-sublink-full <?= ($currPage === 'agreements' && $currDept === 'ALL') ? 'active' : '' ?>">
-                        <span>Semua Dept</span>
+                        <span>All Depts</span>
                         <span class="sub-badge"><?= $userTotalDocs ?></span>
                     </a>
                     <div class="sidebar-dept-grid">
@@ -74,7 +74,7 @@
                class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'PENGAJUAN') ? 'active' : '' ?>">
                 <div class="d-flex align-items-center gap-2">
                     <span class="s-icon" style="color:#f59e0b;"><i class="fas fa-file-signature"></i></span>
-                    <span>Pengajuan</span>
+                    <span>Submission</span>
                 </div>
                 <span class="badge rounded-0 bg-warning text-dark fw-bold" style="font-size:0.66rem;"><?= $userPengajuanDocs ?? 0 ?></span>
             </a>
@@ -83,7 +83,7 @@
                class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'BERJALAN') ? 'active' : '' ?>">
                 <div class="d-flex align-items-center gap-2">
                     <span class="s-icon" style="color:#0284c7;"><i class="fas fa-spinner fa-spin"></i></span>
-                    <span>Sedang Berjalan</span>
+                    <span>In Progress</span>
                 </div>
                 <span class="badge rounded-0 bg-primary text-white fw-bold" style="font-size:0.66rem;"><?= $userBerjalanDocs ?? 0 ?></span>
             </a>
@@ -92,24 +92,24 @@
                class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'SELESAI') ? 'active' : '' ?>">
                 <div class="d-flex align-items-center gap-2">
                     <span class="s-icon" style="color:#10b981;"><i class="fas fa-check-circle"></i></span>
-                    <span>Sudah Selesai</span>
+                    <span>Completed</span>
                 </div>
                 <span class="badge rounded-0 bg-success text-white fw-bold" style="font-size:0.66rem;"><?= $userSelesaiDocs ?? 0 ?></span>
             </a>
 
-            <div class="sidebar-section-title mt-3">AKSI &amp; NOTIFIKASI</div>
+            <div class="sidebar-section-title mt-3">ACTIONS &amp; NOTIFICATIONS</div>
 
             <a href="<?= base_url('?page=create' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
                class="sidebar-link <?= $currPage === 'create' ? 'active' : '' ?>">
                 <span class="s-icon"><i class="fas fa-plus"></i></span>
-                <span>Input Dokumen</span>
+                <span>Add Document</span>
             </a>
 
             <a href="<?= base_url('?page=notifications') ?>"
                class="sidebar-link d-flex justify-content-between align-items-center <?= $currPage === 'notifications' ? 'active' : '' ?>">
                 <div class="d-flex align-items-center gap-2">
                     <span class="s-icon"><i class="fas fa-bell"></i></span>
-                    <span>Deadline</span>
+                    <span>Deadlines</span>
                 </div>
                 <?php if ($alertHCount > 0): ?>
                     <span class="badge rounded-0 bg-danger" style="font-size:0.66rem;"><?= $alertHCount ?></span>
@@ -121,7 +121,7 @@
                class="sidebar-link d-flex justify-content-between align-items-center <?= $currPage === 'user_approvals' ? 'active' : '' ?>">
                 <div class="d-flex align-items-center gap-2">
                     <span class="s-icon"><i class="fas fa-user-shield"></i></span>
-                    <span>Persetujuan Akun</span>
+                    <span>Account Approvals</span>
                 </div>
                 <?php if (!empty($pendingApprovalsCount) && $pendingApprovalsCount > 0): ?>
                     <span class="badge rounded-0 bg-warning text-dark fw-bold" style="font-size:0.66rem;"><?= $pendingApprovalsCount ?></span>
@@ -135,12 +135,12 @@
                 <div class="sidebar-avatar"><?= htmlspecialchars($user['kode_singkatan']) ?></div>
                 <div class="overflow-hidden flex-grow-1">
                     <div class="fw-bold text-white text-truncate" style="font-size:0.76rem;"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
-                    <div class="text-white-50 text-truncate" style="font-size:0.68rem;">Kode: <?= htmlspecialchars($user['kode_singkatan']) ?></div>
+                    <div class="text-white-50 text-truncate" style="font-size:0.68rem;">Code: <?= htmlspecialchars($user['kode_singkatan']) ?></div>
                 </div>
-                <span class="badge bg-white bg-opacity-10 text-white-50" style="font-size:0.66rem;" title="Total Dokumen Anda"><?= $userTotalDocs ?></span>
+                <span class="badge bg-white bg-opacity-10 text-white-50" style="font-size:0.66rem;" title="Your Total Documents"><?= $userTotalDocs ?></span>
             </div>
             <a href="<?= base_url('?page=logout') ?>" class="sidebar-link text-white-50 py-1 px-2 mb-0"
-               onclick="return confirm('Keluar dari akun <?= htmlspecialchars($user['kode_singkatan']) ?>?')">
+               onclick="return confirm('Sign out of account <?= htmlspecialchars($user['kode_singkatan']) ?>?')">
                 <span class="s-icon" style="width:22px;height:22px;"><i class="fas fa-sign-out-alt"></i></span>
                 <span style="font-size:0.74rem;">Log Out</span>
             </a>
@@ -150,14 +150,14 @@
     <div class="app-main">
         <header id="main-header" class="app-topbar no-print">
             <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 440px;">
-                <button type="button" id="sidebarToggleBtn" class="sidebar-toggle-btn" title="Buka / Tutup Sidebar" aria-label="Toggle Sidebar">
+                <button type="button" id="sidebarToggleBtn" class="sidebar-toggle-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
                 <form method="GET" action="<?= base_url() ?>" class="topbar-search">
                     <input type="hidden" name="page" value="agreements">
                     <input type="hidden" name="dept" value="<?= htmlspecialchars($currDept) ?>">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" name="q" placeholder="Cari dokumen <?= htmlspecialchars($user['kode_singkatan']) ?> (nomor, customer, produk)..." value="<?= htmlspecialchars(request('q', '')) ?>">
+                    <input type="text" name="q" placeholder="Search <?= htmlspecialchars($user['kode_singkatan']) ?> documents (number, customer, product)..." value="<?= htmlspecialchars(request('q', '')) ?>">
                 </form>
             </div>
 
@@ -165,12 +165,12 @@
                 <div class="dropdown mq-topbar-dept">
                     <button class="btn btn-sm btn-light border fw-semibold text-dark dropdown-toggle d-inline-flex align-items-center gap-2 px-3" style="font-size:0.76rem;border-radius: 0;" type="button" data-bs-toggle="dropdown">
                         <i class="fas fa-building text-primary" style="font-size:0.72rem;"></i>
-                        <span>Departemen: <strong><?= $currDept === 'ALL' ? 'Semua' : htmlspecialchars($currDept) ?></strong></span>
+                        <span>Department: <strong><?= $currDept === 'ALL' ? 'All' : htmlspecialchars($currDept) ?></strong></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border" style="min-width:220px;border-radius: 0;">
                         <li>
                             <a class="dropdown-item small d-flex justify-content-between align-items-center py-1 <?= $currDept === 'ALL' ? 'fw-bold text-primary bg-light' : '' ?>" href="<?= base_url('?page=agreements&dept=ALL') ?>">
-                                <span>Semua Departemen</span>
+                                <span>All Departments</span>
                                 <span class="badge bg-secondary-subtle text-dark ms-2"><?= $userTotalDocs ?></span>
                             </a>
                         </li>
@@ -203,7 +203,7 @@
                 </div>
 
                 <?php if (is_superadmin()): ?>
-                <a href="<?= base_url('?page=user_approvals') ?>" class="topbar-icon-btn position-relative" title="Persetujuan Akun User (Superadmin)">
+                <a href="<?= base_url('?page=user_approvals') ?>" class="topbar-icon-btn position-relative" title="User Account Approvals (Superadmin)">
                     <i class="fas fa-user-shield"></i>
                     <?php if (!empty($pendingApprovalsCount) && $pendingApprovalsCount > 0): ?>
                         <span class="dot-badge" style="background:#f59e0b !important;"></span>
@@ -211,11 +211,11 @@
                 </a>
                 <?php endif; ?>
 
-                <a href="<?= base_url('?page=smtp_settings') ?>" class="topbar-icon-btn" title="Pengaturan Email Otomatis (SMTP)">
+                <a href="<?= base_url('?page=smtp_settings') ?>" class="topbar-icon-btn" title="Automated Email Settings (SMTP)">
                     <i class="fas fa-envelope-open-text"></i>
                 </a>
 
-                <a href="<?= base_url('?page=notifications') ?>" class="topbar-icon-btn" title="Notifikasi Email Deadline">
+                <a href="<?= base_url('?page=notifications') ?>" class="topbar-icon-btn" title="Deadline Email Notifications">
                     <i class="far fa-bell"></i>
                     <?php if ($alertHCount > 0): ?>
                         <span class="dot-badge"></span>
@@ -266,10 +266,10 @@
                     <div class="mq-footer-col mq-footer-links">
                         <h4 class="mq-footer-title">Explore</h4>
                         <ul>
-                            <li><a href="<?= base_url('?page=agreements') ?>">Dashboard Agreement</a></li>
-                            <li><a href="<?= base_url('?page=create') ?>">Input Agreement Baru</a></li>
-                            <li><a href="<?= base_url('?page=notifications') ?>">Monitoring Deadline</a></li>
-                            <li><a href="<?= base_url('?page=smtp_settings') ?>">Pengaturan Email SMTP</a></li>
+                            <li><a href="<?= base_url('?page=agreements') ?>">Agreement Dashboard</a></li>
+                            <li><a href="<?= base_url('?page=create') ?>">Add New Agreement</a></li>
+                            <li><a href="<?= base_url('?page=notifications') ?>">Deadline Monitoring</a></li>
+                            <li><a href="<?= base_url('?page=smtp_settings') ?>">Email SMTP Settings</a></li>
                             <li><a href="https://medquest.co.id/" target="_blank" rel="noopener">Official Website (medquest.co.id)</a></li>
                             <li><a href="https://medquest.co.id/products/" target="_blank" rel="noopener">Products &amp; Calibration</a></li>
                             <li><a href="https://medquest.co.id/whistle-blowing-system/" target="_blank" rel="noopener">Whistle Blowing System (WBS)</a></li>
@@ -386,8 +386,8 @@ function checkAndSendAutoExpiryEmails() {
                     toastEl.innerHTML = `
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <div class="fw-bold"><i class="fas fa-paper-plane me-1"></i> Email Otomatis ${item.tipe} Terkirim!</div>
-                                <div class="small mt-1">Dokumen <strong>${item.customer || ''}</strong> otomatis dikirim ke <strong>${item.recipient} (${item.kode})</strong>.</div>
+                                <div class="fw-bold"><i class="fas fa-paper-plane me-1"></i> Automated ${item.tipe} Email Sent!</div>
+                                <div class="small mt-1">Notification for document <strong>${item.customer || ''}</strong> was sent automatically to <strong>${item.recipient} (${item.kode})</strong>.</div>
                             </div>
                             <button type="button" class="btn-close ms-2" onclick="this.parentElement.parentElement.remove()"></button>
                         </div>

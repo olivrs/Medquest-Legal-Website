@@ -7,7 +7,7 @@
             <a href="<?= base_url('?page=agreements') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
                 <i class="fas fa-arrow-left me-1"></i> Back
             </a>
-            <h1 class="cp-page-title ms-1">Persetujuan Akun</h1>
+            <h1 class="cp-page-title ms-1">Account Approvals</h1>
             <?php if ($countPending > 0): ?>
                 <span class="badge bg-warning text-dark rounded-0 px-2 py-1 ms-1" style="font-size:0.72rem;"><?= $countPending ?> Pending</span>
             <?php endif; ?>
@@ -20,10 +20,10 @@
                 <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'pending' ? 'ring-primary border-warning' : '' ?>" style="background: #fffdf5; border-left: 4px solid #f59e0b !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small fw-semibold">MENUNGGU ACC</div>
+                            <div class="text-muted small fw-semibold">PENDING APPROVAL</div>
                             <div class="fs-3 fw-bold text-dark mt-1"><?= $countPending ?></div>
                             <div class="text-warning small fw-semibold mt-1">
-                                <i class="fas fa-hourglass-half me-1"></i> Perlu Tindakan
+                                <i class="fas fa-hourglass-half me-1"></i> Action Needed
                             </div>
                         </div>
                         <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#fef3c7;color:#d97706;font-size:22px;">
@@ -39,10 +39,10 @@
                 <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'approved' ? 'ring-primary border-success' : '' ?>" style="background: #f6fdf9; border-left: 4px solid #10b981 !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small fw-semibold">SUDAH DISETUJUI</div>
+                            <div class="text-muted small fw-semibold">APPROVED</div>
                             <div class="fs-3 fw-bold text-dark mt-1"><?= $countApproved ?></div>
                             <div class="text-success small fw-semibold mt-1">
-                                <i class="fas fa-check-circle me-1"></i> Aktif &amp; Siap Login
+                                <i class="fas fa-check-circle me-1"></i> Active &amp; Ready
                             </div>
                         </div>
                         <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#d1fae5;color:#059669;font-size:22px;">
@@ -58,10 +58,10 @@
                 <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'rejected' ? 'ring-primary border-danger' : '' ?>" style="background: #fff8f8; border-left: 4px solid #ef4444 !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small fw-semibold">DITOLAK</div>
+                            <div class="text-muted small fw-semibold">REJECTED</div>
                             <div class="fs-3 fw-bold text-dark mt-1"><?= $countRejected ?></div>
                             <div class="text-danger small fw-semibold mt-1">
-                                <i class="fas fa-ban me-1"></i> Tidak Dapat Login
+                                <i class="fas fa-ban me-1"></i> Access Blocked
                             </div>
                         </div>
                         <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#fee2e2;color:#dc2626;font-size:22px;">
@@ -77,10 +77,10 @@
                 <div class="card border-0 shadow-sm rounded-0 p-3 transition-hover <?= $tab === 'all' ? 'ring-primary border-primary' : '' ?>" style="background: #f8fafc; border-left: 4px solid #2b579a !important;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-muted small fw-semibold">TOTAL SEMUA USER</div>
+                            <div class="text-muted small fw-semibold">TOTAL USERS</div>
                             <div class="fs-3 fw-bold text-dark mt-1"><?= $countTotal ?></div>
                             <div class="text-primary small fw-semibold mt-1">
-                                <i class="fas fa-users me-1"></i> Basis Data User
+                                <i class="fas fa-users me-1"></i> User Directory
                             </div>
                         </div>
                         <div class="rounded-0 d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:#eff6ff;color:#2b579a;font-size:22px;">
@@ -97,7 +97,7 @@
             <ul class="nav nav-pills gap-1">
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'pending' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=pending' . ($search ? '&q=' . urlencode($search) : '')) ?>">
-                        <i class="fas fa-hourglass-half me-1"></i> Menunggu Peninjauan
+                        <i class="fas fa-hourglass-half me-1"></i> Pending Review
                         <?php if ($countPending > 0): ?>
                             <span class="badge rounded-0 bg-warning text-dark ms-1"><?= $countPending ?></span>
                         <?php endif; ?>
@@ -105,19 +105,19 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'approved' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=approved' . ($search ? '&q=' . urlencode($search) : '')) ?>">
-                        <i class="fas fa-check-circle me-1"></i> Disetujui (Approved)
+                        <i class="fas fa-check-circle me-1"></i> Approved
                         <span class="badge rounded-0 bg-light text-dark ms-1"><?= $countApproved ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'rejected' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=rejected' . ($search ? '&q=' . urlencode($search) : '')) ?>">
-                        <i class="fas fa-times-circle me-1"></i> Ditolak (Rejected)
+                        <i class="fas fa-times-circle me-1"></i> Rejected
                         <span class="badge rounded-0 bg-light text-dark ms-1"><?= $countRejected ?></span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link fw-semibold px-3 py-2 <?= $tab === 'all' ? 'active' : '' ?>" href="<?= base_url('?page=user_approvals&tab=all' . ($search ? '&q=' . urlencode($search) : '')) ?>">
-                        <i class="fas fa-list me-1"></i> Semua User
+                        <i class="fas fa-list me-1"></i> All Users
                         <span class="badge rounded-0 bg-light text-dark ms-1"><?= $countTotal ?></span>
                     </a>
                 </li>
@@ -128,14 +128,14 @@
                 <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
                 <div class="input-group input-group-sm" style="min-width:240px;">
                     <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" name="q" class="form-control border-start-0" placeholder="Cari nama, kode, email..." value="<?= htmlspecialchars($search) ?>">
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Search name, code, email..." value="<?= htmlspecialchars($search) ?>">
                     <?php if ($search !== ''): ?>
-                        <a href="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="btn btn-outline-secondary" title="Reset Pencarian">
+                        <a href="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="btn btn-outline-secondary" title="Reset Search">
                             <i class="fas fa-times"></i>
                         </a>
                     <?php endif; ?>
                 </div>
-                <button type="submit" class="btn btn-primary btn-sm fw-semibold">Cari</button>
+                <button type="submit" class="btn btn-primary btn-sm fw-semibold">Search</button>
             </form>
         </div>
 
@@ -144,14 +144,14 @@
                 <thead class="table-light text-secondary small text-uppercase">
                     <tr>
                         <th class="ps-3" style="width:45px;">No</th>
-                        <th>User &amp; Nama Lengkap</th>
-                        <th>Kode</th>
-                        <th>Role Akses (Edit)</th>
-                        <th style="min-width:290px;">Akses Departemen (Centang untuk User)</th>
-                        <th>Email Pribadi</th>
-                        <th>Waktu Daftar</th>
+                        <th>User &amp; Full Name</th>
+                        <th>Code</th>
+                        <th>Role (Edit)</th>
+                        <th style="min-width:290px;">Department Access (Check for User)</th>
+                        <th>Personal Email</th>
+                        <th>Registered At</th>
                         <th>Status</th>
-                        <th class="text-end pe-3" style="min-width:190px;">Aksi Superadmin</th>
+                        <th class="text-end pe-3" style="min-width:190px;">Superadmin Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -163,10 +163,10 @@
                                         <i class="fas <?= $tab === 'pending' ? 'fa-check-double text-success' : 'fa-inbox text-secondary' ?>"></i>
                                     </div>
                                     <h6 class="fw-bold text-dark">
-                                        <?= $tab === 'pending' ? 'Tidak Ada Akun yang Menunggu Peninjauan' : 'Tidak Ditemukan Data User' ?>
+                                        <?= $tab === 'pending' ? 'No Accounts Pending Review' : 'No User Data Found' ?>
                                     </h6>
                                     <p class="small text-muted mb-0">
-                                        <?= $tab === 'pending' ? 'Semua pendaftaran akun baru telah ditinjau dan diproses oleh Superadmin.' : 'Silakan gunakan kata kunci lain atau pilih tab filter yang berbeda.' ?>
+                                        <?= $tab === 'pending' ? 'All new account registrations have been reviewed and processed by the Superadmin.' : 'Please try a different search keyword or select another filter tab.' ?>
                                     </p>
                                 </div>
                             </td>
@@ -191,7 +191,7 @@
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($u['nama_lengkap']) ?></div>
                                             <?php if ($isSelf): ?>
-                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.68rem;">Akun Anda Saat Ini</span>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:0.68rem;">Your Current Account</span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -210,7 +210,7 @@
                                                 class="form-select form-select-sm fw-bold rounded-0 <?= $isAdminRole ? 'border-primary text-primary bg-primary-subtle' : 'border-secondary text-dark bg-light' ?>"
                                                 style="min-width:120px;font-size:0.76rem;cursor:pointer;"
                                                 onchange="this.form.submit()"
-                                                <?= $isSelf ? 'title="Role akun Anda sendiri"' : 'title="Ubah Role antara USER atau ADMIN"' ?>>
+                                                <?= $isSelf ? 'title="Your own account role"' : 'title="Switch Role between USER or ADMIN"' ?>>
                                             <option value="user" <?= !$isAdminRole ? 'selected' : '' ?>>USER</option>
                                             <option value="admin" <?= $isAdminRole ? 'selected' : '' ?>>ADMIN</option>
                                         </select>
@@ -219,7 +219,7 @@
                                 <td>
                                     <?php if ($isAdminRole): ?>
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size:0.74rem;">
-                                            <i class="fas fa-unlock-alt me-1"></i> Semua Departemen (Akses Penuh Admin)
+                                            <i class="fas fa-unlock-alt me-1"></i> All Departments (Full Admin Access)
                                         </span>
                                     <?php else: ?>
                                         <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="m-0">
@@ -263,64 +263,64 @@
                                 <td>
                                     <?php if ($uStatus === 'pending'): ?>
                                         <span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center gap-1 shadow-sm">
-                                            <i class="fas fa-hourglass-half"></i> Menunggu ACC
+                                            <i class="fas fa-hourglass-half"></i> Pending Approval
                                         </span>
                                     <?php elseif ($uStatus === 'approved'): ?>
                                         <span class="badge bg-success px-2 py-1 d-inline-flex align-items-center gap-1">
-                                            <i class="fas fa-check-circle"></i> Disetujui
+                                            <i class="fas fa-check-circle"></i> Approved
                                         </span>
                                     <?php elseif ($uStatus === 'rejected'): ?>
                                         <span class="badge bg-danger px-2 py-1 d-inline-flex align-items-center gap-1">
-                                            <i class="fas fa-times-circle"></i> Ditolak
+                                            <i class="fas fa-times-circle"></i> Rejected
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-end pe-3">
                                     <div class="d-inline-flex align-items-center gap-1">
                                         <?php if ($uStatus === 'pending'): ?>
-                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Setujui akun <?= htmlspecialchars($u['nama_lengkap']) ?> (<?= htmlspecialchars($u['kode_singkatan']) ?>)? User akan langsung dapat login.');">
+                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Approve account <?= htmlspecialchars($u['nama_lengkap']) ?> (<?= htmlspecialchars($u['kode_singkatan']) ?>)? The user will be able to sign in immediately.');">
                                                 @csrf
                                                 <input type="hidden" name="action" value="approve">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                                 <button type="submit" class="btn btn-success btn-sm fw-bold px-2 py-1 shadow-sm">
-                                                    <i class="fas fa-check me-1"></i> ACC Akun
+                                                    <i class="fas fa-check me-1"></i> Approve
                                                 </button>
                                             </form>
 
-                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Tolak pendaftaran akun <?= htmlspecialchars($u['nama_lengkap']) ?> (<?= htmlspecialchars($u['kode_singkatan']) ?>)?');">
+                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Reject registration for <?= htmlspecialchars($u['nama_lengkap']) ?> (<?= htmlspecialchars($u['kode_singkatan']) ?>)?');">
                                                 @csrf
                                                 <input type="hidden" name="action" value="reject">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                                 <button type="submit" class="btn btn-danger btn-sm fw-bold px-2 py-1 shadow-sm">
-                                                    <i class="fas fa-times me-1"></i> Tolak
+                                                    <i class="fas fa-times me-1"></i> Reject
                                                 </button>
                                             </form>
                                         <?php elseif ($uStatus === 'approved'): ?>
-                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Nonaktifkan / tolak akun <?= htmlspecialchars($u['nama_lengkap']) ?>? User tidak akan dapat login lagi.');">
+                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Deactivate / reject account <?= htmlspecialchars($u['nama_lengkap']) ?>? The user will no longer be able to sign in.');">
                                                 @csrf
                                                 <input type="hidden" name="action" value="reject">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm px-2 py-1" title="Tolak / Nonaktifkan">
-                                                    <i class="fas fa-ban me-1"></i> Nonaktifkan
+                                                <button type="submit" class="btn btn-outline-danger btn-sm px-2 py-1" title="Reject / Deactivate">
+                                                    <i class="fas fa-ban me-1"></i> Deactivate
                                                 </button>
                                             </form>
                                         <?php elseif ($uStatus === 'rejected'): ?>
-                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Setujui kembali akun <?= htmlspecialchars($u['nama_lengkap']) ?>?');">
+                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Re-approve account <?= htmlspecialchars($u['nama_lengkap']) ?>?');">
                                                 @csrf
                                                 <input type="hidden" name="action" value="approve">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                                 <button type="submit" class="btn btn-outline-success btn-sm fw-semibold px-2 py-1">
-                                                    <i class="fas fa-redo me-1"></i> ACC Ulang
+                                                    <i class="fas fa-redo me-1"></i> Re-Approve
                                                 </button>
                                             </form>
                                         <?php endif; ?>
 
                                         <?php if (!$isSelf): ?>
-                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus permanen user <?= htmlspecialchars($u['nama_lengkap']) ?> (<?= htmlspecialchars($u['kode_singkatan']) ?>)? Tindakan ini tidak dapat dibatalkan.');">
+                                            <form method="POST" action="<?= base_url('?page=user_approvals&tab=' . urlencode($tab)) ?>" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete user <?= htmlspecialchars($u['nama_lengkap']) ?> (<?= htmlspecialchars($u['kode_singkatan']) ?>)? This action cannot be undone.');">
                                                 @csrf
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="btn btn-light btn-sm text-danger border px-2 py-1" title="Hapus Permanen">
+                                                <button type="submit" class="btn btn-light btn-sm text-danger border px-2 py-1" title="Delete Permanently">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             </form>

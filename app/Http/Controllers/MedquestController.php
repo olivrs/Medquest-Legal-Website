@@ -20,7 +20,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-16-v9-table-headers';
+            $currentRev = '2026-11-16-v10-english-ui';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {
@@ -242,7 +242,7 @@ class MedquestController extends Controller
             $password  = (string) $request->input('password', '');
 
             if ($identitas === '' || $password === '') {
-                set_flash('error', 'Harap isi Email / NIK dan Password Anda.');
+                set_flash('error', 'Please enter your Email / User Code and Password.');
             } else {
                 $user = User::where('email', $identitas)
                     ->orWhere('kode_singkatan', strtoupper($identitas))
@@ -251,24 +251,24 @@ class MedquestController extends Controller
                 if ($user && Hash::check($password, $user->password)) {
                     $status = $user->status ?? 'approved';
                     if ($status === 'pending') {
-                        set_flash('error', '<div class="fw-bold mb-1"><i class="fas fa-hourglass-half me-1 text-warning"></i> Akun Sedang Ditinjau!</div>Akun dengan kode <strong>' . e($user->kode_singkatan) . '</strong> sudah didaftarkan dan <strong>sedang ditinjau oleh Team Medquest</strong>.<br><span class="small opacity-85">Mohon menunggu persetujuan (ACC) dari Superadmin dan cek secara berkala.</span>');
+                        set_flash('error', '<div class="fw-bold mb-1"><i class="fas fa-hourglass-half me-1 text-warning"></i> Account Under Review</div>Your account with code <strong>' . e($user->kode_singkatan) . '</strong> has been registered and is <strong>currently under review by the Medquest Team</strong>.<br><span class="small opacity-85">Please wait for Superadmin approval and check back periodically.</span>');
                         return redirect(base_url('?page=login'));
                     } elseif ($status === 'rejected') {
-                        set_flash('error', '<div class="fw-bold mb-1"><i class="fas fa-times-circle me-1 text-danger"></i> Pendaftaran Akun Ditolak</div>Pendaftaran akun dengan kode <strong>' . e($user->kode_singkatan) . '</strong> ditolak oleh Superadmin. Silakan hubungi admin Medquest.');
+                        set_flash('error', '<div class="fw-bold mb-1"><i class="fas fa-times-circle me-1 text-danger"></i> Account Registration Rejected</div>Registration for account code <strong>' . e($user->kode_singkatan) . '</strong> was rejected by the Superadmin. Please contact the Medquest administrator.');
                         return redirect(base_url('?page=login'));
                     }
 
                     Auth::login($user);
                     $request->session()->regenerate();
 
-                    set_flash('success', 'Selamat datang kembali, <strong>' . e($user->nama_lengkap) . ' (' . e($user->kode_singkatan) . ')</strong>!');
+                    set_flash('success', 'Welcome back, <strong>' . e($user->nama_lengkap) . ' (' . e($user->kode_singkatan) . ')</strong>!');
                     $redirectDept = ($user->departemen_default && $user->departemen_default !== 'ALL')
                         ? '&dept=' . urlencode($user->departemen_default)
                         : '';
                     return redirect(base_url('?page=agreements' . $redirectDept));
                 }
 
-                set_flash('error', 'Email / NIK atau Password tidak sesuai.');
+                set_flash('error', 'Invalid Email / User Code or Password.');
                 return redirect(base_url('?page=login'));
             }
         }
@@ -293,15 +293,15 @@ class MedquestController extends Controller
             $password_confirm = (string) $request->input('password_confirm', '');
 
             if ($nama_lengkap === '' || $kode_singkatan === '' || $departemen === '' || $email === '' || $password === '') {
-                set_flash('error', 'Semua kolom wajib diisi (Nama Lengkap, Kode Singkatan, Departemen, Email Pribadi, dan Password).');
+                set_flash('error', 'All fields are required (Full Name, Initial Code, Department, Email Address, and Password).');
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                set_flash('error', 'Format Email Pribadi tidak valid.');
+                set_flash('error', 'Invalid Email Address format.');
             } elseif (strlen($kode_singkatan) < 2 || strlen($kode_singkatan) > 10) {
-                set_flash('error', 'Nama Singkatan Medquest harus terdiri dari 2 sampai 10 karakter (contoh: RYN atau FJR).');
+                set_flash('error', 'Medquest Initial Code must be between 2 and 10 characters (e.g., RYN or FJR).');
             } elseif (strlen($password) < 6) {
-                set_flash('error', 'Password minimal terdiri dari 6 karakter.');
+                set_flash('error', 'Password must be at least 6 characters.');
             } elseif ($password !== $password_confirm) {
-                set_flash('error', 'Konfirmasi password tidak cocok.');
+                set_flash('error', 'Password confirmation does not match.');
             } else {
                 $existing = User::where('email', $email)
                     ->orWhere('kode_singkatan', $kode_singkatan)
@@ -309,9 +309,9 @@ class MedquestController extends Controller
 
                 if ($existing) {
                     if (strtolower($existing->email) === $email) {
-                        set_flash('error', 'Email pribadi <strong>' . e($email) . '</strong> sudah terdaftar. Silakan gunakan email lain atau hubungi admin.');
+                        set_flash('error', 'Email address <strong>' . e($email) . '</strong> is already registered. Please use another email or contact the admin.');
                     } else {
-                        set_flash('error', 'Singkatan nama <strong>' . e($kode_singkatan) . '</strong> sudah digunakan user lain.');
+                        set_flash('error', 'Initial code <strong>' . e($kode_singkatan) . '</strong> is already in use by another user.');
                     }
                 } else {
                     User::create([
@@ -358,7 +358,7 @@ class MedquestController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        set_flash('success', 'Anda telah keluar dari sistem.');
+        set_flash('success', 'You have been signed out.');
         return redirect(base_url('?page=login'));
     }
 
@@ -441,7 +441,7 @@ class MedquestController extends Controller
                         'aksi'           => 'ADD_NOTE',
                     ]);
 
-                    set_flash('success', "Catatan baru berhasil disimpan dan otomatis ditandai dengan <strong>{$stampBaru}</strong>.");
+                    set_flash('success', "New note saved and stamped with <strong>{$stampBaru}</strong>.");
                 }
 
                 return redirect(base_url('?page=agreements&dept=' . urlencode((string) $request->input('return_dept', 'ALL'))));
@@ -453,7 +453,7 @@ class MedquestController extends Controller
                 $this->applyAgreementAccessScope($delQuery);
                 $delQuery->delete();
 
-                set_flash('success', 'Data dokumen berhasil dihapus.');
+                set_flash('success', 'Document deleted successfully.');
                 return redirect(base_url('?page=agreements&dept=' . urlencode((string) $request->input('return_dept', 'ALL'))));
             }
 
@@ -467,12 +467,12 @@ class MedquestController extends Controller
                     $deletedCount = $delQuery->delete();
 
                     if ($deletedCount > 0) {
-                        set_flash('success', "Berhasil menghapus <strong>{$deletedCount} dokumen</strong> yang dipilih.");
+                        set_flash('success', "Successfully deleted <strong>{$deletedCount} selected document(s)</strong>.");
                     } else {
-                        set_flash('error', 'Tidak ada dokumen yang dapat dihapus.');
+                        set_flash('error', 'No documents could be deleted.');
                     }
                 } else {
-                    set_flash('error', 'Silakan centang minimal 1 dokumen terlebih dahulu untuk dihapus.');
+                    set_flash('error', 'Please select at least 1 document to delete.');
                 }
 
                 $retDept = urlencode((string) $request->input('return_dept', 'ALL'));
@@ -512,12 +512,12 @@ class MedquestController extends Controller
                         'tanggal_selesai' => $tglSelesai,
                     ]);
 
-                    $logMsg = "Status alur diubah dari [{$oldStatusMeta['label']}] menjadi [{$statusMeta['label']}].";
+                    $logMsg = "Status changed from [{$oldStatusMeta['label']}] to [{$statusMeta['label']}].";
                     if ($newStatus === 'SELESAI' && $tglSelesai) {
-                        $logMsg .= " (Tanggal Selesai: " . format_date_medquest($tglSelesai) . ")";
+                        $logMsg .= " (Completion Date: " . format_date_medquest($tglSelesai) . ")";
                     }
                     if ($catatanStatus !== '') {
-                        $logMsg .= "\nCatatan: " . $catatanStatus;
+                        $logMsg .= "\nNote: " . $catatanStatus;
                     }
 
                     $this->logAgreementHistory(
@@ -529,7 +529,7 @@ class MedquestController extends Controller
                         'STATUS_' . $newStatus
                     );
 
-                    set_flash('success', "Status alur dokumen #<strong>" . ($agr->no_urut_dokumen ?: $agr->id) . "</strong> berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
+                    set_flash('success', "Status for document #<strong>" . ($agr->no_urut_dokumen ?: $agr->id) . "</strong> updated to: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
                 }
 
                 $retDept   = urlencode((string) $request->input('return_dept', 'ALL'));
@@ -551,7 +551,7 @@ class MedquestController extends Controller
                         ['kode_dept' => $kodeDept],
                         ['nama_dept' => $namaDept]
                     );
-                    set_flash('success', "Departemen <strong>{$kodeDept}</strong> berhasil ditambahkan.");
+                    set_flash('success', "Department <strong>{$kodeDept}</strong> added successfully.");
                 }
                 return redirect(base_url('?page=agreements&dept=' . urlencode($kodeDept ?: 'ALL')));
             }
@@ -768,7 +768,7 @@ class MedquestController extends Controller
                 $department = $custom_dept;
                 Department::firstOrCreate(
                     ['kode_dept' => $department],
-                    ['nama_dept' => 'Divisi ' . $department]
+                    ['nama_dept' => $department . ' Division']
                 );
             }
 
@@ -808,15 +808,15 @@ class MedquestController extends Controller
             $errorMsg = '';
             if ($doc_type === 'COOPERATION') {
                 if ($document_number === '' || $customer === '' || $product_description === '' || (!$expiry_date_na && !$expiry_date)) {
-                    $errorMsg = 'Untuk Log of Cooperation Agreement, harap lengkapi Document Number, Customer, Product Description, dan Expiry Date.';
+                    $errorMsg = 'For Log of Cooperation Agreement, please complete Document Number, Customer, Product Description, and Expiry Date.';
                 }
             } elseif ($doc_type === 'COMPANY') {
                 if ($document_title === '' || $issued_by === '') {
-                    $errorMsg = 'Untuk Original Company Document, harap lengkapi Document Title dan Issued By.';
+                    $errorMsg = 'For Original Company Document, please complete Document Title and Issued By.';
                 }
             } elseif ($doc_type === 'PRINCIPAL') {
                 if ($document_title === '' || $issued_by === '' || $principal_name === '') {
-                    $errorMsg = 'Untuk Log of Principal Document, harap lengkapi Document Title, Issued By, dan Principal.';
+                    $errorMsg = 'For Log of Principal Document, please complete Document Title, Issued By, and Principal.';
                 }
             }
 
@@ -892,12 +892,12 @@ class MedquestController extends Controller
                 if (!$expiry_date_na && $expiry_date) {
                     $autoEmails = NotificationService::runAutoExpiryNotifications();
                     if (!empty($autoEmails)) {
-                        $extraMsg = ' Karena tanggal berada di titik pengingat (H-90/60/30/14/7/3), sistem langsung memproses pengiriman email ke <strong>' . e($user['email']) . '</strong>!';
+                        $extraMsg = ' Because the date falls within a reminder milestone (H-90/60/30/14/7/3), an automatic notification email was queued for <strong>' . e($user['email']) . '</strong>!';
                     }
                 }
 
                 $meta = get_doc_type_meta($doc_type);
-                set_flash('success', "Dokumen <strong>{$meta['title']}</strong> berhasil disimpan ke departemen <strong>{$department}</strong> dengan tanda Created By: <strong>{$createdByStamp}</strong>.{$extraMsg}");
+                set_flash('success', "Document <strong>{$meta['title']}</strong> was saved to department <strong>{$department}</strong> stamped Created By: <strong>{$createdByStamp}</strong>.{$extraMsg}");
                 return redirect(base_url('?page=agreements&dept=' . urlencode($department) . '&doc_type=' . urlencode($doc_type)));
             }
         }
@@ -925,7 +925,7 @@ class MedquestController extends Controller
         $agrModel = $agrQuery->first();
 
         if (!$agrModel) {
-            set_flash('error', 'Data dokumen tidak ditemukan.');
+            set_flash('error', 'Document record not found.');
             return redirect(base_url('?page=agreements'));
         }
 
@@ -1022,9 +1022,9 @@ class MedquestController extends Controller
             if ($status_proses !== $oldStatusProses) {
                 $statusMeta = get_process_status_meta($status_proses);
                 $oldStatusMeta = get_process_status_meta($oldStatusProses);
-                $logMsg = "Status alur diubah dari [{$oldStatusMeta['label']}] menjadi [{$statusMeta['label']}].";
+                $logMsg = "Status changed from [{$oldStatusMeta['label']}] to [{$statusMeta['label']}].";
                 if ($status_proses === 'SELESAI' && $tanggal_selesai) {
-                    $logMsg .= " (Tanggal Selesai: " . format_date_medquest($tanggal_selesai) . ")";
+                    $logMsg .= " (Completion Date: " . format_date_medquest($tanggal_selesai) . ")";
                 }
                 $this->logAgreementHistory($id, $uId, $uCode, date('Y-m-d'), $logMsg, 'STATUS_' . $status_proses);
             }
@@ -1036,7 +1036,7 @@ class MedquestController extends Controller
             } catch (\Throwable $e) {
             }
 
-            set_flash('success', 'Data dokumen berhasil diperbarui.');
+            set_flash('success', 'Document details updated successfully.');
             return redirect(base_url('?page=agreements&dept=' . urlencode($department) . '&doc_type=' . urlencode($docType)));
         }
 
@@ -1068,7 +1068,7 @@ class MedquestController extends Controller
         $agrRow = $agrQuery->first();
 
         if (!$agrRow) {
-            set_flash('error', 'Data dokumen tidak ditemukan.');
+            set_flash('error', 'Document record not found.');
             return redirect(base_url('?page=agreements'));
         }
 
@@ -1090,10 +1090,10 @@ class MedquestController extends Controller
                         $fileName = 'doc_' . $id . '_' . time() . '.' . $ext;
                         $file->move($uploadDir, $fileName);
                         Agreement::where('id', $id)->update(['file_attachment' => $fileName]);
-                        set_flash('success', 'File dokumen berhasil dilampirkan.');
+                        set_flash('success', 'Document file attached successfully.');
                         return redirect(base_url('?page=detail&id=' . $id));
                     } else {
-                        set_flash('error', 'Format file harus PDF, JPG, PNG, Word, atau Excel.');
+                        set_flash('error', 'File format must be PDF, JPG, PNG, Word, or Excel.');
                     }
                 }
             }
@@ -1123,12 +1123,12 @@ class MedquestController extends Controller
                         'tanggal_selesai' => $tglSelesai,
                     ]);
 
-                    $logMsg = "Status alur diubah dari [{$oldStatusMeta['label']}] menjadi [{$statusMeta['label']}].";
+                    $logMsg = "Status changed from [{$oldStatusMeta['label']}] to [{$statusMeta['label']}].";
                     if ($newStatus === 'SELESAI' && $tglSelesai) {
-                        $logMsg .= " (Tanggal Selesai: " . format_date_medquest($tglSelesai) . ")";
+                        $logMsg .= " (Completion Date: " . format_date_medquest($tglSelesai) . ")";
                     }
                     if ($catatanStatus !== '') {
-                        $logMsg .= "\nCatatan: " . $catatanStatus;
+                        $logMsg .= "\nNote: " . $catatanStatus;
                     }
 
                     $this->logAgreementHistory(
@@ -1140,7 +1140,7 @@ class MedquestController extends Controller
                         'STATUS_' . $newStatus
                     );
 
-                    set_flash('success', "Status alur dokumen berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
+                    set_flash('success', "Document status updated to: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
                 }
 
                 return redirect(base_url('?page=detail&id=' . $id));
@@ -1188,7 +1188,7 @@ class MedquestController extends Controller
                     ->orWhere('recipient_code', $uCode)
                     ->delete();
             }
-            set_flash('success', 'Riwayat log email berhasil dibersihkan.');
+            set_flash('success', 'Email log history cleared successfully.');
             return redirect(base_url('?page=notifications'));
         }
 
@@ -1297,11 +1297,11 @@ class MedquestController extends Controller
                 $sentReal = count(array_filter($autoResults, fn ($r) => !empty($r['sent_smtp'])));
 
                 if ($sentReal > 0) {
-                    set_flash('success', "Konfigurasi Gmail SMTP tersimpan & sistem <strong>langsung mengirimkan {$sentReal} email otomatis (H-7/H-3/H-1)</strong> ke Inbox Gmail penginput data!");
+                    set_flash('success', "Gmail SMTP settings saved & system <strong>immediately sent {$sentReal} automated email(s) (H-7/H-3/H-1)</strong> to the creators' Gmail inboxes!");
                 } elseif ($smtp_enabled) {
-                    set_flash('success', 'Konfigurasi Gmail SMTP berhasil diaktifkan! Mulai sekarang setiap dokumen yang masuk H-7, H-3, dan H-1 akan langsung masuk ke Inbox Gmail user secara otomatis.');
+                    set_flash('success', 'Gmail SMTP configuration enabled! Documents reaching H-7, H-3, and H-1 will now be delivered automatically to user Gmail inboxes.');
                 } else {
-                    set_flash('info', 'Pengaturan SMTP disimpan.');
+                    set_flash('info', 'SMTP settings saved.');
                 }
 
                 return redirect(base_url('?page=smtp_settings'));
@@ -1312,7 +1312,7 @@ class MedquestController extends Controller
                 $sampleAgr = Agreement::orderByDesc('id')->first();
                 if ($sampleAgr) {
                     $err = null;
-                    $subject = '[TEST GMAIL MEDQUEST] Uji Coba Notifikasi Otomatis H-7, H-3, H-1';
+                    $subject = '[TEST GMAIL MEDQUEST] Automated Notification Test H-7, H-3, H-1';
                     $htmlBody = NotificationService::buildExpiryEmailHtml($sampleAgr->toArray(), [
                         'nama_lengkap'   => $user['nama_lengkap'],
                         'kode_singkatan' => $user['kode_singkatan'],
@@ -1321,12 +1321,12 @@ class MedquestController extends Controller
 
                     if ($smtpModel->smtp_enabled && !empty($smtpModel->smtp_username) && !empty($smtpModel->smtp_password)) {
                         if (NotificationService::sendViaDynamicSmtp($smtpModel, $targetEmail, $subject, $htmlBody, $err)) {
-                            set_flash('success', "BERHASIL! Email uji coba telah dikirim langsung ke Inbox Gmail <strong>{$targetEmail}</strong>. Silakan cek Inbox/Spam Anda sekarang!");
+                            set_flash('success', "SUCCESS! Test email sent directly to Gmail inbox <strong>{$targetEmail}</strong>. Please check your Inbox or Spam folder!");
                         } else {
-                            set_flash('error', "Gagal mengirim ke Gmail: <strong>{$err}</strong>");
+                            set_flash('error', "Failed to send to Gmail: <strong>{$err}</strong>");
                         }
                     } else {
-                        set_flash('error', 'Harap isi Email Gmail Pengirim dan 16-Digit App Password Google pada form di atas terlebih dahulu, lalu klik Simpan.');
+                        set_flash('error', 'Please enter the Sender Gmail Address and 16-Digit Google App Password in the form above first, then click Save.');
                     }
                 }
                 return redirect(base_url('?page=smtp_settings'));
@@ -1350,7 +1350,7 @@ class MedquestController extends Controller
         }
 
         if (!is_superadmin()) {
-            set_flash('error', 'Akses ditolak. Halaman Persetujuan Akun hanya dapat diakses oleh Superadmin.');
+            set_flash('error', 'Access denied. Account Approvals can only be accessed by a Superadmin.');
             return redirect(base_url('?page=agreements'));
         }
 
@@ -1368,16 +1368,16 @@ class MedquestController extends Controller
 
                     if ($action === 'approve') {
                         $targetUser->update(['status' => 'approved']);
-                        set_flash('success', "<i class='fas fa-check-circle me-1'></i> Akun <strong>{$targetName} ({$targetCode})</strong> berhasil <strong>DISETUJUI (ACC)</strong>! User sekarang dapat login.");
+                        set_flash('success', "<i class='fas fa-check-circle me-1'></i> Account <strong>{$targetName} ({$targetCode})</strong> has been <strong>APPROVED</strong>! The user can now sign in.");
                     } elseif ($action === 'reject') {
                         $targetUser->update(['status' => 'rejected']);
-                        set_flash('error', "<i class='fas fa-times-circle me-1'></i> Pendaftaran akun <strong>{$targetName} ({$targetCode})</strong> telah <strong>DITOLAK</strong>.");
+                        set_flash('error', "<i class='fas fa-times-circle me-1'></i> Account registration for <strong>{$targetName} ({$targetCode})</strong> has been <strong>REJECTED</strong>.");
                     } elseif ($action === 'delete') {
                         if ($targetId === (int) $currentUser['id']) {
-                            set_flash('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.');
+                            set_flash('error', 'You cannot delete your own currently active account.');
                         } else {
                             $targetUser->delete();
-                            set_flash('success', "<i class='fas fa-trash-alt me-1'></i> Akun <strong>{$targetName} ({$targetCode})</strong> berhasil dihapus.");
+                            set_flash('success', "<i class='fas fa-trash-alt me-1'></i> Account <strong>{$targetName} ({$targetCode})</strong> deleted successfully.");
                         }
                     } elseif ($action === 'set_role') {
                         $rawRole = strtolower(trim((string) $request->input('new_role', 'user')));
@@ -1385,12 +1385,12 @@ class MedquestController extends Controller
                         $targetUser->update(['role' => $newRole]);
 
                         if (in_array($newRole, ['superadmin', 'admin'], true)) {
-                            set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>ADMIN</strong>. Akun tersebut kini dapat melihat seluruh dokumen dari semua departemen.");
+                            set_flash('success', "Account role for <strong>{$targetName} ({$targetCode})</strong> updated to <strong>ADMIN</strong>. This account can now view documents across all departments.");
                         } else {
                             if (empty($targetUser->allowed_departments) && strtoupper((string) $targetUser->departemen_default) !== 'ALL') {
                                 $targetUser->update(['allowed_departments' => strtoupper((string) $targetUser->departemen_default)]);
                             }
-                            set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>USER</strong>. Silakan centang departemen yang diizinkan pada kolom Akses Departemen.");
+                            set_flash('success', "Account role for <strong>{$targetName} ({$targetCode})</strong> updated to <strong>USER</strong>. Please check the allowed departments in the Department Access column.");
                         }
                     } elseif ($action === 'update_departments') {
                         $rawDepts = (array) $request->input('departments', []);
@@ -1404,10 +1404,10 @@ class MedquestController extends Controller
                                 'allowed_departments' => $allowedStr,
                                 'departemen_default'  => $cleanDepts[0],
                             ]);
-                            set_flash('success', "Akses departemen untuk User <strong>{$targetName} ({$targetCode})</strong> berhasil diperbarui: <strong>" . implode(', ', $cleanDepts) . "</strong>.");
+                            set_flash('success', "Department access for User <strong>{$targetName} ({$targetCode})</strong> updated: <strong>" . implode(', ', $cleanDepts) . "</strong>.");
                         } else {
                             $targetUser->update(['allowed_departments' => 'NONE']);
-                            set_flash('info', "Seluruh centang departemen untuk <strong>{$targetName} ({$targetCode})</strong> dilepas. User hanya dapat melihat dokumen yang ia buat sendiri.");
+                            set_flash('info', "All department checkboxes for <strong>{$targetName} ({$targetCode})</strong> were cleared. This user can only view documents they created themselves.");
                         }
                     }
                 }

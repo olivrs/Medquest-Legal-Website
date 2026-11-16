@@ -19,12 +19,12 @@ class MedquestSystemTest extends TestCase
     {
         $response = $this->get('/login');
         $response->assertStatus(200);
-        $response->assertSee('Masuk ke Sistem');
-        $response->assertSee('Buat Akun Baru');
+        $response->assertSee('Sign In');
+        $response->assertSee('Create New Account');
 
         $regResponse = $this->get('/register');
         $regResponse->assertStatus(200);
-        $regResponse->assertSee('PENDAFTARAN AKUN USER MEDQUEST');
+        $regResponse->assertSee('MEDQUEST USER REGISTRATION');
     }
 
     public function test_superadmin_login_and_all_dashboard_pages_work(): void
@@ -38,7 +38,11 @@ class MedquestSystemTest extends TestCase
         $agrResp = $this->get('/agreements');
         $agrResp->assertStatus(200);
         $agrResp->assertSee('UDD PMI Kota Surabaya');
-        $agrResp->assertSee('MENU INTERNAL');
+        $agrResp->assertSee('INTERNAL MENU');
+        $agrResp->assertSee('Departments');
+        $agrResp->assertSee('Submission');
+        $agrResp->assertSee('In Progress');
+        $agrResp->assertSee('Completed');
         $agrResp->assertDontSee('STATUS ALUR PROSES');
 
         $sortResp = $this->get('/agreements?sort=newest&doc_type=ALL');
@@ -50,17 +54,21 @@ class MedquestSystemTest extends TestCase
 
         $createResp = $this->get('/create');
         $createResp->assertStatus(200);
+        $createResp->assertSee('Add New Document');
         $createResp->assertDontSee('Status Alur Proses');
         $createResp->assertSee('Status <span class="text-danger">*</span>', false);
 
         $notifResp = $this->get('/notifications');
         $notifResp->assertStatus(200);
+        $notifResp->assertSee('Deadline Monitoring');
 
         $smtpResp = $this->get('/smtp-settings');
         $smtpResp->assertStatus(200);
+        $smtpResp->assertSee('Email SMTP Settings');
 
         $approvalsResp = $this->get('/user-approvals');
         $approvalsResp->assertStatus(200);
+        $approvalsResp->assertSee('Account Approvals');
     }
 
     public function test_artisan_deadline_notification_command_runs(): void

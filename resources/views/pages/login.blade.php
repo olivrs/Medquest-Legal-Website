@@ -14,10 +14,10 @@
             <form method="POST" action="<?= base_url('?page=login') ?>">
                 @csrf
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Email / NIK </label>
+                    <label class="form-label fw-semibold">Email / User Code</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light"><i class="fas fa-user-tag text-primary"></i></span>
-                        <input type="text" name="identitas" class="form-control" placeholder="Contoh: FJR, NIK, atau fjr.medquest@gmail.com" required autofocus>
+                        <input type="text" name="identitas" class="form-control" placeholder="e.g. FJR or fjr.medquest@gmail.com" required autofocus>
                     </div>
                 </div>
 
@@ -25,21 +25,21 @@
                     <label class="form-label fw-semibold">Password</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light"><i class="fas fa-lock text-primary"></i></span>
-                        <input type="password" name="password" class="form-control" placeholder="Masukkan password..." required>
+                        <input type="password" name="password" class="form-control" placeholder="Enter your password..." required>
                     </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mt-1">
-                    <i class="fas fa-sign-in-alt me-1"></i> Masuk ke Sistem
+                    <i class="fas fa-sign-in-alt me-1"></i> Sign In
                 </button>
             </form>
 
             <hr class="my-4">
 
             <div class="text-center">
-                <p class="mb-2 text-muted small">Belum punya akun atau ingin mendaftarkan singkatan nama &amp; email pribadi?</p>
+                <p class="mb-2 text-muted small">Don't have an account yet or need to register your initial code &amp; email?</p>
                 <a href="<?= base_url('?page=register') ?>" class="btn btn-sm btn-outline-primary py-1 px-4 fw-semibold" style="font-size:0.82rem;">
-                    <i class="fas fa-user-plus me-1"></i> Buat Akun Baru
+                    <i class="fas fa-user-plus me-1"></i> Create New Account
                 </a>
             </div>
         </div>

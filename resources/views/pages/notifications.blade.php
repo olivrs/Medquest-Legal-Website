@@ -6,20 +6,20 @@
         <a href="<?= base_url('?page=agreements') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
             <i class="fas fa-arrow-left me-1"></i> Back
         </a>
-        <h1 class="cp-page-title ms-1">Monitoring Deadline</h1>
+        <h1 class="cp-page-title ms-1">Deadline Monitoring</h1>
     </div>
 </div>
 
 <div class="cp-table-card mt-0 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold text-dark mb-0">Dokumen Mendekati Deadline</h6>
-        <span class="badge bg-light text-dark border px-3 py-1"><?= count($upcomingH) ?> Dokumen</span>
+        <h6 class="fw-bold text-dark mb-0">Documents Approaching Deadline</h6>
+        <span class="badge bg-light text-dark border px-3 py-1"><?= count($upcomingH) ?> Document(s)</span>
     </div>
     <div class="table-responsive">
         <table class="cp-table mq-mobile-cards">
             <thead>
                 <tr>
-                    <th style="width: 48px;" class="text-center">Buka</th>
+                    <th style="width: 48px;" class="text-center">Open</th>
                     <th>Dept</th>
                     <th>Customer &amp; Product</th>
                     <th>Expiry Date</th>
@@ -30,12 +30,12 @@
             <tbody>
                 <?php if (empty($upcomingH)): ?>
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">Belum ada dokumen yang mendekati deadline.</td>
+                        <td colspan="6" class="text-center py-4 text-muted">No documents approaching deadline.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($upcomingH as $item):
                         $expInfo = get_expiry_info($item['expiry_date']);
-                        $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Dokumen #' . $item['id']);
+                        $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Document #' . $item['id']);
                         $displaySub   = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
                     ?>
                         <tr class="<?= $expInfo['row_class'] ?>">
@@ -43,7 +43,7 @@
                                 <a href="<?= base_url('?page=detail&id=' . $item['id']) ?>"
                                    class="btn btn-sm btn-primary py-1 px-2 text-white d-inline-flex align-items-center justify-content-center"
                                    style="width: 32px; height: 32px; font-size: 0.85rem;"
-                                   title="Buka Dokumen <?= htmlspecialchars($displayTitle) ?>">
+                                   title="Open Document <?= htmlspecialchars($displayTitle) ?>">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             </td>
@@ -76,12 +76,12 @@
 
 <div class="cp-table-card mt-0">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold text-dark mb-0">Riwayat Pengiriman Email</h6>
+        <h6 class="fw-bold text-dark mb-0">Email Notification History</h6>
         <?php if (!empty($emailLogs)): ?>
-            <form method="POST" action="<?= base_url('?page=notifications') ?>" onsubmit="return confirm('Bersihkan seluruh riwayat log email?')">
+            <form method="POST" action="<?= base_url('?page=notifications') ?>" onsubmit="return confirm('Clear all email log history?')">
                 @csrf
                 <input type="hidden" name="action" value="clear_logs">
-                <button type="submit" class="btn btn-outline-danger btn-sm">Bersihkan Riwayat</button>
+                <button type="submit" class="btn btn-outline-danger btn-sm">Clear History</button>
             </form>
         <?php endif; ?>
     </div>
@@ -89,18 +89,18 @@
         <table class="cp-table">
             <thead>
                 <tr>
-                    <th>Waktu</th>
-                    <th>Tahap</th>
-                    <th>Penerima</th>
-                    <th>Subjek</th>
+                    <th>Time</th>
+                    <th>Stage</th>
+                    <th>Recipient</th>
+                    <th>Subject</th>
                     <th>Status</th>
-                    <th class="text-end">Detail</th>
+                    <th class="text-end">Details</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($emailLogs)): ?>
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">Belum ada riwayat email terkirim.</td>
+                        <td colspan="6" class="text-center py-4 text-muted">No email notifications sent yet.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($emailLogs as $log): ?>
@@ -125,7 +125,7 @@
                                 <button type="button"
                                         class="btn btn-sm btn-light border fw-semibold"
                                         onclick="showEmailPreview(<?= (int)$log['id'] ?>)">
-                                    Lihat
+                                    View
                                 </button>
                                 <template id="emailTpl_<?= (int)$log['id'] ?>"><?= $log['body_html'] ?></template>
                             </td>
@@ -141,7 +141,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-0 overflow-hidden border-0 shadow">
             <div class="modal-header mq-modal-header text-white py-2">
-                <h6 class="modal-title fw-bold">Detail Email</h6>
+                <h6 class="modal-title fw-bold">Email Details</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
