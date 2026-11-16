@@ -54,6 +54,38 @@
                         <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
                     </div>
 
+                    <div class="col-md-7">
+                        <label class="form-label fw-bold small text-dark mb-1">Status Alur Proses Dokumen <span class="text-danger">*</span></label>
+                        <div class="d-flex flex-wrap align-items-center gap-3 p-2 bg-light border" style="border-radius:4px;">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="status_proses" id="statusPengajuan" value="PENGAJUAN" checked onchange="toggleTglSelesai(this.value)">
+                                <label class="form-check-label small fw-semibold" for="statusPengajuan" style="color:#b45309;">
+                                    <i class="fas fa-file-signature me-1"></i> Pengajuan
+                                </label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="status_proses" id="statusBerjalan" value="BERJALAN" onchange="toggleTglSelesai(this.value)">
+                                <label class="form-check-label small fw-semibold text-primary" for="statusBerjalan">
+                                    <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                                </label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="status_proses" id="statusSelesai" value="SELESAI" onchange="toggleTglSelesai(this.value)">
+                                <label class="form-check-label small fw-semibold text-success" for="statusSelesai">
+                                    <i class="fas fa-check-circle me-1"></i> Sudah Selesai
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5 d-none" id="colTanggalSelesai">
+                        <label class="form-label fw-bold small text-success mb-1">
+                            <i class="fas fa-calendar-check me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="tanggal_selesai" id="inputTglSelesai" class="form-control" value="<?= date('Y-m-d') ?>">
+                        <div class="text-muted small" style="font-size:0.7rem;">Tanggal resmi saat proses dokumen rampung</div>
+                    </div>
+
                     <div class="col-md-7 field-company-principal">
                         <label class="form-label fw-bold small text-dark mb-1">Document Title <span class="text-danger">*</span></label>
                         <input type="text" name="document_title" id="inputDocTitle" class="form-control"
@@ -257,6 +289,20 @@ function toggleExpNa(checked) {
     if (star) star.style.display = checked ? 'none' : '';
     if (checked) {
         inp.value = '';
+    }
+}
+
+function toggleTglSelesai(val) {
+    const col = document.getElementById('colTanggalSelesai');
+    const inp = document.getElementById('inputTglSelesai');
+    if (col) {
+        if (val === 'SELESAI') {
+            col.classList.remove('d-none');
+            if (inp) inp.required = true;
+        } else {
+            col.classList.add('d-none');
+            if (inp) inp.required = false;
+        }
     }
 }
 

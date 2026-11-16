@@ -324,3 +324,48 @@ if (!function_exists('get_expiry_info')) {
         }
     }
 }
+
+if (!function_exists('get_process_status_meta')) {
+    function get_process_status_meta(?string $status): array
+    {
+        $st = strtoupper(trim((string) ($status ?: 'PENGAJUAN')));
+        return match ($st) {
+            'BERJALAN' => [
+                'code'             => 'BERJALAN',
+                'label'            => 'Sedang Berjalan',
+                'badge_class'      => 'badge-berjalan',
+                'badge_bg'         => '#eff6ff',
+                'badge_color'      => '#1d4ed8',
+                'badge_border'     => '#bfdbfe',
+                'icon'             => 'fas fa-spinner fa-spin',
+                'icon_static'      => 'fas fa-play-circle',
+                'btn_class'        => 'btn-outline-primary',
+                'btn_active_class' => 'btn-primary text-white fw-bold',
+            ],
+            'SELESAI' => [
+                'code'             => 'SELESAI',
+                'label'            => 'Sudah Selesai',
+                'badge_class'      => 'badge-selesai',
+                'badge_bg'         => '#f0fdf4',
+                'badge_color'      => '#15803d',
+                'badge_border'     => '#bbf7d0',
+                'icon'             => 'fas fa-check-circle',
+                'icon_static'      => 'fas fa-check-circle',
+                'btn_class'        => 'btn-outline-success',
+                'btn_active_class' => 'btn-success text-white fw-bold',
+            ],
+            default => [
+                'code'             => 'PENGAJUAN',
+                'label'            => 'Pengajuan',
+                'badge_class'      => 'badge-pengajuan',
+                'badge_bg'         => '#fffbeb',
+                'badge_color'      => '#b45309',
+                'badge_border'     => '#fde68a',
+                'icon'             => 'fas fa-file-signature',
+                'icon_static'      => 'fas fa-file-signature',
+                'btn_class'        => 'btn-outline-warning text-dark',
+                'btn_active_class' => 'btn-warning text-dark fw-bold',
+            ],
+        };
+    }
+}

@@ -22,6 +22,8 @@ return new class extends Migration
             Schema::create('agreements', function (Blueprint $table) {
                 $table->id();
                 $table->string('doc_type', 30)->default('COOPERATION');
+                $table->string('status_proses', 30)->default('PENGAJUAN')->index()->comment('PENGAJUAN, BERJALAN, SELESAI');
+                $table->date('tanggal_selesai')->nullable()->index()->comment('Tanggal dokumen ditandai selesai');
                 $table->integer('no_urut_dokumen')->nullable()->comment('Nomor urut form, contoh 731, 732');
                 $table->string('department', 30)->index();
                 $table->text('document_title')->nullable();

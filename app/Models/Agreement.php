@@ -12,6 +12,8 @@ class Agreement extends Model
 
     protected $fillable = [
         'doc_type',
+        'status_proses',
+        'tanggal_selesai',
         'no_urut_dokumen',
         'department',
         'document_title',

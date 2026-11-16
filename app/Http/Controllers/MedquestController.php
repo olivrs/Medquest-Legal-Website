@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers;
 
@@ -31,13 +31,27 @@ class MedquestController extends Controller
                     '--seed'  => true,
                     '--force' => true,
                 ]);
-            } elseif (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'allowed_departments')) {
-                \Illuminate\Support\Facades\Schema::table('users', function (\Illuminate\Database\Schema\Blueprint $table) {
-                    $table->text('allowed_departments')->nullable();
-                });
+            } else {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'allowed_departments')) {
+                    \Illuminate\Support\Facades\Schema::table('users', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->text('allowed_departments')->nullable();
+                    });
+                }
+                if (\Illuminate\Support\Facades\Schema::hasTable('agreements')) {
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('agreements', 'status_proses')) {
+                        \Illuminate\Support\Facades\Schema::table('agreements', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('status_proses', 30)->default('PENGAJUAN')->index();
+                        });
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('agreements', 'tanggal_selesai')) {
+                        \Illuminate\Support\Facades\Schema::table('agreements', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->date('tanggal_selesai')->nullable()->index();
+                        });
+                    }
+                }
             }
         } catch (\Throwable $e) {
-$1        }
+        }
     }
     public function handleRoot(Request $request)
     {
@@ -88,6 +102,10 @@ $1        }
     {
         $this->ensureDatabaseReady();
         $currDept = strtoupper(trim((string) $request->query('dept', 'ALL')));
+        $selectedProses = strtoupper(trim((string) $request->query('proses', 'ALL')));
+        if (!in_array($selectedProses, ['ALL', 'PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+            $selectedProses = 'ALL';
+        }
         $user = current_user();
 
         $alertHCount = 0;
@@ -95,6 +113,9 @@ $1        }
         $sidebarDepts = [];
         $userDeptCounts = [];
         $userTotalDocs = 0;
+        $userPengajuanDocs = 0;
+        $userBerjalanDocs = 0;
+        $userSelesaiDocs = 0;
         $pendingApprovalsCount = 0;
 
         if (Auth::check() && $user) {
@@ -104,12 +125,25 @@ $1        }
 
             $allDocsQuery = Agreement::query();
             $this->applyAgreementAccessScope($allDocsQuery);
-            $allUserDocs = $allDocsQuery->get(['id', 'department', 'expiry_date', 'expiry_date_na']);
+            $cols = ['id', 'department', 'expiry_date', 'expiry_date_na'];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('agreements', 'status_proses')) {
+                $cols[] = 'status_proses';
+            }
+            $allUserDocs = $allDocsQuery->get($cols);
 
             foreach ($allUserDocs as $doc) {
                 $dCode = strtoupper((string) $doc->department);
                 $userDeptCounts[$dCode] = ($userDeptCounts[$dCode] ?? 0) + 1;
                 $userTotalDocs++;
+
+                $stProses = strtoupper(trim((string) ($doc->status_proses ?? 'PENGAJUAN')));
+                if ($stProses === 'BERJALAN') {
+                    $userBerjalanDocs++;
+                } elseif ($stProses === 'SELESAI') {
+                    $userSelesaiDocs++;
+                } else {
+                    $userPengajuanDocs++;
+                }
 
                 if (!$doc->expiry_date_na && !empty($doc->expiry_date)) {
                     $days = get_days_until_expiry($doc->expiry_date);
@@ -136,7 +170,7 @@ $1        }
             if (is_superadmin() || in_array('ALL', $allowedDepts, true)) {
                 $sidebarDepts = $allDepts;
             } else {
-$1                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($allowedDepts, $userDeptCounts) {
+                $sidebarDepts = array_values(array_filter($allDepts, function ($d) use ($allowedDepts, $userDeptCounts) {
                     $code = strtoupper((string) ($d['kode_dept'] ?? ''));
                     return in_array($code, $allowedDepts, true) || !empty($userDeptCounts[$code]);
                 }));
@@ -156,6 +190,10 @@ $1                $sidebarDepts = array_values(array_filter($allDepts, function 
             'sidebarDepts'          => $sidebarDepts,
             'userDeptCounts'        => $userDeptCounts,
             'userTotalDocs'         => $userTotalDocs,
+            'userPengajuanDocs'     => $userPengajuanDocs,
+            'userBerjalanDocs'      => $userBerjalanDocs,
+            'userSelesaiDocs'       => $userSelesaiDocs,
+            'selectedProses'        => $selectedProses,
             'pendingApprovalsCount' => $pendingApprovalsCount,
         ];
     }
@@ -409,6 +447,66 @@ $1                $sidebarDepts = array_values(array_filter($allDepts, function 
                 return redirect(base_url("?page=agreements&dept={$retDept}&doc_type={$retType}&status={$retStat}&sort={$retSort}"));
             }
 
+            if ($action === 'update_process_status') {
+                $agrId = (int) $request->input('agreement_id', 0);
+                $newStatus = strtoupper(trim((string) $request->input('status_proses', 'PENGAJUAN')));
+                if (!in_array($newStatus, ['PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+                    $newStatus = 'PENGAJUAN';
+                }
+
+                $tglSelesai = $request->filled('tanggal_selesai') ? (string) $request->input('tanggal_selesai') : null;
+                if ($newStatus === 'SELESAI' && empty($tglSelesai)) {
+                    $tglSelesai = date('Y-m-d');
+                } elseif ($newStatus !== 'SELESAI') {
+                    $tglSelesai = null;
+                }
+
+                $catatanStatus = trim((string) $request->input('catatan_status', ''));
+
+                $agrQuery = Agreement::where('id', $agrId);
+                $this->applyAgreementAccessScope($agrQuery);
+                $agr = $agrQuery->first();
+
+                if ($agr) {
+                    $statusMeta = get_process_status_meta($newStatus);
+                    $oldStatusMeta = get_process_status_meta($agr->status_proses ?? 'PENGAJUAN');
+
+                    $agr->update([
+                        'status_proses'   => $newStatus,
+                        'tanggal_selesai' => $tglSelesai,
+                    ]);
+
+                    $logMsg = "Status alur diubah dari [{$oldStatusMeta['label']}] menjadi [{$statusMeta['label']}].";
+                    if ($newStatus === 'SELESAI' && $tglSelesai) {
+                        $logMsg .= " (Tanggal Selesai: " . format_date_medquest($tglSelesai) . ")";
+                    }
+                    if ($catatanStatus !== '') {
+                        $logMsg .= "\nCatatan: " . $catatanStatus;
+                    }
+
+                    AgreementHistory::create([
+                        'agreement_id'   => $agrId,
+                        'user_id'        => $uId,
+                        'kode_singkatan' => $uCode,
+                        'tanggal_input'  => date('Y-m-d'),
+                        'catatan'        => $logMsg,
+                        'aksi'           => 'STATUS_' . $newStatus,
+                    ]);
+
+                    set_flash('success', "Status alur dokumen #<strong>" . ($agr->no_urut_dokumen ?: $agr->id) . "</strong> berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
+                }
+
+                $retDept   = urlencode((string) $request->input('return_dept', 'ALL'));
+                $retType   = urlencode((string) $request->input('return_doc_type', 'ALL'));
+                $retStat   = urlencode((string) $request->input('return_status', 'ALL'));
+                $retProses = urlencode((string) $request->input('return_proses', 'ALL'));
+                $retSort   = urlencode((string) $request->input('return_sort', 'default'));
+                $retQ      = urlencode((string) $request->input('return_q', ''));
+                $retP      = urlencode((string) $request->input('return_p', '1'));
+
+                return redirect(base_url("?page=agreements&dept={$retDept}&doc_type={$retType}&status={$retStat}&proses={$retProses}&sort={$retSort}&q={$retQ}&p={$retP}"));
+            }
+
             if ($action === 'add_department' && is_superadmin()) {
                 $kodeDept = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) $request->input('kode_dept', ''))));
                 $namaDept = trim((string) $request->input('nama_dept', ''));
@@ -426,6 +524,10 @@ $1                $sidebarDepts = array_values(array_filter($allDepts, function 
         $selectedDept    = strtoupper(trim((string) $request->query('dept', 'ALL')));
         $selectedStatus  = trim((string) $request->query('status', 'ALL'));
         $selectedDocType = strtoupper(trim((string) $request->query('doc_type', 'ALL')));
+        $selectedProses  = strtoupper(trim((string) $request->query('proses', 'ALL')));
+        if (!in_array($selectedProses, ['ALL', 'PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+            $selectedProses = 'ALL';
+        }
         $searchQuery     = trim((string) $request->query('q', ''));
         $selectedSort    = trim((string) $request->query('sort', 'default'));
         $currentPage     = max(1, (int) $request->query('p', 1));
@@ -476,7 +578,36 @@ $1                $sidebarDepts = array_values(array_filter($allDepts, function 
 
         $fetchedRows = $query->get()->map(fn ($r) => (array) $r)->all();
 
-$1        $allMatchingAgreements = array_values(array_filter($fetchedRows, function (array $row) use ($selectedStatus) {
+        $countProsesAll = count($fetchedRows);
+        $countPengajuan = 0;
+        $countBerjalan  = 0;
+        $countSelesai   = 0;
+
+        foreach ($fetchedRows as $row) {
+            $stP = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+            if ($stP === 'BERJALAN') {
+                $countBerjalan++;
+            } elseif ($stP === 'SELESAI') {
+                $countSelesai++;
+            } else {
+                $countPengajuan++;
+            }
+        }
+
+        $allMatchingAgreements = array_values(array_filter($fetchedRows, function (array $row) use ($selectedStatus, $selectedProses) {
+            if ($selectedProses !== 'ALL') {
+                $stP = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+                if ($selectedProses === 'PENGAJUAN' && ($stP !== 'PENGAJUAN' && !empty($row['status_proses']))) {
+                    return false;
+                }
+                if ($selectedProses === 'BERJALAN' && $stP !== 'BERJALAN') {
+                    return false;
+                }
+                if ($selectedProses === 'SELESAI' && $stP !== 'SELESAI') {
+                    return false;
+                }
+            }
+
             if ($selectedStatus === 'ALL' || $selectedStatus === '') {
                 return true;
             }
@@ -535,6 +666,11 @@ $1        $allMatchingAgreements = array_values(array_filter($fetchedRows, funct
                 'selectedDept',
                 'selectedStatus',
                 'selectedDocType',
+                'selectedProses',
+                'countProsesAll',
+                'countPengajuan',
+                'countBerjalan',
+                'countSelesai',
                 'searchQuery',
                 'selectedSort',
                 'currentPage',
@@ -660,8 +796,18 @@ $1        $allMatchingAgreements = array_values(array_filter($fetchedRows, funct
 
                 $createdByStamp = format_created_by_stamp($user['kode_singkatan'], $tanggal_input);
 
+                $status_proses   = strtoupper(trim((string) $request->input('status_proses', 'PENGAJUAN')));
+                if (!in_array($status_proses, ['PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+                    $status_proses = 'PENGAJUAN';
+                }
+                $tanggal_selesai = ($status_proses === 'SELESAI' && $request->filled('tanggal_selesai'))
+                    ? (string) $request->input('tanggal_selesai')
+                    : ($status_proses === 'SELESAI' ? date('Y-m-d') : null);
+
                 $newAgr = Agreement::create([
                     'doc_type'            => $doc_type,
+                    'status_proses'       => $status_proses,
+                    'tanggal_selesai'     => $tanggal_selesai,
                     'no_urut_dokumen'     => $no_urut_dokumen,
                     'department'          => $department,
                     'document_title'      => $document_title ?: null,
@@ -792,7 +938,17 @@ $1        $allMatchingAgreements = array_values(array_filter($fetchedRows, funct
                 }
             }
 
+            $status_proses   = strtoupper(trim((string) $request->input('status_proses', $agr['status_proses'] ?? 'PENGAJUAN')));
+            if (!in_array($status_proses, ['PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+                $status_proses = 'PENGAJUAN';
+            }
+            $tanggal_selesai = ($status_proses === 'SELESAI' && $request->filled('tanggal_selesai'))
+                ? (string) $request->input('tanggal_selesai')
+                : ($status_proses === 'SELESAI' ? ($agr['tanggal_selesai'] ?? date('Y-m-d')) : null);
+
             $updatePayload = [
+                'status_proses'       => $status_proses,
+                'tanggal_selesai'     => $tanggal_selesai,
                 'no_urut_dokumen'     => $no_urut_dokumen,
                 'department'          => $department,
                 'document_title'      => $document_title ?: null,
@@ -865,24 +1021,76 @@ $1        $allMatchingAgreements = array_values(array_filter($fetchedRows, funct
 
         $agr = (array) $agrRow;
 
-        if ($request->isMethod('post') && $request->input('action') === 'upload_file') {
-            if ($request->hasFile('file_dokumen') && $request->file('file_dokumen')->isValid()) {
-                $file = $request->file('file_dokumen');
-                $ext = strtolower($file->getClientOriginalExtension());
-                $allowedExt = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
-                if (in_array($ext, $allowedExt, true)) {
-                    $uploadDir = public_path('assets/uploads');
-                    if (!is_dir($uploadDir)) {
-                        @mkdir($uploadDir, 0775, true);
+        if ($request->isMethod('post')) {
+            $action = (string) $request->input('action', '');
+
+            if ($action === 'upload_file') {
+                if ($request->hasFile('file_dokumen') && $request->file('file_dokumen')->isValid()) {
+                    $file = $request->file('file_dokumen');
+                    $ext = strtolower($file->getClientOriginalExtension());
+                    $allowedExt = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
+                    if (in_array($ext, $allowedExt, true)) {
+                        $uploadDir = public_path('assets/uploads');
+                        if (!is_dir($uploadDir)) {
+                            @mkdir($uploadDir, 0775, true);
+                        }
+                        $fileName = 'doc_' . $id . '_' . time() . '.' . $ext;
+                        $file->move($uploadDir, $fileName);
+                        Agreement::where('id', $id)->update(['file_attachment' => $fileName]);
+                        set_flash('success', 'File dokumen berhasil dilampirkan.');
+                        return redirect(base_url('?page=detail&id=' . $id));
+                    } else {
+                        set_flash('error', 'Format file harus PDF, JPG, PNG, Word, atau Excel.');
                     }
-                    $fileName = 'doc_' . $id . '_' . time() . '.' . $ext;
-                    $file->move($uploadDir, $fileName);
-                    Agreement::where('id', $id)->update(['file_attachment' => $fileName]);
-                    set_flash('success', 'File dokumen berhasil dilampirkan.');
-                    return redirect(base_url('?page=detail&id=' . $id));
-                } else {
-                    set_flash('error', 'Format file harus PDF, JPG, PNG, Word, atau Excel.');
                 }
+            }
+
+            if ($action === 'update_process_status') {
+                $newStatus = strtoupper(trim((string) $request->input('status_proses', 'PENGAJUAN')));
+                if (!in_array($newStatus, ['PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+                    $newStatus = 'PENGAJUAN';
+                }
+
+                $tglSelesai = $request->filled('tanggal_selesai') ? (string) $request->input('tanggal_selesai') : null;
+                if ($newStatus === 'SELESAI' && empty($tglSelesai)) {
+                    $tglSelesai = date('Y-m-d');
+                } elseif ($newStatus !== 'SELESAI') {
+                    $tglSelesai = null;
+                }
+
+                $catatanStatus = trim((string) $request->input('catatan_status', ''));
+
+                $agrModel = Agreement::where('id', $id)->first();
+                if ($agrModel) {
+                    $statusMeta = get_process_status_meta($newStatus);
+                    $oldStatusMeta = get_process_status_meta($agrModel->status_proses ?? 'PENGAJUAN');
+
+                    $agrModel->update([
+                        'status_proses'   => $newStatus,
+                        'tanggal_selesai' => $tglSelesai,
+                    ]);
+
+                    $logMsg = "Status alur diubah dari [{$oldStatusMeta['label']}] menjadi [{$statusMeta['label']}].";
+                    if ($newStatus === 'SELESAI' && $tglSelesai) {
+                        $logMsg .= " (Tanggal Selesai: " . format_date_medquest($tglSelesai) . ")";
+                    }
+                    if ($catatanStatus !== '') {
+                        $logMsg .= "\nCatatan: " . $catatanStatus;
+                    }
+
+                    AgreementHistory::create([
+                        'agreement_id'   => $id,
+                        'user_id'        => $uId,
+                        'kode_singkatan' => $uCode,
+                        'tanggal_input'  => date('Y-m-d'),
+                        'catatan'        => $logMsg,
+                        'aksi'           => 'STATUS_' . $newStatus,
+                    ]);
+
+                    set_flash('success', "Status alur dokumen berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
+                }
+
+                return redirect(base_url('?page=detail&id=' . $id));
             }
         }
 
@@ -893,13 +1101,14 @@ $1        $allMatchingAgreements = array_values(array_filter($fetchedRows, funct
         $cleanLabel   = preg_replace('/\s*\(Fase\s+H-\d+\)/i', '', $expInfo['short_label']);
         $effFormatted = format_date_medquest($agr['effective_date'], $agr['effective_date_na']);
         $expFormatted = format_date_medquest($agr['expiry_date'], $isExpNa);
+        $statusMeta   = get_process_status_meta($agr['status_proses'] ?? 'PENGAJUAN');
 
         $histories = AgreementHistory::where('agreement_id', $id)->orderBy('id', 'asc')->get()->map->toArray()->all();
         $backUrl = base_url('?page=agreements&dept=' . urlencode((string) $agr['department']) . '&doc_type=' . urlencode($docType));
 
         return view('pages.detail', array_merge(
             $this->getLayoutData($request, 'detail'),
-            compact('id', 'agr', 'docType', 'typeMeta', 'isExpNa', 'expInfo', 'cleanLabel', 'effFormatted', 'expFormatted', 'histories', 'backUrl', 'uCode')
+            compact('id', 'agr', 'docType', 'typeMeta', 'isExpNa', 'expInfo', 'cleanLabel', 'effFormatted', 'expFormatted', 'statusMeta', 'histories', 'backUrl', 'uCode')
         ));
     }
 
@@ -1122,7 +1331,7 @@ $1        $allMatchingAgreements = array_values(array_filter($fetchedRows, funct
                         if (in_array($newRole, ['superadmin', 'admin'], true)) {
                             set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>ADMIN</strong>. Akun tersebut kini dapat melihat seluruh dokumen dari semua departemen.");
                         } else {
-$1                            if (empty($targetUser->allowed_departments) && strtoupper((string) $targetUser->departemen_default) !== 'ALL') {
+                            if (empty($targetUser->allowed_departments) && strtoupper((string) $targetUser->departemen_default) !== 'ALL') {
                                 $targetUser->update(['allowed_departments' => strtoupper((string) $targetUser->departemen_default)]);
                             }
                             set_flash('success', "Role akun <strong>{$targetName} ({$targetCode})</strong> berhasil diubah menjadi <strong>USER</strong>. Silakan centang departemen yang diizinkan pada kolom Akses Departemen.");

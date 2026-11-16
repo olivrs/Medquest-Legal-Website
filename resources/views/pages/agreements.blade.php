@@ -22,12 +22,19 @@
             'H90_60' => 'Sisa 60 - 90 Hari',
             default  => 'Sisa Hari',
         };
-        $baseFilterUrl = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType);
+        $baseFilterUrl = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType) . '&proses=' . urlencode($selectedProses);
         if ($selectedSort !== 'default') { $baseFilterUrl .= '&sort=' . urlencode($selectedSort); }
         if ($searchQuery !== '') { $baseFilterUrl .= '&q=' . urlencode($searchQuery); }
 
-        $baseFilterUrlWithoutSort = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType) . '&status=' . urlencode($selectedStatus);
+        $baseFilterUrlWithoutSort = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType) . '&status=' . urlencode($selectedStatus) . '&proses=' . urlencode($selectedProses);
         if ($searchQuery !== '') { $baseFilterUrlWithoutSort .= '&q=' . urlencode($searchQuery); }
+
+        $prosesFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&doc_type=' . urlencode($selectedDocType) . '&status=' . urlencode($selectedStatus);
+        if ($selectedSort !== 'default') { $prosesFilterBase .= '&sort=' . urlencode($selectedSort); }
+        if ($searchQuery !== '') { $prosesFilterBase .= '&q=' . urlencode($searchQuery); }
+        $typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status=' . urlencode($selectedStatus) . '&proses=' . urlencode($selectedProses);
+        if ($selectedSort !== 'default') { $typeFilterBase .= '&sort=' . urlencode($selectedSort); }
+        if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
         ?>
         <div class="cp-pill-group">
             <a href="<?= base_url($baseFilterUrl . '&status=ALL') ?>"
@@ -87,10 +94,10 @@
 
 <div class="row g-2 mb-2 no-print">
     <div class="col-6 col-xl-3">
-        <a href="<?= base_url($baseFilterUrl . '&status=ALL') ?>" class="cp-stat-card">
+        <a href="<?= base_url($prosesFilterBase . '&proses=ALL') ?>" class="cp-stat-card <?= $selectedProses === 'ALL' ? 'border-primary' : '' ?>">
             <div>
                 <div class="cp-stat-title">Total Dokumen</div>
-                <div class="cp-stat-value"><?= $statTotal ?></div>
+                <div class="cp-stat-value"><?= $countProsesAll ?></div>
                 <div class="cp-stat-sublabel"><?= $selectedDept === 'ALL' ? 'Semua Dept' : htmlspecialchars($selectedDept) ?></div>
             </div>
             <div class="cp-circle-gauge" style="background: conic-gradient(#2b579a 0% 90%, #e2e8f0 90% 100%);">
@@ -100,61 +107,64 @@
     </div>
 
     <div class="col-6 col-xl-3">
-        <a href="<?= base_url($baseFilterUrl . '&status=ACTIVE') ?>" class="cp-stat-card">
+        <a href="<?= base_url($prosesFilterBase . '&proses=PENGAJUAN') ?>" class="cp-stat-card <?= $selectedProses === 'PENGAJUAN' ? 'border-warning shadow-sm' : '' ?>">
             <div>
-                <div class="cp-stat-title">Dokumen Berlaku</div>
-                <div class="cp-stat-value"><?= $statSafe ?></div>
-                <div class="cp-stat-sublabel"><?= $pctSafe ?>% Aktif</div>
+                <div class="cp-stat-title" style="color:#b45309;">Pengajuan</div>
+                <div class="cp-stat-value" style="color:#b45309;"><?= $countPengajuan ?></div>
+                <div class="cp-stat-sublabel"><?= $countProsesAll > 0 ? round(($countPengajuan / $countProsesAll) * 100) : 0 ?>% dari Total</div>
             </div>
-            <div class="cp-circle-gauge" style="background: conic-gradient(#10b981 0% <?= max(12, $pctSafe) ?>%, #e2e8f0 <?= max(12, $pctSafe) ?>% 100%);">
+            <div class="cp-circle-gauge" style="background: conic-gradient(#f59e0b 0% <?= max(12, $countProsesAll > 0 ? round(($countPengajuan / $countProsesAll) * 100) : 0) ?>%, #e2e8f0 <?= max(12, $countProsesAll > 0 ? round(($countPengajuan / $countProsesAll) * 100) : 0) ?>% 100%);">
+                <div class="cp-circle-inner"><i class="fas fa-file-signature" style="color:#f59e0b;"></i></div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-xl-3">
+        <a href="<?= base_url($prosesFilterBase . '&proses=BERJALAN') ?>" class="cp-stat-card <?= $selectedProses === 'BERJALAN' ? 'border-primary shadow-sm' : '' ?>">
+            <div>
+                <div class="cp-stat-title text-primary">Sedang Berjalan</div>
+                <div class="cp-stat-value text-primary"><?= $countBerjalan ?></div>
+                <div class="cp-stat-sublabel"><?= $countProsesAll > 0 ? round(($countBerjalan / $countProsesAll) * 100) : 0 ?>% dari Total</div>
+            </div>
+            <div class="cp-circle-gauge" style="background: conic-gradient(#0284c7 0% <?= max(15, $countProsesAll > 0 ? round(($countBerjalan / $countProsesAll) * 100) : 0) ?>%, #e2e8f0 <?= max(15, $countProsesAll > 0 ? round(($countBerjalan / $countProsesAll) * 100) : 0) ?>% 100%);">
+                <div class="cp-circle-inner"><i class="fas fa-spinner fa-spin" style="color:#0284c7;"></i></div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-xl-3">
+        <a href="<?= base_url($prosesFilterBase . '&proses=SELESAI') ?>" class="cp-stat-card <?= $selectedProses === 'SELESAI' ? 'border-success shadow-sm' : '' ?>">
+            <div>
+                <div class="cp-stat-title text-success">Sudah Selesai</div>
+                <div class="cp-stat-value text-success"><?= $countSelesai ?></div>
+                <div class="cp-stat-sublabel"><?= $countProsesAll > 0 ? round(($countSelesai / $countProsesAll) * 100) : 0 ?>% dari Total</div>
+            </div>
+            <div class="cp-circle-gauge" style="background: conic-gradient(#10b981 0% <?= max(10, $countProsesAll > 0 ? round(($countSelesai / $countProsesAll) * 100) : 0) ?>%, #e2e8f0 <?= max(10, $countProsesAll > 0 ? round(($countSelesai / $countProsesAll) * 100) : 0) ?>% 100%);">
                 <div class="cp-circle-inner"><i class="fas fa-check-circle" style="color:#10b981;"></i></div>
-            </div>
-        </a>
-    </div>
-
-    <div class="col-6 col-xl-3">
-        <a href="<?= base_url($baseFilterUrl . '&status=DEADLINE_ALL') ?>" class="cp-stat-card">
-            <div>
-                <div class="cp-stat-title">Deadline</div>
-                <div class="cp-stat-value"><?= $statDeadline ?></div>
-                <div class="cp-stat-sublabel"><?= $statUrgent ?> Mendesak</div>
-            </div>
-            <div class="cp-circle-gauge" style="background: conic-gradient(#f59e0b 0% <?= max(15, $pctDeadline) ?>%, #e2e8f0 <?= max(15, $pctDeadline) ?>% 100%);">
-                <div class="cp-circle-inner"><i class="fas fa-clock" style="color:#f59e0b;"></i></div>
-            </div>
-        </a>
-    </div>
-
-    <div class="col-6 col-xl-3">
-        <a href="<?= base_url($baseFilterUrl . '&status=EXPIRED') ?>" class="cp-stat-card">
-            <div>
-                <div class="cp-stat-title">Sudah Expired</div>
-                <div class="cp-stat-value"><?= $statExpired ?></div>
-                <div class="cp-stat-sublabel"><?= $pctExpired ?>% Habis</div>
-            </div>
-            <div class="cp-circle-gauge" style="background: conic-gradient(#ef4444 0% <?= max(10, $pctExpired) ?>%, #e2e8f0 <?= max(10, $pctExpired) ?>% 100%);">
-                <div class="cp-circle-inner"><i class="fas fa-exclamation-circle" style="color:#ef4444;"></i></div>
             </div>
         </a>
     </div>
 </div>
 
 <?php
-$activeTableTitle = match ($selectedDocType) {
-    'COMPANY'     => 'ORIGINAL COMPANY DOCUMENT',
-    'PRINCIPAL'   => 'LOG OF PRINCIPAL DOCUMENT',
-    'COOPERATION' => 'LOG OF COOPERATION AGREEMENT',
-    default       => 'DAFTAR DOKUMEN LEGAL MEDQUEST',
+$prosesTitleSuffix = match ($selectedProses) {
+    'PENGAJUAN' => ' &mdash; TAHAP PENGAJUAN',
+    'BERJALAN'  => ' &mdash; SEDANG BERJALAN',
+    'SELESAI'   => ' &mdash; SUDAH SELESAI',
+    default     => '',
 };
-$typeFilterBase = '?page=agreements&dept=' . urlencode($selectedDept) . '&status=' . urlencode($selectedStatus);
-if ($selectedSort !== 'default') { $typeFilterBase .= '&sort=' . urlencode($selectedSort); }
-if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
+$activeTableTitle = match ($selectedDocType) {
+    'COMPANY'     => 'ORIGINAL COMPANY DOCUMENT' . $prosesTitleSuffix,
+    'PRINCIPAL'   => 'LOG OF PRINCIPAL DOCUMENT' . $prosesTitleSuffix,
+    'COOPERATION' => 'LOG OF COOPERATION AGREEMENT' . $prosesTitleSuffix,
+    default       => 'DAFTAR DOKUMEN LEGAL MEDQUEST' . $prosesTitleSuffix,
+};
 ?>
 <div class="cp-table-card">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div class="d-flex flex-wrap align-items-center gap-2">
             <h6 class="fw-bold text-dark mb-0 me-2">
-                <?= htmlspecialchars($activeTableTitle) ?>
+                <?= $activeTableTitle ?>
             </h6>
             <div class="cp-pill-group no-print">
                 <a href="<?= base_url($typeFilterBase . '&doc_type=ALL') ?>"
@@ -168,7 +178,24 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
             </div>
         </div>
 
-        <div class="d-flex flex-wrap align-items-center gap-3 small no-print">
+        <div class="d-flex flex-wrap align-items-center gap-2 no-print">
+            <div class="cp-pill-group">
+                <a href="<?= base_url($prosesFilterBase . '&proses=ALL') ?>"
+                   class="cp-pill-link <?= $selectedProses === 'ALL' ? 'active' : '' ?>">Semua (<?= $countProsesAll ?>)</a>
+                <a href="<?= base_url($prosesFilterBase . '&proses=PENGAJUAN') ?>"
+                   class="cp-pill-link <?= $selectedProses === 'PENGAJUAN' ? 'active' : '' ?>" style="<?= $selectedProses === 'PENGAJUAN' ? 'background:#f59e0b;color:#fff;' : '' ?>">
+                   <i class="fas fa-file-signature me-1"></i>Pengajuan (<?= $countPengajuan ?>)
+                </a>
+                <a href="<?= base_url($prosesFilterBase . '&proses=BERJALAN') ?>"
+                   class="cp-pill-link <?= $selectedProses === 'BERJALAN' ? 'active' : '' ?>" style="<?= $selectedProses === 'BERJALAN' ? 'background:#0284c7;color:#fff;' : '' ?>">
+                   <i class="fas fa-spinner fa-spin me-1"></i>Sedang Berjalan (<?= $countBerjalan ?>)
+                </a>
+                <a href="<?= base_url($prosesFilterBase . '&proses=SELESAI') ?>"
+                   class="cp-pill-link <?= $selectedProses === 'SELESAI' ? 'active' : '' ?>" style="<?= $selectedProses === 'SELESAI' ? 'background:#10b981;color:#fff;' : '' ?>">
+                   <i class="fas fa-check-circle me-1"></i>Sudah Selesai (<?= $countSelesai ?>)
+                </a>
+            </div>
+
             <button type="button"
                     id="btnBulkDelete"
                     class="btn btn-sm btn-danger fw-bold px-3 py-1 d-none align-items-center gap-1 shadow-sm"
@@ -254,14 +281,18 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                             </div>
                         </div>
                     </th>
-                    <th style="width:200px;">Note</th>
-                    <th style="width:160px;">Created By</th>
+                    <th style="min-width:180px;">Status Alur &amp; Pilihan</th>
+                    <?php if ($selectedProses === 'SELESAI'): ?>
+                        <th style="width:130px;" class="text-success fw-bold"><i class="fas fa-calendar-check me-1"></i> Selesai Tanggal</th>
+                    <?php endif; ?>
+                    <th style="width:180px;">Note</th>
+                    <th style="width:150px;">Created By</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($agreements)): ?>
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="<?= $selectedProses === 'SELESAI' ? '9' : '8' ?>" class="text-center py-5 text-muted">
                             <i class="fas fa-folder-open fa-2x mb-2 d-block opacity-50"></i>
                             <?php if (is_superadmin()): ?>
                                 Belum ada dokumen yang ditemukan pada filter ini.
@@ -348,6 +379,59 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
                                 </div>
                             </td>
 
+                            <td class="mc-process" data-label="Status Alur">
+                                <?php
+                                $rowProses = strtoupper(trim($row['status_proses'] ?? 'PENGAJUAN'));
+                                $pMeta = get_process_status_meta($rowProses);
+                                ?>
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="btn-group btn-group-xs process-segmented-group no-print" role="group" aria-label="Ubah Status Proses">
+                                        <button type="button"
+                                                class="btn btn-xs <?= $rowProses === 'PENGAJUAN' ? 'btn-warning text-dark fw-bold shadow-sm' : 'btn-outline-secondary' ?>"
+                                                style="font-size:0.68rem;padding:2px 7px;"
+                                                title="Ubah status dokumen ke Pengajuan"
+                                                onclick="submitQuickStatus(<?= $row['id'] ?>, 'PENGAJUAN', '<?= htmlspecialchars(addslashes($displayTitle)) ?>')">
+                                            Pengajuan
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-xs <?= $rowProses === 'BERJALAN' ? 'btn-primary text-white fw-bold shadow-sm' : 'btn-outline-secondary' ?>"
+                                                style="font-size:0.68rem;padding:2px 7px;"
+                                                title="Ubah status dokumen ke Sedang Berjalan"
+                                                onclick="submitQuickStatus(<?= $row['id'] ?>, 'BERJALAN', '<?= htmlspecialchars(addslashes($displayTitle)) ?>')">
+                                            Berjalan
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-xs <?= $rowProses === 'SELESAI' ? 'btn-success text-white fw-bold shadow-sm' : 'btn-outline-secondary' ?>"
+                                                style="font-size:0.68rem;padding:2px 7px;"
+                                                title="Tandai dokumen Sudah Selesai"
+                                                onclick="openModalSetSelesai(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($displayTitle)) ?>', '<?= htmlspecialchars($row['tanggal_selesai'] ?? date('Y-m-d')) ?>')">
+                                            Selesai
+                                        </button>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                        <span class="badge" style="background:<?= $pMeta['badge_bg'] ?>;color:<?= $pMeta['badge_color'] ?>;border:1px solid <?= $pMeta['badge_border'] ?>;font-size:0.68rem;">
+                                            <i class="<?= $pMeta['icon_static'] ?> me-1"></i><?= htmlspecialchars($pMeta['label']) ?>
+                                        </span>
+                                    </div>
+
+                                    <?php if ($rowProses === 'SELESAI' && $selectedProses !== 'SELESAI'): ?>
+                                        <div class="text-success small fw-bold" style="font-size:0.7rem;">
+                                            <i class="fas fa-calendar-check me-1"></i>Selesai: <?= format_date_medquest($row['tanggal_selesai']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+
+                            <?php if ($selectedProses === 'SELESAI'): ?>
+                            <td class="mc-selesai-tgl align-middle text-nowrap" data-label="Selesai Tanggal">
+                                <div class="fw-bold text-success" style="font-size:0.78rem;">
+                                    <i class="fas fa-calendar-check me-1"></i><?= format_date_medquest($row['tanggal_selesai']) ?>
+                                </div>
+                                <div class="text-muted small" style="font-size:0.68rem;">Tanggal Selesai</div>
+                            </td>
+                            <?php endif; ?>
+
                             <td class="mc-note" data-label="Note">
                                 <div class="small text-secondary mb-2" style="white-space:pre-line;max-height:85px;overflow-y:auto;"><?= htmlspecialchars($row['note'] ?: 'N/A') ?></div>
                                 <button type="button"
@@ -401,12 +485,13 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
 
         <?php if ($totalPages > 1): ?>
             <?php
-            $pageUrlHelper = function($p) use ($selectedDept, $selectedDocType, $selectedStatus, $searchQuery, $selectedSort) {
+            $pageUrlHelper = function($p) use ($selectedDept, $selectedDocType, $selectedStatus, $selectedProses, $searchQuery, $selectedSort) {
                 $q = [
                     'page'     => 'agreements',
                     'dept'     => $selectedDept,
                     'doc_type' => $selectedDocType,
                     'status'   => $selectedStatus,
+                    'proses'   => $selectedProses,
                     'p'        => $p
                 ];
                 if ($searchQuery !== '') $q['q'] = $searchQuery;
@@ -520,8 +605,75 @@ if ($searchQuery !== '') { $typeFilterBase .= '&q=' . urlencode($searchQuery); }
     <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
     <input type="hidden" name="return_doc_type" value="<?= htmlspecialchars($selectedDocType) ?>">
     <input type="hidden" name="return_status" value="<?= htmlspecialchars($selectedStatus) ?>">
+    <input type="hidden" name="return_proses" value="<?= htmlspecialchars($selectedProses) ?>">
     <input type="hidden" name="return_sort" value="<?= htmlspecialchars($selectedSort) ?>">
     <div id="bulkDeleteInputsContainer"></div>
+</form>
+
+<!-- Modal Set Selesai -->
+<div class="modal fade no-print" id="modalSetSelesai" tabindex="-1" aria-labelledby="modalSetSelesaiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
+            @csrf
+            <input type="hidden" name="action" value="update_process_status">
+            <input type="hidden" name="status_proses" value="SELESAI">
+            <input type="hidden" name="agreement_id" id="modalSelesaiAgrId" value="">
+            <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
+            <input type="hidden" name="return_doc_type" value="<?= htmlspecialchars($selectedDocType) ?>">
+            <input type="hidden" name="return_status" value="<?= htmlspecialchars($selectedStatus) ?>">
+            <input type="hidden" name="return_proses" value="<?= htmlspecialchars($selectedProses) ?>">
+            <input type="hidden" name="return_sort" value="<?= htmlspecialchars($selectedSort) ?>">
+            <input type="hidden" name="return_q" value="<?= htmlspecialchars($searchQuery) ?>">
+            <input type="hidden" name="return_p" value="<?= htmlspecialchars((string) $currentPage) ?>">
+
+            <div class="modal-header bg-success text-white py-2 px-3">
+                <h6 class="modal-title fw-bold" id="modalSetSelesaiLabel">
+                    <i class="fas fa-check-circle me-1"></i> Tandai Dokumen Sudah Selesai
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="alert alert-light border mb-3 p-2 small">
+                    <div class="text-muted small">Dokumen:</div>
+                    <strong id="modalSelesaiDocTitle" class="text-dark"></strong>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">
+                        <i class="fas fa-calendar-alt text-success me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                    </label>
+                    <input type="date" name="tanggal_selesai" id="modalSelesaiTanggal" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    <div class="form-text small text-muted">Tanggal resmi saat proses dokumen/perjanjian dinyatakan rampung.</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-bold text-dark">Catatan Penyelesaian (Opsional)</label>
+                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="Contoh: Dokumen telah selesai di-ACC para pihak dan diarsipkan"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3 bg-light">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+                    <i class="fas fa-check me-1"></i> Simpan Status Selesai
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Form Hidden untuk Quick Status Switch (Pengajuan / Berjalan) -->
+<form id="formQuickStatus" method="POST" action="<?= base_url('?page=agreements') ?>" style="display:none;">
+    @csrf
+    <input type="hidden" name="action" value="update_process_status">
+    <input type="hidden" name="agreement_id" id="quickStatusAgrId" value="">
+    <input type="hidden" name="status_proses" id="quickStatusVal" value="">
+    <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
+    <input type="hidden" name="return_doc_type" value="<?= htmlspecialchars($selectedDocType) ?>">
+    <input type="hidden" name="return_status" value="<?= htmlspecialchars($selectedStatus) ?>">
+    <input type="hidden" name="return_proses" value="<?= htmlspecialchars($selectedProses) ?>">
+    <input type="hidden" name="return_sort" value="<?= htmlspecialchars($selectedSort) ?>">
+    <input type="hidden" name="return_q" value="<?= htmlspecialchars($searchQuery) ?>">
+    <input type="hidden" name="return_p" value="<?= htmlspecialchars((string) $currentPage) ?>">
 </form>
 
 <script>
@@ -599,6 +751,26 @@ function submitBulkDelete() {
     });
 
     form.submit();
+}
+
+function submitQuickStatus(id, status, title) {
+    const label = status === 'PENGAJUAN' ? 'PENGAJUAN' : 'SEDANG BERJALAN';
+    if (confirm(`Ubah status proses dokumen "${title}" menjadi [${label}]?`)) {
+        document.getElementById('quickStatusAgrId').value = id;
+        document.getElementById('quickStatusVal').value = status;
+        document.getElementById('formQuickStatus').submit();
+    }
+}
+
+function openModalSetSelesai(id, title, tgl) {
+    document.getElementById('modalSelesaiAgrId').value = id;
+    document.getElementById('modalSelesaiDocTitle').textContent = title;
+    document.getElementById('modalSelesaiTanggal').value = tgl || new Date().toISOString().slice(0, 10);
+    const modalEl = document.getElementById('modalSetSelesai');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
 }
 </script>
 @endsection

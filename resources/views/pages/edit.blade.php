@@ -35,6 +35,39 @@
                         <input type="number" name="no_urut_dokumen" class="form-control" value="<?= htmlspecialchars((string) $agr['no_urut_dokumen']) ?>">
                     </div>
 
+                    <div class="col-md-7">
+                        <label class="form-label fw-semibold">Status Alur Proses Dokumen <span class="text-danger">*</span></label>
+                        <?php $currStatusProses = strtoupper(trim((string)($agr['status_proses'] ?? 'PENGAJUAN'))); ?>
+                        <div class="d-flex flex-wrap align-items-center gap-3 p-2 bg-light border" style="border-radius:4px;">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="status_proses" id="editStatusPengajuan" value="PENGAJUAN" <?= $currStatusProses === 'PENGAJUAN' ? 'checked' : '' ?> onchange="toggleEditTglSelesai(this.value)">
+                                <label class="form-check-label small fw-semibold" for="editStatusPengajuan" style="color:#b45309;">
+                                    <i class="fas fa-file-signature me-1"></i> Pengajuan
+                                </label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="status_proses" id="editStatusBerjalan" value="BERJALAN" <?= $currStatusProses === 'BERJALAN' ? 'checked' : '' ?> onchange="toggleEditTglSelesai(this.value)">
+                                <label class="form-check-label small fw-semibold text-primary" for="editStatusBerjalan">
+                                    <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                                </label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="radio" name="status_proses" id="editStatusSelesai" value="SELESAI" <?= $currStatusProses === 'SELESAI' ? 'checked' : '' ?> onchange="toggleEditTglSelesai(this.value)">
+                                <label class="form-check-label small fw-semibold text-success" for="editStatusSelesai">
+                                    <i class="fas fa-check-circle me-1"></i> Sudah Selesai
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5 <?= $currStatusProses === 'SELESAI' ? '' : 'd-none' ?>" id="editColTglSelesai">
+                        <label class="form-label fw-semibold text-success">
+                            <i class="fas fa-calendar-check me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="tanggal_selesai" id="editInputTglSelesai" class="form-control" value="<?= htmlspecialchars($agr['tanggal_selesai'] ?? date('Y-m-d')) ?>">
+                        <div class="text-muted small" style="font-size:0.7rem;">Tanggal resmi saat proses dokumen rampung</div>
+                    </div>
+
                     <?php if ($docType === 'COMPANY' || $docType === 'PRINCIPAL'): ?>
                         <div class="col-md-7">
                             <label class="form-label fw-semibold">Document Title <span class="text-danger">*</span></label>
@@ -129,4 +162,20 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleEditTglSelesai(val) {
+    const col = document.getElementById('editColTglSelesai');
+    const inp = document.getElementById('editInputTglSelesai');
+    if (col) {
+        if (val === 'SELESAI') {
+            col.classList.remove('d-none');
+            if (inp) inp.required = true;
+        } else {
+            col.classList.add('d-none');
+            if (inp) inp.required = false;
+        }
+    }
+}
+</script>
 @endsection

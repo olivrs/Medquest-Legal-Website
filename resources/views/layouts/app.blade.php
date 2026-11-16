@@ -70,6 +70,37 @@
                 </div>
             </div>
 
+            <div class="sidebar-section-title mt-3">STATUS ALUR PROSES</div>
+
+            <a href="<?= base_url('?page=agreements&proses=PENGAJUAN' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
+               class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'PENGAJUAN') ? 'active' : '' ?>">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="s-icon" style="color:#f59e0b;"><i class="fas fa-file-signature"></i></span>
+                    <span>Pengajuan</span>
+                </div>
+                <span class="badge rounded-0 bg-warning text-dark fw-bold" style="font-size:0.66rem;"><?= $userPengajuanDocs ?? 0 ?></span>
+            </a>
+
+            <a href="<?= base_url('?page=agreements&proses=BERJALAN' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
+               class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'BERJALAN') ? 'active' : '' ?>">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="s-icon" style="color:#0284c7;"><i class="fas fa-spinner fa-spin"></i></span>
+                    <span>Sedang Berjalan</span>
+                </div>
+                <span class="badge rounded-0 bg-primary text-white fw-bold" style="font-size:0.66rem;"><?= $userBerjalanDocs ?? 0 ?></span>
+            </a>
+
+            <a href="<?= base_url('?page=agreements&proses=SELESAI' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
+               class="sidebar-link d-flex justify-content-between align-items-center <?= ($currPage === 'agreements' && ($selectedProses ?? 'ALL') === 'SELESAI') ? 'active' : '' ?>">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="s-icon" style="color:#10b981;"><i class="fas fa-check-circle"></i></span>
+                    <span>Sudah Selesai</span>
+                </div>
+                <span class="badge rounded-0 bg-success text-white fw-bold" style="font-size:0.66rem;"><?= $userSelesaiDocs ?? 0 ?></span>
+            </a>
+
+            <div class="sidebar-section-title mt-3">AKSI &amp; NOTIFIKASI</div>
+
             <a href="<?= base_url('?page=create' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '')) ?>"
                class="sidebar-link <?= $currPage === 'create' ? 'active' : '' ?>">
                 <span class="s-icon"><i class="fas fa-plus"></i></span>

@@ -32,9 +32,50 @@
                         </span>
                         <span class="fw-bold text-dark"><?= htmlspecialchars($typeMeta['title']) ?></span>
                     </div>
-                    <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
-                        <?= htmlspecialchars($cleanLabel) ?>
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" style="background:<?= $statusMeta['badge_bg'] ?>;color:<?= $statusMeta['badge_color'] ?>;border:1px solid <?= $statusMeta['badge_border'] ?>;font-size:0.75rem;">
+                            <i class="<?= $statusMeta['icon_static'] ?> me-1"></i> <?= htmlspecialchars($statusMeta['label']) ?>
+                        </span>
+                        <span class="expiry-pill <?= $expInfo['badge_class'] ?>">
+                            <?= htmlspecialchars($cleanLabel) ?>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Kontrol 3 Tombol Status Proses -->
+                <div class="p-2 mb-3 bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2 no-print">
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="small fw-bold text-secondary me-1">Pilihan Status:</span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="d-inline" onsubmit="return confirm('Ubah status proses dokumen menjadi PENGAJUAN?')">
+                                @csrf
+                                <input type="hidden" name="action" value="update_process_status">
+                                <input type="hidden" name="status_proses" value="PENGAJUAN">
+                                <button type="submit" class="btn btn-sm <?= ($agr['status_proses'] ?? 'PENGAJUAN') === 'PENGAJUAN' ? 'btn-warning text-dark fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
+                                    <i class="fas fa-file-signature me-1"></i> Pengajuan
+                                </button>
+                            </form>
+
+                            <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="d-inline" onsubmit="return confirm('Ubah status proses dokumen menjadi SEDANG BERJALAN?')">
+                                @csrf
+                                <input type="hidden" name="action" value="update_process_status">
+                                <input type="hidden" name="status_proses" value="BERJALAN">
+                                <button type="submit" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'BERJALAN' ? 'btn-primary text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
+                                    <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                                </button>
+                            </form>
+
+                            <button type="button" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'SELESAI' ? 'btn-success text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;" data-bs-toggle="modal" data-bs-target="#modalDetailSetSelesai">
+                                <i class="fas fa-check-circle me-1"></i> Sudah Selesai
+                            </button>
+                        </div>
+                    </div>
+
+                    <?php if (strtoupper(trim((string)($agr['status_proses'] ?? ''))) === 'SELESAI'): ?>
+                        <div class="text-success small fw-bold">
+                            <i class="fas fa-calendar-check me-1"></i> Selesai Tanggal: <?= format_date_medquest($agr['tanggal_selesai']) ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="mb-0">
@@ -56,6 +97,22 @@
                                 <th class="bg-light text-secondary">Department / Division</th>
                                 <td class="fw-bold text-primary"><?= htmlspecialchars($agr['department']) ?></td>
                             </tr>
+                            <tr class="mq-row-compact">
+                                <th class="bg-light text-secondary">Status Proses Alur</th>
+                                <td>
+                                    <span class="badge px-2 py-1" style="background:<?= $statusMeta['badge_bg'] ?>;color:<?= $statusMeta['badge_color'] ?>;border:1px solid <?= $statusMeta['badge_border'] ?>;font-size:0.75rem;">
+                                        <i class="<?= $statusMeta['icon_static'] ?> me-1"></i><?= htmlspecialchars($statusMeta['label']) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php if (strtoupper(trim((string)($agr['status_proses'] ?? ''))) === 'SELESAI'): ?>
+                            <tr class="mq-row-compact">
+                                <th class="bg-light text-success fw-bold">Selesai Tanggal</th>
+                                <td class="fw-bold text-success font-monospace" style="font-size:0.86rem;">
+                                    <i class="fas fa-calendar-check me-1"></i><?= format_date_medquest($agr['tanggal_selesai']) ?>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
 
                             <?php if ($docType === 'COMPANY'): ?>
                                 <tr>
@@ -188,6 +245,49 @@
                 <?php endif; ?>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Modal Set Selesai di Halaman Detail -->
+<div class="modal fade no-print" id="modalDetailSetSelesai" tabindex="-1" aria-labelledby="modalDetailSetSelesaiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="modal-content rounded-0 border-0 shadow">
+            @csrf
+            <input type="hidden" name="action" value="update_process_status">
+            <input type="hidden" name="status_proses" value="SELESAI">
+
+            <div class="modal-header bg-success text-white py-2 px-3">
+                <h6 class="modal-title fw-bold" id="modalDetailSetSelesaiLabel">
+                    <i class="fas fa-check-circle me-1"></i> Tandai Dokumen Sudah Selesai
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="alert alert-light border mb-3 p-2 small">
+                    <div class="text-muted small">Dokumen:</div>
+                    <strong class="text-dark">#<?= htmlspecialchars((string) ($agr['no_urut_dokumen'] ?: $agr['id'])) ?> &mdash; <?= htmlspecialchars($agr['customer'] ?: ($agr['document_title'] ?? 'N/A')) ?></strong>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">
+                        <i class="fas fa-calendar-alt text-success me-1"></i> Selesai Tanggal Berapa <span class="text-danger">*</span>
+                    </label>
+                    <input type="date" name="tanggal_selesai" class="form-control" value="<?= htmlspecialchars($agr['tanggal_selesai'] ?: date('Y-m-d')) ?>" required>
+                    <div class="form-text small text-muted">Tanggal resmi saat proses dokumen ini selesai diproses/diarsipkan.</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-bold text-dark">Catatan Tambahan (Opsional)</label>
+                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="Contoh: Seluruh paraf dan tanda tangan telah lengkap"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3 bg-light">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+                    <i class="fas fa-check me-1"></i> Simpan Status Selesai
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
