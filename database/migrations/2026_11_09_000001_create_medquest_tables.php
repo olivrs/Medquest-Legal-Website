@@ -57,7 +57,7 @@ return new class extends Migration
                 $table->string('kode_singkatan', 20);
                 $table->date('tanggal_input');
                 $table->text('catatan')->nullable();
-                $table->enum('aksi', ['CREATE', 'ADD_NOTE', 'EDIT'])->default('CREATE');
+                $table->string('aksi', 50)->default('CREATE');
                 $table->timestamp('created_at')->nullable()->useCurrent();
             });
         }

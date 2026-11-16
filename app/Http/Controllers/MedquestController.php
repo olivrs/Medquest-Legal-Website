@@ -49,6 +49,11 @@ class MedquestController extends Controller
                         });
                     }
                 }
+                if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {
+                    try {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE `agreement_histories` MODIFY `aksi` VARCHAR(50) NOT NULL DEFAULT 'CREATE'");
+                    } catch (\Throwable $e) {}
+                }
             }
         } catch (\Throwable $e) {
         }
@@ -484,14 +489,27 @@ class MedquestController extends Controller
                         $logMsg .= "\nCatatan: " . $catatanStatus;
                     }
 
-                    AgreementHistory::create([
-                        'agreement_id'   => $agrId,
-                        'user_id'        => $uId,
-                        'kode_singkatan' => $uCode,
-                        'tanggal_input'  => date('Y-m-d'),
-                        'catatan'        => $logMsg,
-                        'aksi'           => 'STATUS_' . $newStatus,
-                    ]);
+                    try {
+                        AgreementHistory::create([
+                            'agreement_id'   => $agrId,
+                            'user_id'        => $uId,
+                            'kode_singkatan' => $uCode,
+                            'tanggal_input'  => date('Y-m-d'),
+                            'catatan'        => $logMsg,
+                            'aksi'           => 'STATUS_' . $newStatus,
+                        ]);
+                    } catch (\Throwable $e) {
+                        try {
+                            AgreementHistory::create([
+                                'agreement_id'   => $agrId,
+                                'user_id'        => $uId,
+                                'kode_singkatan' => $uCode,
+                                'tanggal_input'  => date('Y-m-d'),
+                                'catatan'        => $logMsg,
+                                'aksi'           => 'EDIT',
+                            ]);
+                        } catch (\Throwable $ignored) {}
+                    }
 
                     set_flash('success', "Status alur dokumen #<strong>" . ($agr->no_urut_dokumen ?: $agr->id) . "</strong> berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
                 }
@@ -1078,14 +1096,27 @@ class MedquestController extends Controller
                         $logMsg .= "\nCatatan: " . $catatanStatus;
                     }
 
-                    AgreementHistory::create([
-                        'agreement_id'   => $id,
-                        'user_id'        => $uId,
-                        'kode_singkatan' => $uCode,
-                        'tanggal_input'  => date('Y-m-d'),
-                        'catatan'        => $logMsg,
-                        'aksi'           => 'STATUS_' . $newStatus,
-                    ]);
+                    try {
+                        AgreementHistory::create([
+                            'agreement_id'   => $id,
+                            'user_id'        => $uId,
+                            'kode_singkatan' => $uCode,
+                            'tanggal_input'  => date('Y-m-d'),
+                            'catatan'        => $logMsg,
+                            'aksi'           => 'STATUS_' . $newStatus,
+                        ]);
+                    } catch (\Throwable $e) {
+                        try {
+                            AgreementHistory::create([
+                                'agreement_id'   => $id,
+                                'user_id'        => $uId,
+                                'kode_singkatan' => $uCode,
+                                'tanggal_input'  => date('Y-m-d'),
+                                'catatan'        => $logMsg,
+                                'aksi'           => 'EDIT',
+                            ]);
+                        } catch (\Throwable $ignored) {}
+                    }
 
                     set_flash('success', "Status alur dokumen berhasil diubah menjadi: <strong class='text-uppercase'>{$statusMeta['label']}</strong>.");
                 }
