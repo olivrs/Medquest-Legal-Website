@@ -660,19 +660,51 @@ $activeTableTitle = match ($selectedDocType) {
     </div>
 </div>
 
-<form id="formQuickStatus" method="POST" action="<?= base_url('?page=agreements') ?>" style="display:none;">
-    @csrf
-    <input type="hidden" name="action" value="update_process_status">
-    <input type="hidden" name="agreement_id" id="quickStatusAgrId" value="">
-    <input type="hidden" name="status_proses" id="quickStatusVal" value="">
-    <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
-    <input type="hidden" name="return_doc_type" value="<?= htmlspecialchars($selectedDocType) ?>">
-    <input type="hidden" name="return_status" value="<?= htmlspecialchars($selectedStatus) ?>">
-    <input type="hidden" name="return_proses" value="<?= htmlspecialchars($selectedProses) ?>">
-    <input type="hidden" name="return_sort" value="<?= htmlspecialchars($selectedSort) ?>">
-    <input type="hidden" name="return_q" value="<?= htmlspecialchars($searchQuery) ?>">
-    <input type="hidden" name="return_p" value="<?= htmlspecialchars((string) $currentPage) ?>">
-</form>
+<div class="modal fade no-print" id="modalChangeProcessStatus" tabindex="-1" aria-labelledby="modalChangeProcessStatusLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="formQuickStatus" method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
+            @csrf
+            <input type="hidden" name="action" value="update_process_status">
+            <input type="hidden" name="agreement_id" id="quickStatusAgrId" value="">
+            <input type="hidden" name="status_proses" id="quickStatusVal" value="">
+            <input type="hidden" name="return_dept" value="<?= htmlspecialchars($selectedDept) ?>">
+            <input type="hidden" name="return_doc_type" value="<?= htmlspecialchars($selectedDocType) ?>">
+            <input type="hidden" name="return_status" value="<?= htmlspecialchars($selectedStatus) ?>">
+            <input type="hidden" name="return_proses" value="<?= htmlspecialchars($selectedProses) ?>">
+            <input type="hidden" name="return_sort" value="<?= htmlspecialchars($selectedSort) ?>">
+            <input type="hidden" name="return_q" value="<?= htmlspecialchars($searchQuery) ?>">
+            <input type="hidden" name="return_p" value="<?= htmlspecialchars((string) $currentPage) ?>">
+
+            <div class="modal-header text-white py-2 px-3" id="quickStatusHeader">
+                <h6 class="modal-title fw-bold" id="quickStatusTitle">
+                    <i id="quickStatusIcon" class="fas fa-play-circle me-1"></i> <span id="quickStatusHeaderLabel">Ubah Status Proses</span>
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="alert alert-light border mb-3 p-2 small">
+                    <div class="text-muted small">Dokumen:</div>
+                    <strong id="quickStatusDocTitle" class="text-dark"></strong>
+                </div>
+
+                <p class="mb-3 small text-secondary" id="quickStatusDesc">
+                    Apakah Anda yakin ingin mengubah status alur dokumen ini menjadi <strong id="quickStatusTargetLabel"></strong>?
+                </p>
+
+                <div class="mb-1">
+                    <label class="form-label small fw-bold text-dark">Catatan Perubahan (Opsional)</label>
+                    <textarea name="catatan_status" id="quickStatusCatatan" class="form-control" rows="2" placeholder="Contoh: Dokumen mulai direview dan dinegosiasikan"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3 bg-light">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-sm fw-bold px-3" id="quickStatusSubmitBtn">
+                    <i class="fas fa-check me-1"></i> Ya, Ubah Status
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
 const modalAddNote = document.getElementById('modalAddNote');
@@ -752,11 +784,39 @@ function submitBulkDelete() {
 }
 
 function submitQuickStatus(id, status, title) {
-    const label = status === 'PENGAJUAN' ? 'PENGAJUAN' : 'SEDANG BERJALAN';
-    if (confirm(`Ubah status proses dokumen "${title}" menjadi [${label}]?`)) {
-        document.getElementById('quickStatusAgrId').value = id;
-        document.getElementById('quickStatusVal').value = status;
-        document.getElementById('formQuickStatus').submit();
+    document.getElementById('quickStatusAgrId').value = id;
+    document.getElementById('quickStatusVal').value = status;
+    document.getElementById('quickStatusDocTitle').textContent = title;
+    document.getElementById('quickStatusCatatan').value = '';
+
+    const headerEl = document.getElementById('quickStatusHeader');
+    const titleEl = document.getElementById('quickStatusHeaderLabel');
+    const iconEl = document.getElementById('quickStatusIcon');
+    const targetEl = document.getElementById('quickStatusTargetLabel');
+    const submitBtn = document.getElementById('quickStatusSubmitBtn');
+
+    if (status === 'BERJALAN') {
+        headerEl.className = 'modal-header bg-primary text-white py-2 px-3';
+        titleEl.textContent = 'Ubah Status: Sedang Berjalan';
+        iconEl.className = 'fas fa-spinner fa-spin me-1';
+        targetEl.textContent = 'Sedang Berjalan';
+        targetEl.style.color = '#1d4ed8';
+        submitBtn.className = 'btn btn-sm btn-primary fw-bold px-3';
+        submitBtn.innerHTML = '<i class="fas fa-play me-1"></i> Ya, Ubah Menjadi Sedang Berjalan';
+    } else {
+        headerEl.className = 'modal-header bg-warning text-dark py-2 px-3';
+        titleEl.textContent = 'Ubah Status: Pengajuan';
+        iconEl.className = 'fas fa-file-signature me-1';
+        targetEl.textContent = 'Pengajuan';
+        targetEl.style.color = '#b45309';
+        submitBtn.className = 'btn btn-sm btn-warning text-dark fw-bold px-3';
+        submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Ya, Ubah Menjadi Pengajuan';
+    }
+
+    const modalEl = document.getElementById('modalChangeProcessStatus');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
     }
 }
 

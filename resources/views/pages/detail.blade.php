@@ -46,23 +46,13 @@
                     <div class="d-flex align-items-center gap-1">
                         <span class="small fw-bold text-secondary me-1">Pilihan Status:</span>
                         <div class="btn-group btn-group-sm" role="group">
-                            <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="d-inline" onsubmit="return confirm('Ubah status proses dokumen menjadi PENGAJUAN?')">
-                                @csrf
-                                <input type="hidden" name="action" value="update_process_status">
-                                <input type="hidden" name="status_proses" value="PENGAJUAN">
-                                <button type="submit" class="btn btn-sm <?= ($agr['status_proses'] ?? 'PENGAJUAN') === 'PENGAJUAN' ? 'btn-warning text-dark fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
-                                    <i class="fas fa-file-signature me-1"></i> Pengajuan
-                                </button>
-                            </form>
+                            <button type="button" onclick="openDetailChangeStatus('PENGAJUAN')" class="btn btn-sm <?= ($agr['status_proses'] ?? 'PENGAJUAN') === 'PENGAJUAN' ? 'btn-warning text-dark fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
+                                <i class="fas fa-file-signature me-1"></i> Pengajuan
+                            </button>
 
-                            <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="d-inline" onsubmit="return confirm('Ubah status proses dokumen menjadi SEDANG BERJALAN?')">
-                                @csrf
-                                <input type="hidden" name="action" value="update_process_status">
-                                <input type="hidden" name="status_proses" value="BERJALAN">
-                                <button type="submit" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'BERJALAN' ? 'btn-primary text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
-                                    <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
-                                </button>
-                            </form>
+                            <button type="button" onclick="openDetailChangeStatus('BERJALAN')" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'BERJALAN' ? 'btn-primary text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;">
+                                <i class="fas fa-spinner fa-spin me-1"></i> Sedang Berjalan
+                            </button>
 
                             <button type="button" class="btn btn-sm <?= ($agr['status_proses'] ?? '') === 'SELESAI' ? 'btn-success text-white fw-bold active shadow-sm' : 'btn-outline-secondary bg-white' ?>" style="font-size:0.73rem;" data-bs-toggle="modal" data-bs-target="#modalDetailSetSelesai">
                                 <i class="fas fa-check-circle me-1"></i> Sudah Selesai
@@ -288,4 +278,78 @@
         </form>
     </div>
 </div>
+
+<!-- Modal Ganti Status Proses di Halaman Detail -->
+<div class="modal fade no-print" id="modalDetailChangeProcessStatus" tabindex="-1" aria-labelledby="modalDetailChangeProcessStatusLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="modal-content rounded-0 border-0 shadow">
+            @csrf
+            <input type="hidden" name="action" value="update_process_status">
+            <input type="hidden" name="status_proses" id="modalDetailStatusVal" value="">
+
+            <div class="modal-header text-white py-2 px-3" id="modalDetailStatusHeader">
+                <h6 class="modal-title fw-bold" id="modalDetailStatusTitle">
+                    <i id="modalDetailStatusIcon" class="fas fa-play-circle me-1"></i> <span id="modalDetailStatusHeaderLabel">Ubah Status Proses</span>
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="alert alert-light border mb-3 p-2 small">
+                    <div class="text-muted small">Dokumen:</div>
+                    <strong class="text-dark">#<?= htmlspecialchars((string) ($agr['no_urut_dokumen'] ?: $agr['id'])) ?> &mdash; <?= htmlspecialchars($agr['customer'] ?: ($agr['document_title'] ?? 'N/A')) ?></strong>
+                </div>
+
+                <p class="mb-3 small text-secondary">
+                    Apakah Anda yakin ingin mengubah status dokumen ini menjadi <strong id="modalDetailTargetLabel"></strong>?
+                </p>
+
+                <div class="mb-1">
+                    <label class="form-label small fw-bold text-dark">Catatan Perubahan (Opsional)</label>
+                    <textarea name="catatan_status" class="form-control" rows="2" placeholder="Contoh: Dokumen mulai direview dan diproses"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3 bg-light">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-sm fw-bold px-3" id="modalDetailStatusSubmitBtn">
+                    <i class="fas fa-check me-1"></i> Ya, Ubah Status
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openDetailChangeStatus(status) {
+    document.getElementById('modalDetailStatusVal').value = status;
+    const headerEl = document.getElementById('modalDetailStatusHeader');
+    const titleEl = document.getElementById('modalDetailStatusHeaderLabel');
+    const iconEl = document.getElementById('modalDetailStatusIcon');
+    const targetEl = document.getElementById('modalDetailTargetLabel');
+    const submitBtn = document.getElementById('modalDetailStatusSubmitBtn');
+
+    if (status === 'BERJALAN') {
+        headerEl.className = 'modal-header bg-primary text-white py-2 px-3';
+        titleEl.textContent = 'Ubah Status: Sedang Berjalan';
+        iconEl.className = 'fas fa-spinner fa-spin me-1';
+        targetEl.textContent = 'Sedang Berjalan';
+        targetEl.style.color = '#1d4ed8';
+        submitBtn.className = 'btn btn-sm btn-primary fw-bold px-3';
+        submitBtn.innerHTML = '<i class="fas fa-play me-1"></i> Ya, Ubah Menjadi Sedang Berjalan';
+    } else {
+        headerEl.className = 'modal-header bg-warning text-dark py-2 px-3';
+        titleEl.textContent = 'Ubah Status: Pengajuan';
+        iconEl.className = 'fas fa-file-signature me-1';
+        targetEl.textContent = 'Pengajuan';
+        targetEl.style.color = '#b45309';
+        submitBtn.className = 'btn btn-sm btn-warning text-dark fw-bold px-3';
+        submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Ya, Ubah Menjadi Pengajuan';
+    }
+
+    const modalEl = document.getElementById('modalDetailChangeProcessStatus');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+</script>
 @endsection
