@@ -9,9 +9,6 @@ class ExampleTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Root renders the login page when unauthenticated.
-     */
     public function test_the_application_returns_a_successful_response(): void
     {
         $response = $this->get('/');
