@@ -404,7 +404,7 @@ $activeTableTitle = match ($selectedDocType) {
                                                 class="btn btn-xs <?= $rowProses === 'SELESAI' ? 'btn-success text-white fw-bold shadow-sm' : 'btn-outline-secondary' ?>"
                                                 style="font-size:0.68rem;padding:2px 7px;"
                                                 title="Mark document as Completed"
-                                                onclick="openModalSetSelesai(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($displayTitle)) ?>', '<?= htmlspecialchars($row['tanggal_selesai'] ?? date('Y-m-d')) ?>')">
+                                                onclick="openModalSetSelesai(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($displayTitle)) ?>', '<?= htmlspecialchars(format_date_input_medquest($row['tanggal_selesai'] ?? null, date('d/m/Y'))) ?>')">
                                             Completed
                                         </button>
                                     </div>
@@ -526,7 +526,7 @@ $activeTableTitle = match ($selectedDocType) {
     </div>
 </div>
 
-<div class="modal fade no-print" id="modalAddNote" tabindex="-1" aria-hidden="true">
+<div class="modal fade no-print" id="modalAddNote" tabindex="-1" aria-hidden="true" data-bs-focus="false">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
             @csrf
@@ -549,7 +549,7 @@ $activeTableTitle = match ($selectedDocType) {
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold small">Note Date <span class="text-danger">*</span></label>
-                    <input type="date" name="tanggal_input" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    <input type="text" name="tanggal_input" id="noteModalTglInput" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= date('d/m/Y') ?>" required>
                 </div>
 
                 <div class="mb-3">
@@ -559,7 +559,7 @@ $activeTableTitle = match ($selectedDocType) {
 
                 <div class="mb-1">
                     <label class="form-label fw-semibold small">Extend / New Expiry Date (Optional)</label>
-                    <input type="date" name="new_expiry_date" class="form-control">
+                    <input type="text" name="new_expiry_date" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy">
                 </div>
             </div>
 
@@ -610,7 +610,7 @@ $activeTableTitle = match ($selectedDocType) {
     <div id="bulkDeleteInputsContainer"></div>
 </form>
 
-<div class="modal fade no-print" id="modalSetSelesai" tabindex="-1" aria-labelledby="modalSetSelesaiLabel" aria-hidden="true">
+<div class="modal fade no-print" id="modalSetSelesai" tabindex="-1" aria-labelledby="modalSetSelesaiLabel" aria-hidden="true" data-bs-focus="false">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=agreements') ?>" class="modal-content rounded-0 border-0 shadow">
             @csrf
@@ -641,7 +641,7 @@ $activeTableTitle = match ($selectedDocType) {
                     <label class="form-label small fw-bold text-dark">
                         <i class="fas fa-calendar-alt text-success me-1"></i> Completion Date <span class="text-danger">*</span>
                     </label>
-                    <input type="date" name="tanggal_selesai" id="modalSelesaiTanggal" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    <input type="text" name="tanggal_selesai" id="modalSelesaiTanggal" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= date('d/m/Y') ?>" required>
                     <div class="form-text small text-muted">Official date when the document/agreement process was completed.</div>
                 </div>
 
@@ -823,7 +823,12 @@ function submitQuickStatus(id, status, title) {
 function openModalSetSelesai(id, title, tgl) {
     document.getElementById('modalSelesaiAgrId').value = id;
     document.getElementById('modalSelesaiDocTitle').textContent = title;
-    document.getElementById('modalSelesaiTanggal').value = tgl || new Date().toISOString().slice(0, 10);
+    const tglVal = tgl || (typeof mqTodayDMY === 'function' ? mqTodayDMY() : '');
+    const tglEl = document.getElementById('modalSelesaiTanggal');
+    tglEl.value = tglVal;
+    if (tglEl._flatpickr) {
+        tglEl._flatpickr.setDate(tglVal, false, 'd/m/Y');
+    }
     const modalEl = document.getElementById('modalSetSelesai');
     if (modalEl) {
         const modal = new bootstrap.Modal(modalEl);

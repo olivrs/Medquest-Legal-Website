@@ -296,4 +296,42 @@ class MedquestSystemTest extends TestCase
         $resp->assertDontSee('Sedang Berjalan');
         $resp->assertDontSee('Sudah Selesai');
     }
+
+    public function test_dd_mm_yyyy_dates_are_parsed_and_rendered_properly(): void
+    {
+        $this->assertSame('2026-11-25', parse_date_medquest('25/11/2026'));
+        $this->assertSame('2026-11-25', parse_date_medquest('2026-11-25'));
+        $this->assertNull(parse_date_medquest('31/02/2026'));
+        $this->assertSame('25/11/2026', format_date_input_medquest('2026-11-25'));
+
+        $superadmin = \App\Models\User::where('kode_singkatan', 'FJR')->first();
+        $this->assertNotNull($superadmin);
+        $this->actingAs($superadmin);
+
+        $this->post('/create', [
+            'doc_type'            => 'COOPERATION',
+            'department'          => 'LAC',
+            'document_number'     => 'DMY-001',
+            'customer'            => 'Hospital DMY',
+            'product_description' => 'DMY Device',
+            'tanggal_input'       => '17/11/2026',
+            'effective_date'      => '01/11/2026',
+            'expiry_date'         => '25/12/2026',
+            'status_proses'       => 'SELESAI',
+            'tanggal_selesai'     => '18/11/2026',
+        ])->assertRedirect();
+
+        $agr = \App\Models\Agreement::where('document_number', 'DMY-001')->first();
+        $this->assertNotNull($agr);
+        $this->assertSame('2026-11-01', $agr->effective_date);
+        $this->assertSame('2026-12-25', $agr->expiry_date);
+        $this->assertSame('2026-11-18', $agr->tanggal_selesai);
+
+        $editPage = $this->get('/edit/' . $agr->id);
+        $editPage->assertStatus(200);
+        $editPage->assertSee('value="01/11/2026"', false);
+        $editPage->assertSee('value="25/12/2026"', false);
+        $editPage->assertSee('value="18/11/2026"', false);
+        $editPage->assertSee('placeholder="dd/mm/yyyy"', false);
+    }
 }

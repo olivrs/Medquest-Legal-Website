@@ -51,7 +51,7 @@
 
                     <div class="col-md-2">
                         <label class="form-label fw-bold small text-dark mb-1">Input Date <span class="text-danger">*</span></label>
-                        <input type="date" name="tanggal_input" id="inputTglCreate" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                        <input type="text" name="tanggal_input" id="inputTglCreate" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= date('d/m/Y') ?>" required>
                     </div>
 
                     <div class="col-md-7">
@@ -82,7 +82,7 @@
                         <label class="form-label fw-bold small text-success mb-1">
                             <i class="fas fa-calendar-check me-1"></i> Completion Date <span class="text-danger">*</span>
                         </label>
-                        <input type="date" name="tanggal_selesai" id="inputTglSelesai" class="form-control" value="<?= date('Y-m-d') ?>">
+                        <input type="text" name="tanggal_selesai" id="inputTglSelesai" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= date('d/m/Y') ?>">
                         <div class="text-muted small" style="font-size:0.7rem;">Official date when the document process was completed</div>
                     </div>
 
@@ -137,7 +137,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-dark mb-1">Effective Date</label>
                         <div class="input-group">
-                            <input type="date" name="effective_date" id="effDateInput" class="form-control" value="<?= date('Y-m-d') ?>">
+                            <input type="text" name="effective_date" id="effDateInput" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= date('d/m/Y') ?>">
                             <div class="input-group-text bg-light">
                                 <input class="form-check-input mt-0 me-1" type="checkbox" name="effective_date_na" id="effDateNaCheck" onchange="toggleEffNa(this.checked)">
                                 <label class="small mb-0 fw-semibold user-select-none" for="effDateNaCheck" style="cursor:pointer;">N/A</label>
@@ -148,7 +148,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold small text-dark mb-1">Expiry Date <span class="text-danger" id="expReqStar">*</span></label>
                         <div class="input-group">
-                            <input type="date" name="expiry_date" id="expDateInput" class="form-control fw-semibold" required>
+                            <input type="text" name="expiry_date" id="expDateInput" class="form-control fw-semibold mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" required>
                             <div class="input-group-text bg-light">
                                 <input class="form-check-input mt-0 me-1" type="checkbox" name="expiry_date_na" id="expDateNaCheck" onchange="toggleExpNa(this.checked)">
                                 <label class="small mb-0 fw-semibold user-select-none" for="expDateNaCheck" style="cursor:pointer;">N/A</label>
@@ -278,7 +278,10 @@ function toggleCustomDept(val) {
 function toggleEffNa(checked) {
     const inp = document.getElementById('effDateInput');
     inp.disabled = checked;
-    if (checked) inp.value = '';
+    if (checked) {
+        inp.value = '';
+        if (inp._flatpickr) inp._flatpickr.close();
+    }
 }
 
 function toggleExpNa(checked) {
@@ -289,6 +292,7 @@ function toggleExpNa(checked) {
     if (star) star.style.display = checked ? 'none' : '';
     if (checked) {
         inp.value = '';
+        if (inp._flatpickr) inp._flatpickr.close();
     }
 }
 

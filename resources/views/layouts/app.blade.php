@@ -11,7 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v7_clean" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v8_dmy" rel="stylesheet">
 </head>
 <body>
 
@@ -325,6 +326,48 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <?php if (is_logged_in()): ?>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+function mqTodayDMY() {
+    const now = new Date();
+    return String(now.getDate()).padStart(2, '0') + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
+}
+
+function mqBindAutoSlashDate(el) {
+    if (!el || el.dataset.mqDateBound === '1') return;
+    el.dataset.mqDateBound = '1';
+    el.addEventListener('input', function(e) {
+        if (e.inputType && e.inputType.startsWith('delete')) return;
+        if (el.selectionStart !== el.value.length) return;
+        const digits = el.value.replace(/\D/g, '').slice(0, 8);
+        if (!digits) return;
+        let formatted = digits;
+        if (digits.length > 4) {
+            formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+        } else if (digits.length > 2) {
+            formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+        }
+        if (el.value !== formatted && (/^\d+$/.test(el.value) || el.value.length <= formatted.length)) {
+            el.value = formatted;
+        }
+    });
+}
+
+function mqInitDatePickers() {
+    document.querySelectorAll('.mq-date-input').forEach(function(el) {
+        mqBindAutoSlashDate(el);
+        if (typeof window.flatpickr === 'function' && !el._flatpickr) {
+            window.flatpickr(el, {
+                dateFormat: 'd/m/Y',
+                allowInput: true,
+                disableMobile: true
+            });
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', mqInitDatePickers);
+</script>
 <script>
 (function() {
     const layoutEl = document.querySelector('.app-layout');

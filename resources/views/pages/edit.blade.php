@@ -64,7 +64,7 @@
                         <label class="form-label fw-semibold text-success">
                             <i class="fas fa-calendar-check me-1"></i> Completion Date <span class="text-danger">*</span>
                         </label>
-                        <input type="date" name="tanggal_selesai" id="editInputTglSelesai" class="form-control" value="<?= htmlspecialchars($agr['tanggal_selesai'] ?? date('Y-m-d')) ?>">
+                        <input type="text" name="tanggal_selesai" id="editInputTglSelesai" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= htmlspecialchars(format_date_input_medquest($agr['tanggal_selesai'] ?? null, date('d/m/Y'))) ?>">
                         <div class="text-muted small" style="font-size:0.7rem;">Official date when the document process was completed</div>
                     </div>
 
@@ -115,9 +115,9 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Effective Date</label>
                         <div class="input-group">
-                            <input type="date" name="effective_date" id="editEffDate" class="form-control" value="<?= htmlspecialchars($agr['effective_date'] ?? '') ?>" <?= $agr['effective_date_na'] ? 'disabled' : '' ?>>
+                            <input type="text" name="effective_date" id="editEffDate" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= htmlspecialchars(format_date_input_medquest($agr['effective_date'] ?? null)) ?>" <?= $agr['effective_date_na'] ? 'disabled' : '' ?>>
                             <div class="input-group-text">
-                                <input class="form-check-input mt-0 me-1" type="checkbox" name="effective_date_na" id="editEffNa" <?= $agr['effective_date_na'] ? 'checked' : '' ?> onchange="document.getElementById('editEffDate').disabled = this.checked;">
+                                <input class="form-check-input mt-0 me-1" type="checkbox" name="effective_date_na" id="editEffNa" <?= $agr['effective_date_na'] ? 'checked' : '' ?> onchange="const el=document.getElementById('editEffDate'); el.disabled=this.checked; if(this.checked && el._flatpickr) el._flatpickr.close();">
                                 <label class="small mb-0" for="editEffNa">Set N/A</label>
                             </div>
                         </div>
@@ -126,9 +126,9 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold text-danger">Expiry Date</label>
                         <div class="input-group">
-                            <input type="date" name="expiry_date" id="editExpDate" class="form-control border-danger" value="<?= htmlspecialchars($agr['expiry_date'] ?? '') ?>" <?= $isExpNa ? 'disabled' : 'required' ?>>
+                            <input type="text" name="expiry_date" id="editExpDate" class="form-control border-danger mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= htmlspecialchars(format_date_input_medquest($agr['expiry_date'] ?? null)) ?>" <?= $isExpNa ? 'disabled' : 'required' ?>>
                             <div class="input-group-text">
-                                <input class="form-check-input mt-0 me-1" type="checkbox" name="expiry_date_na" id="editExpNa" <?= $isExpNa ? 'checked' : '' ?> onchange="const el=document.getElementById('editExpDate'); el.disabled=this.checked; el.required=!this.checked;">
+                                <input class="form-check-input mt-0 me-1" type="checkbox" name="expiry_date_na" id="editExpNa" <?= $isExpNa ? 'checked' : '' ?> onchange="const el=document.getElementById('editExpDate'); el.disabled=this.checked; el.required=!this.checked; if(this.checked && el._flatpickr) el._flatpickr.close();">
                                 <label class="small mb-0" for="editExpNa">Set N/A</label>
                             </div>
                         </div>

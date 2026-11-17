@@ -14,7 +14,7 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 }
 
 $mqRevFile = __DIR__.'/../storage/framework/medquest_rev.txt';
-if ((!file_exists($mqRevFile) || trim((string) @file_get_contents($mqRevFile)) !== '2026-11-17-v12-no-comments') && function_exists('opcache_reset')) {
+if ((!file_exists($mqRevFile) || trim((string) @file_get_contents($mqRevFile)) !== '2026-11-17-v13-date-ddmmyyyy') && function_exists('opcache_reset')) {
     @opcache_reset();
 }
 

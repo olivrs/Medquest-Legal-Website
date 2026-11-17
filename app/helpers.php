@@ -136,13 +136,47 @@ if (!function_exists('get_doc_type_meta')) {
     }
 }
 
+if (!function_exists('parse_date_medquest')) {
+    function parse_date_medquest(?string $date): ?string
+    {
+        $val = trim((string) $date);
+        if ($val === '' || $val === '0000-00-00' || strtoupper($val) === 'N/A') {
+            return null;
+        }
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $val, $m)) {
+            $d = (int) $m[1];
+            $mo = (int) $m[2];
+            $y = (int) $m[3];
+            return checkdate($mo, $d, $y) ? sprintf('%04d-%02d-%02d', $y, $mo, $d) : null;
+        }
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $val, $m)) {
+            return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $val : null;
+        }
+        $ts = strtotime($val);
+        return $ts ? date('Y-m-d', $ts) : null;
+    }
+}
+
+if (!function_exists('format_date_input_medquest')) {
+    function format_date_input_medquest(?string $date, string $default = ''): string
+    {
+        $parsed = parse_date_medquest($date);
+        if ($parsed === null) {
+            return $default;
+        }
+        $ts = strtotime($parsed);
+        return $ts ? date('d/m/Y', $ts) : $default;
+    }
+}
+
 if (!function_exists('format_date_medquest')) {
     function format_date_medquest($date, $is_na = false): string
     {
         if ($is_na || empty($date) || $date === '0000-00-00') {
             return 'N/A';
         }
-        $ts = strtotime((string) $date);
+        $normalized = parse_date_medquest((string) $date) ?? (string) $date;
+        $ts = strtotime($normalized);
         if (!$ts) {
             return 'N/A';
         }
@@ -154,7 +188,8 @@ if (!function_exists('format_created_by_stamp')) {
     function format_created_by_stamp(string $kode_singkatan, ?string $date = null): string
     {
         $kode = strtoupper(trim($kode_singkatan));
-        $ts = $date ? strtotime($date) : time();
+        $normalized = $date ? (parse_date_medquest($date) ?? $date) : null;
+        $ts = $normalized ? (strtotime($normalized) ?: time()) : time();
         return $kode . ', ' . strtoupper(date('d M Y', $ts));
     }
 }
@@ -162,11 +197,12 @@ if (!function_exists('format_created_by_stamp')) {
 if (!function_exists('get_days_until_expiry')) {
     function get_days_until_expiry($expiry_date): int
     {
-        if (empty($expiry_date) || $expiry_date === '0000-00-00' || strtoupper((string) $expiry_date) === 'N/A') {
+        $normalized = parse_date_medquest((string) $expiry_date);
+        if ($normalized === null) {
             return 9999;
         }
         $today = new DateTime(date('Y-m-d'));
-        $exp = new DateTime(date('Y-m-d', strtotime((string) $expiry_date)));
+        $exp = new DateTime($normalized);
         $diff = $today->diff($exp);
         return (int) $diff->format('%r%a');
     }
@@ -175,11 +211,15 @@ if (!function_exists('get_days_until_expiry')) {
 if (!function_exists('get_deadline_schedule')) {
     function get_deadline_schedule($expiry_date, array $agreementRow = []): array
     {
-        if (empty($expiry_date) || $expiry_date === '0000-00-00' || !empty($agreementRow['expiry_date_na'])) {
+        if (!empty($agreementRow['expiry_date_na'])) {
+            return [];
+        }
+        $normalized = parse_date_medquest((string) $expiry_date);
+        if ($normalized === null) {
             return [];
         }
         $milestones = DEADLINE_MILESTONES;
-        $expTs = strtotime((string) $expiry_date);
+        $expTs = strtotime($normalized);
         if (!$expTs) {
             return [];
         }

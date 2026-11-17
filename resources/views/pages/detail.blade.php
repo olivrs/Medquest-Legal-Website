@@ -237,7 +237,7 @@
     </div>
 </div>
 
-<div class="modal fade no-print" id="modalDetailSetSelesai" tabindex="-1" aria-labelledby="modalDetailSetSelesaiLabel" aria-hidden="true">
+<div class="modal fade no-print" id="modalDetailSetSelesai" tabindex="-1" aria-labelledby="modalDetailSetSelesaiLabel" aria-hidden="true" data-bs-focus="false">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="<?= base_url('?page=detail&id=' . $id) ?>" class="modal-content rounded-0 border-0 shadow">
             @csrf
@@ -260,7 +260,7 @@
                     <label class="form-label small fw-bold text-dark">
                         <i class="fas fa-calendar-alt text-success me-1"></i> Completion Date <span class="text-danger">*</span>
                     </label>
-                    <input type="date" name="tanggal_selesai" class="form-control" value="<?= htmlspecialchars($agr['tanggal_selesai'] ?: date('Y-m-d')) ?>" required>
+                    <input type="text" name="tanggal_selesai" class="form-control mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/[0-9]{4}" title="Use format dd/mm/yyyy" value="<?= htmlspecialchars(format_date_input_medquest($agr['tanggal_selesai'] ?? null, date('d/m/Y'))) ?>" required>
                     <div class="form-text small text-muted">Official date when this document was completed/archived.</div>
                 </div>
 

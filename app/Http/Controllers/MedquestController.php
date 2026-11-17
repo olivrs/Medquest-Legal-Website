@@ -20,7 +20,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-17-v12-no-comments';
+            $currentRev = '2026-11-17-v13-date-ddmmyyyy';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -390,8 +390,13 @@ class MedquestController extends Controller
             if ($action === 'add_note') {
                 $agrId       = (int) $request->input('agreement_id', 0);
                 $catatanBaru = trim((string) $request->input('catatan_baru', ''));
-                $tglInput    = $request->filled('tanggal_input') ? (string) $request->input('tanggal_input') : date('Y-m-d');
-                $newExpiry   = $request->filled('new_expiry_date') ? (string) $request->input('new_expiry_date') : null;
+                $tglInput    = parse_date_medquest((string) $request->input('tanggal_input', '')) ?? date('Y-m-d');
+                $newExpiry   = parse_date_medquest((string) $request->input('new_expiry_date', ''));
+
+                if ($request->filled('new_expiry_date') && $newExpiry === null) {
+                    set_flash('error', 'Invalid New Expiry Date format. Please use dd/mm/yyyy.');
+                    return redirect(base_url('?page=agreements&dept=' . urlencode((string) $request->input('return_dept', 'ALL'))));
+                }
 
                 $agrQuery = Agreement::where('id', $agrId);
                 $this->applyAgreementAccessScope($agrQuery);
@@ -496,7 +501,7 @@ class MedquestController extends Controller
                     $newStatus = 'PENGAJUAN';
                 }
 
-                $tglSelesai = $request->filled('tanggal_selesai') ? (string) $request->input('tanggal_selesai') : null;
+                $tglSelesai = parse_date_medquest((string) $request->input('tanggal_selesai', ''));
                 if ($newStatus === 'SELESAI' && empty($tglSelesai)) {
                     $tglSelesai = date('Y-m-d');
                 } elseif ($newStatus !== 'SELESAI') {
@@ -796,23 +801,27 @@ class MedquestController extends Controller
             }
 
             $effective_date_na = $request->has('effective_date_na') ? 1 : 0;
-            $effective_date    = ($effective_date_na || !$request->filled('effective_date')) ? null : (string) $request->input('effective_date');
-            if ($effective_date === null) {
+            $effective_date    = $effective_date_na ? null : parse_date_medquest((string) $request->input('effective_date', ''));
+            $invalidEffDate    = (!$effective_date_na && $request->filled('effective_date') && $effective_date === null);
+            if ($effective_date === null && !$invalidEffDate) {
                 $effective_date_na = 1;
             }
 
             $expiry_date_na = $request->has('expiry_date_na') ? 1 : 0;
-            $expiry_date    = ($expiry_date_na || !$request->filled('expiry_date')) ? null : (string) $request->input('expiry_date');
-            if ($expiry_date === null) {
+            $expiry_date    = $expiry_date_na ? null : parse_date_medquest((string) $request->input('expiry_date', ''));
+            $invalidExpDate = (!$expiry_date_na && $request->filled('expiry_date') && $expiry_date === null);
+            if ($expiry_date === null && !$invalidExpDate) {
                 $expiry_date_na = 1;
             }
 
-            $tanggal_input    = $request->filled('tanggal_input') ? (string) $request->input('tanggal_input') : date('Y-m-d');
+            $tanggal_input    = parse_date_medquest((string) $request->input('tanggal_input', '')) ?? date('Y-m-d');
             $raw_note         = trim((string) $request->input('note', ''));
             $prefix_date_note = $request->has('prefix_date_note');
 
             $errorMsg = '';
-            if ($doc_type === 'COOPERATION') {
+            if ($invalidEffDate || $invalidExpDate) {
+                $errorMsg = 'Invalid date format. Please use dd/mm/yyyy.';
+            } elseif ($doc_type === 'COOPERATION') {
                 if ($document_number === '' || $customer === '' || $product_description === '' || (!$expiry_date_na && !$expiry_date)) {
                     $errorMsg = 'For Log of Cooperation Agreement, please complete Document Number, Customer, Product Description, and Expiry Date.';
                 }
@@ -844,7 +853,7 @@ class MedquestController extends Controller
                     $status_proses = 'PENGAJUAN';
                 }
                 $tanggal_selesai = ($status_proses === 'SELESAI' && $request->filled('tanggal_selesai'))
-                    ? (string) $request->input('tanggal_selesai')
+                    ? (parse_date_medquest((string) $request->input('tanggal_selesai')) ?? date('Y-m-d'))
                     : ($status_proses === 'SELESAI' ? date('Y-m-d') : null);
 
                 $newAgr = Agreement::create([
@@ -960,13 +969,21 @@ class MedquestController extends Controller
             }
 
             $effective_date_na = $request->has('effective_date_na') ? 1 : 0;
-            $effective_date    = ($effective_date_na || !$request->filled('effective_date')) ? null : (string) $request->input('effective_date');
+            $effective_date    = $effective_date_na ? null : parse_date_medquest((string) $request->input('effective_date', ''));
+            if (!$effective_date_na && $request->filled('effective_date') && $effective_date === null) {
+                set_flash('error', 'Invalid Effective Date format. Please use dd/mm/yyyy.');
+                return redirect(base_url('?page=edit&id=' . $id));
+            }
             if ($effective_date === null) {
                 $effective_date_na = 1;
             }
 
             $expiry_date_na = $request->has('expiry_date_na') ? 1 : 0;
-            $expiry_date    = ($expiry_date_na || !$request->filled('expiry_date')) ? null : (string) $request->input('expiry_date');
+            $expiry_date    = $expiry_date_na ? null : parse_date_medquest((string) $request->input('expiry_date', ''));
+            if (!$expiry_date_na && $request->filled('expiry_date') && $expiry_date === null) {
+                set_flash('error', 'Invalid Expiry Date format. Please use dd/mm/yyyy.');
+                return redirect(base_url('?page=edit&id=' . $id));
+            }
             if ($expiry_date === null) {
                 $expiry_date_na = 1;
             }
@@ -987,7 +1004,7 @@ class MedquestController extends Controller
                 $status_proses = 'PENGAJUAN';
             }
             $tanggal_selesai = ($status_proses === 'SELESAI' && $request->filled('tanggal_selesai'))
-                ? (string) $request->input('tanggal_selesai')
+                ? (parse_date_medquest((string) $request->input('tanggal_selesai')) ?? ($agr['tanggal_selesai'] ?? date('Y-m-d')))
                 : ($status_proses === 'SELESAI' ? ($agr['tanggal_selesai'] ?? date('Y-m-d')) : null);
 
             $updatePayload = [
@@ -1110,7 +1127,7 @@ class MedquestController extends Controller
                     $newStatus = 'PENGAJUAN';
                 }
 
-                $tglSelesai = $request->filled('tanggal_selesai') ? (string) $request->input('tanggal_selesai') : null;
+                $tglSelesai = parse_date_medquest((string) $request->input('tanggal_selesai', ''));
                 if ($newStatus === 'SELESAI' && empty($tglSelesai)) {
                     $tglSelesai = date('Y-m-d');
                 } elseif ($newStatus !== 'SELESAI') {

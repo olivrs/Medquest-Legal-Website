@@ -1694,3 +1694,29 @@ span.badge-h3,
         font-size: 0.65rem;
     }
 }
+
+.mq-date-input {
+    padding-right: 32px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3E%3Cpath d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px 14px;
+}
+
+.flatpickr-calendar {
+    border-radius: 0 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14) !important;
+    font-family: var(--mq-font-primary) !important;
+    z-index: 1065 !important;
+}
+
+.flatpickr-day {
+    border-radius: 0 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+    background: var(--mq-primary) !important;
+    border-color: var(--mq-primary) !important;
+}
