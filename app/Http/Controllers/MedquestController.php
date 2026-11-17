@@ -20,9 +20,15 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-16-v10-english-ui';
+            $currentRev = '2026-11-17-v11-english-ui-opcache';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
+                if (function_exists('opcache_invalidate')) {
+                    @opcache_invalidate(app_path('helpers.php'), true);
+                }
+                if (function_exists('opcache_reset')) {
+                    @opcache_reset();
+                }
                 if (\Illuminate\Support\Facades\Schema::hasTable('agreement_histories')) {
                     try {
                         DB::statement("ALTER TABLE agreement_histories MODIFY COLUMN aksi VARCHAR(50) NOT NULL DEFAULT 'CREATE'");

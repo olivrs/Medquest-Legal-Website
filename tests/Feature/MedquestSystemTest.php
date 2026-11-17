@@ -231,4 +231,69 @@ class MedquestSystemTest extends TestCase
 
         $this->assertSame('SELESAI', $targetAgr->fresh()->status_proses);
     }
+
+    public function test_expiry_and_process_status_labels_are_fully_english(): void
+    {
+        $this->assertSame('EXPIRED (9d ago)', get_expiry_info(date('Y-m-d', strtotime('-9 days')))['short_label']);
+        $this->assertSame('13 Days Left', get_expiry_info(date('Y-m-d', strtotime('+13 days')))['short_label']);
+        $this->assertSame('Active (358 days)', get_expiry_info(date('Y-m-d', strtotime('+358 days')))['short_label']);
+        $this->assertSame('Submission', get_process_status_meta('PENGAJUAN')['label']);
+        $this->assertSame('In Progress', get_process_status_meta('BERJALAN')['label']);
+        $this->assertSame('Completed', get_process_status_meta('SELESAI')['label']);
+
+        $superadmin = \App\Models\User::where('kode_singkatan', 'FJR')->first();
+        $this->assertNotNull($superadmin);
+        $this->actingAs($superadmin);
+
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 901,
+            'department'          => 'LAC',
+            'document_number'     => 'DOC-EN-901',
+            'customer'            => 'English Label Expired Test',
+            'product_description' => 'Test Product 1',
+            'serial_number'       => 'N/A',
+            'effective_date'      => date('Y-m-d', strtotime('-30 days')),
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d', strtotime('-9 days')),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'BERJALAN',
+            'note'                => 'N/A',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 17 NOV 2026',
+        ]);
+
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 902,
+            'department'          => 'LAC',
+            'document_number'     => 'DOC-EN-902',
+            'customer'            => 'English Label Soon Test',
+            'product_description' => 'Test Product 2',
+            'serial_number'       => 'N/A',
+            'effective_date'      => date('Y-m-d', strtotime('-10 days')),
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d', strtotime('+13 days')),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'SELESAI',
+            'tanggal_selesai'     => date('Y-m-d'),
+            'note'                => 'N/A',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 17 NOV 2026',
+        ]);
+
+        $resp = $this->get('/agreements?dept=LAC&sort=newest');
+        $resp->assertStatus(200);
+        $resp->assertSee('EXPIRED (9d ago)');
+        $resp->assertSee('13 Days Left');
+        $resp->assertSee('In Progress');
+        $resp->assertSee('Completed');
+        $resp->assertDontSee('hr lalu');
+        $resp->assertDontSee('Sisa ');
+        $resp->assertDontSee('Aman (');
+        $resp->assertDontSee('Sedang Berjalan');
+        $resp->assertDontSee('Sudah Selesai');
+    }
 }

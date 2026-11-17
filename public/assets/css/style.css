@@ -1455,7 +1455,7 @@ a:hover {
     }
 
     .mq-mobile-cards td.mc-check::after {
-        content: "Pilih Dokumen Ini";
+        content: "Select This Document";
         font-size: 0.74rem;
         font-weight: 600;
         color: #64748b;
@@ -1493,7 +1493,7 @@ a:hover {
     }
 
     .mq-mobile-cards td.mc-open a::after {
-        content: " Buka Dokumen";
+        content: " Open Document";
         font-size: 0.8rem;
         font-weight: 600;
         margin-left: 6px;
