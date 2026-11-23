@@ -1556,6 +1556,11 @@ a:hover {
     .mq-iso-header-table .mq-legend-warning {
         background-color: #fef08a !important;
     }
+    #mqExportPreviewCollapse,
+    #mqExportPreviewCollapse.collapse:not(.show) {
+        display: block !important;
+        height: auto !important;
+    }
 }
 
 .cp-tab-toggle-btn {
@@ -1798,4 +1803,47 @@ span.badge-h3,
     font-size: 0.76rem;
     padding: 6px 8px;
     vertical-align: middle !important;
+}
+
+.mq-preview-toggle-bar {
+    border: 1px solid #1e293b;
+    border-top: none;
+    background: #ffffff;
+}
+
+.mq-preview-toggle-btn {
+    width: 100%;
+    border: none;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 9px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.mq-preview-toggle-btn:hover {
+    background: #f1f5f9;
+}
+
+.mq-preview-chevron {
+    font-size: 0.74rem;
+    color: #1e3a8a;
+    transition: transform 0.2s ease;
+}
+
+.mq-preview-toggle-btn[aria-expanded="true"] .mq-preview-chevron {
+    transform: rotate(90deg);
+}
+
+.mq-preview-count {
+    font-weight: 500;
+    font-size: 0.73rem;
+    color: #64748b;
+    margin-left: auto;
 }

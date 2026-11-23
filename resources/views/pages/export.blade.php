@@ -223,8 +223,25 @@ $formMeta = $dataset['form_meta'] ?? [
         <div class="border border-top-0 px-2 py-1 bg-light text-secondary small" style="border-color:#1e293b !important;font-size:0.72rem;">
             <?= htmlspecialchars($dataset['subtitle']) ?>
         </div>
+    </div>
 
-        <table class="cp-table mq-iso-table mt-0" id="mqExportPreviewTable">
+    <div class="mq-preview-toggle-bar no-print">
+        <button type="button"
+                id="btnToggleExportPreview"
+                class="mq-preview-toggle-btn"
+                data-bs-toggle="collapse"
+                data-bs-target="#mqExportPreviewCollapse"
+                aria-expanded="false"
+                aria-controls="mqExportPreviewCollapse">
+            <i class="fas fa-chevron-right mq-preview-chevron"></i>
+            <span>Preview</span>
+            <span class="mq-preview-count">Click to show table (<?= count($dataset['rows']) ?> record<?= count($dataset['rows']) === 1 ? '' : 's' ?>)</span>
+        </button>
+    </div>
+
+    <div id="mqExportPreviewCollapse" class="collapse">
+        <div class="table-responsive">
+            <table class="cp-table mq-iso-table mt-0" id="mqExportPreviewTable">
             <thead>
                 <?php
                 $headerGroups = $dataset['header_groups'] ?? [];
@@ -299,7 +316,8 @@ $formMeta = $dataset['form_meta'] ?? [
                     <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -547,5 +565,20 @@ function exportMedquestPdf() {
 
     doc.save((MQ_EXPORT_DATASET.filename || 'Medquest_Export') + '.pdf');
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const collapseEl = document.getElementById('mqExportPreviewCollapse');
+    const toggleBtn = document.getElementById('btnToggleExportPreview');
+    if (!collapseEl || !toggleBtn) return;
+    const countLabel = toggleBtn.querySelector('.mq-preview-count');
+    const rowTotal = (MQ_EXPORT_DATASET.rows || []).length;
+    const suffix = rowTotal + ' record' + (rowTotal === 1 ? '' : 's');
+    collapseEl.addEventListener('shown.bs.collapse', function () {
+        if (countLabel) countLabel.textContent = 'Click to hide table (' + suffix + ')';
+    });
+    collapseEl.addEventListener('hidden.bs.collapse', function () {
+        if (countLabel) countLabel.textContent = 'Click to show table (' + suffix + ')';
+    });
+});
 </script>
 @endsection

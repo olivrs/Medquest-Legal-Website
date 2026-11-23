@@ -413,6 +413,9 @@ class MedquestSystemTest extends TestCase
         $exportAll->assertStatus(200);
         $exportAll->assertSee('Export Excel (.xlsx)');
         $exportAll->assertSee('Export PDF (.pdf)');
+        $exportAll->assertSee('id="btnToggleExportPreview"', false);
+        $exportAll->assertSee('id="mqExportPreviewCollapse" class="collapse"', false);
+        $exportAll->assertSee('Preview');
         $exportAll->assertSee('MJG-EXP-ALL-ALL-' . $todayDocCode);
         $exportAll->assertSee(': ' . $todayDateMeta);
         $exportAll->assertSee('MEDQUEST LEGAL DOCUMENTS LIST');
