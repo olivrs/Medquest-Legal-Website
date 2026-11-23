@@ -203,9 +203,10 @@ $activeTableTitle = match ($selectedDocType) {
                     onclick="submitBulkDelete()">
                 <i class="fas fa-trash-alt me-1"></i> Delete Selected (<span id="selectedDocCount">0</span>)
             </button>
-            <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#10b981;"></span> Active</span>
-            <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#f59e0b;"></span> Expiring Soon</span>
-            <span><span class="d-inline-block rounded-0 me-1" style="width:8px;height:8px;background:#ef4444;"></span> Expired</span>
+            <span><span class="d-inline-block rounded-0 me-1 border border-secondary-subtle" style="width:9px;height:9px;background:#ffffff;"></span> Default</span>
+            <span><span class="d-inline-block rounded-0 me-1" style="width:9px;height:9px;background:#10b981;"></span> Completed</span>
+            <span><span class="d-inline-block rounded-0 me-1" style="width:9px;height:9px;background:#f59e0b;"></span> Expiring Soon</span>
+            <span><span class="d-inline-block rounded-0 me-1" style="width:9px;height:9px;background:#ef4444;"></span> Expired</span>
         </div>
     </div>
 
@@ -317,8 +318,15 @@ $activeTableTitle = match ($selectedDocType) {
                         $displayTitle = ($rowType === 'COOPERATION')
                             ? ($row['customer'] ?: '-')
                             : ($row['document_title'] ?: $row['product_description'] ?: '-');
+                        $rowProsesCode = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+                        $rowBgClass = match (true) {
+                            $rowProsesCode === 'SELESAI'      => 'row-completed',
+                            $expInfo['status'] === 'expired'  => 'row-expired',
+                            $expInfo['status'] === 'warning'  => 'row-warning',
+                            default                           => 'row-active',
+                        };
                     ?>
-                        <tr class="<?= $expInfo['row_class'] ?>">
+                        <tr class="<?= $rowBgClass ?>">
                             <td class="text-center no-print mc-check" style="vertical-align:middle;">
                                 <input type="checkbox"
                                        class="form-check-input doc-row-checkbox m-0"

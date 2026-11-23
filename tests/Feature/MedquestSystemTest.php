@@ -566,5 +566,12 @@ class MedquestSystemTest extends TestCase
         $colorResp->assertSee('mq-row-approved');
         $colorResp->assertSee('mq-row-expired');
         $colorResp->assertSee('mq-row-warning');
+
+        $dashColorResp = $this->get('/agreements');
+        $dashColorResp->assertStatus(200);
+        $dashColorResp->assertSee('class="row-completed"', false);
+        $dashColorResp->assertSee('class="row-expired"', false);
+        $dashColorResp->assertSee('class="row-warning"', false);
+        $dashColorResp->assertSee('class="row-active"', false);
     }
 }

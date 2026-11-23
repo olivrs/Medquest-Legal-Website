@@ -35,10 +35,12 @@
                 <?php else: ?>
                     <?php foreach ($upcomingH as $item):
                         $expInfo = get_expiry_info($item['expiry_date']);
+                        $itemProses = strtoupper(trim((string) ($item['status_proses'] ?? 'PENGAJUAN')));
+                        $itemRowClass = $itemProses === 'SELESAI' ? 'row-completed' : $expInfo['row_class'];
                         $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Document #' . $item['id']);
                         $displaySub   = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
                     ?>
-                        <tr class="<?= $expInfo['row_class'] ?>">
+                        <tr class="<?= $itemRowClass ?>">
                             <td class="text-center mc-open" style="vertical-align: middle;">
                                 <a href="<?= base_url('?page=detail&id=' . $item['id']) ?>"
                                    class="btn btn-sm btn-primary py-1 px-2 text-white d-inline-flex align-items-center justify-content-center"

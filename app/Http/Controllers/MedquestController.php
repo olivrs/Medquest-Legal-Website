@@ -21,7 +21,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-23-v21-export-preview-center';
+            $currentRev = '2026-11-23-v22-soft-row-colors';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
