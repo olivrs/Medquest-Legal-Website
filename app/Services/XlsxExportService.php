@@ -9,13 +9,18 @@ class XlsxExportService
         string $reportTitle,
         string $subtitle,
         array $columns,
-        array $rows
+        array $rows,
+        array $formMeta = [],
+        ?string $logoPath = null
     ): string {
-        $colCount = max(1, count($columns));
+        $colCount = max(6, count($columns));
         $lastCol = self::colLetter($colCount - 1);
         $safeSheetName = self::xmlText(mb_substr(preg_replace('/[\\\\\/\?\*\[\]:]/', '', $sheetTitle) ?: 'Export', 0, 31));
 
-        $sheetXml = self::buildWorksheetXml($reportTitle, $subtitle, $columns, $rows, $lastCol);
+        $logoBytes = ($logoPath && is_file($logoPath)) ? @file_get_contents($logoPath) : false;
+        $hasLogo = is_string($logoBytes) && $logoBytes !== '';
+
+        $sheetXml = self::buildWorksheetXml($reportTitle, $subtitle, $columns, $rows, $formMeta, $colCount, $lastCol, $hasLogo);
         $stylesXml = self::buildStylesXml();
         $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
@@ -38,19 +43,64 @@ class XlsxExportService
             . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
             . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
             . '<Default Extension="xml" ContentType="application/xml"/>'
+            . ($hasLogo ? '<Default Extension="png" ContentType="image/png"/>' : '')
             . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
             . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
             . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . ($hasLogo ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : '')
             . '</Types>';
 
-        return self::buildZip([
+        $files = [
             '[Content_Types].xml'        => $contentTypes,
             '_rels/.rels'                => $rootRels,
             'xl/workbook.xml'            => $workbookXml,
             'xl/_rels/workbook.xml.rels' => $workbookRels,
             'xl/styles.xml'              => $stylesXml,
             'xl/worksheets/sheet1.xml'   => $sheetXml,
-        ]);
+        ];
+
+        if ($hasLogo) {
+            $files['xl/media/image1.png'] = $logoBytes;
+            $files['xl/drawings/drawing1.xml'] = self::buildDrawingXml();
+            $files['xl/drawings/_rels/drawing1.xml.rels'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/>'
+                . '</Relationships>';
+            $files['xl/worksheets/_rels/sheet1.xml.rels'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>'
+                . '</Relationships>';
+        }
+
+        return self::buildZip($files);
+    }
+
+    protected static function buildDrawingXml(): string
+    {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '
+            . 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+            . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<xdr:oneCellAnchor>'
+            . '<xdr:from><xdr:col>0</xdr:col><xdr:colOff>142875</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>238125</xdr:rowOff></xdr:from>'
+            . '<xdr:ext cx="1809750" cy="428625"/>'
+            . '<xdr:pic>'
+            . '<xdr:nvPicPr>'
+            . '<xdr:cNvPr id="2" name="Medquest Logo"/>'
+            . '<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>'
+            . '</xdr:nvPicPr>'
+            . '<xdr:blipFill>'
+            . '<a:blip r:embed="rId1"/>'
+            . '<a:stretch><a:fillRect/></a:stretch>'
+            . '</xdr:blipFill>'
+            . '<xdr:spPr>'
+            . '<a:xfrm><a:off x="0" y="0"/><a:ext cx="1809750" cy="428625"/></a:xfrm>'
+            . '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+            . '</xdr:spPr>'
+            . '</xdr:pic>'
+            . '<xdr:clientData/>'
+            . '</xdr:oneCellAnchor>'
+            . '</xdr:wsDr>';
     }
 
     protected static function buildWorksheetXml(
@@ -58,63 +108,104 @@ class XlsxExportService
         string $subtitle,
         array $columns,
         array $rows,
-        string $lastCol
+        array $formMeta,
+        int $colCount,
+        string $lastCol,
+        bool $hasLogo
     ): string {
         $colsXml = '<cols>';
         foreach ($columns as $i => $col) {
             $idx = $i + 1;
-            $width = (float) ($col['width'] ?? 22);
+            $width = (float) ($col['width'] ?? 20);
             $colsXml .= '<col min="' . $idx . '" max="' . $idx . '" width="' . $width . '" customWidth="1"/>';
         }
         $colsXml .= '</cols>';
 
-        $rowsXml = '';
-        $rowsXml .= '<row r="1" ht="24" customHeight="1">'
-            . '<c r="A1" t="inlineStr" s="1"><is><t xml:space="preserve">' . self::xmlText($reportTitle) . '</t></is></c>'
-            . '</row>';
-        $rowsXml .= '<row r="2" ht="18" customHeight="1">'
-            . '<c r="A2" t="inlineStr" s="2"><is><t xml:space="preserve">' . self::xmlText($subtitle) . '</t></is></c>'
-            . '</row>';
-        $rowsXml .= '<row r="3" ht="28" customHeight="1">'
-            . '<c r="A3" t="inlineStr" s="6"><is><t xml:space="preserve">RED = Past Deadline</t></is></c>'
-            . '<c r="B3" t="inlineStr" s="7"><is><t xml:space="preserve">YELLOW = Approaching Deadline (&lt;= 90d)</t></is></c>'
-            . '<c r="C3" t="inlineStr" s="17"><is><t xml:space="preserve">GREEN = Completed / Approved (ACC)</t></is></c>'
-            . '</row>';
-        $rowsXml .= '<row r="4" ht="8" customHeight="1"/>';
+        $logoEndIdx = (($columns[1]['width'] ?? 0) < 15 && $colCount >= 8) ? 2 : 1;
+        $logoEndCol = self::colLetter($logoEndIdx);
+        $midStartIdx = $logoEndIdx + 1;
+        $midStartCol = self::colLetter($midStartIdx);
+        $midEndIdx = max($midStartIdx, $colCount - 4);
+        $midEndCol = self::colLetter($midEndIdx);
+        $metaLabelIdx = $colCount - 3;
+        $metaValIdx = $colCount - 2;
 
-        $rowsXml .= '<row r="5" ht="26" customHeight="1">';
+        $docNo = (string) ($formMeta['doc_no'] ?? 'MJG-FOR-LAC.12-001');
+        $effDate = (string) ($formMeta['effective_date'] ?? '22 AUG 2024');
+        $revNo = (string) ($formMeta['revision_no'] ?? '01');
+        $pageNo = (string) ($formMeta['page_no'] ?? '1 of 1');
+
+        $headerMetaRows = [
+            1 => ['label' => 'Doc. No.',       'val' => ': ' . $docNo,   'legend' => 'Past Deadline / ED',   'legendStyle' => 12],
+            2 => ['label' => 'Effective Date', 'val' => ': ' . $effDate, 'legend' => 'Near Deadline (<=90d)', 'legendStyle' => 13],
+            3 => ['label' => 'Revision No.',   'val' => ': ' . $revNo,   'legend' => 'Approved (ACC)',       'legendStyle' => 14],
+            4 => ['label' => 'Page No.',       'val' => ': ' . $pageNo,  'legend' => '',                     'legendStyle' => 11],
+        ];
+
+        $rowsXml = '';
+        for ($r = 1; $r <= 4; $r++) {
+            $rowsXml .= '<row r="' . $r . '" ht="18" customHeight="1">';
+            for ($c = 0; $c < $colCount; $c++) {
+                $colL = self::colLetter($c);
+                $ref = $colL . $r;
+                if ($c <= $logoEndIdx) {
+                    $text = ($r === 1 && $c === 0 && !$hasLogo) ? 'Medquest' : '';
+                    $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="1"><is><t xml:space="preserve">' . self::xmlText($text) . '</t></is></c>';
+                } elseif ($c <= $midEndIdx) {
+                    if ($c === $midStartIdx && $r === 1) {
+                        $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="1"><is><t xml:space="preserve">FORM</t></is></c>';
+                    } elseif ($c === $midStartIdx && $r === 3) {
+                        $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="1"><is><t xml:space="preserve">' . self::xmlText($reportTitle) . '</t></is></c>';
+                    } else {
+                        $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="1"><is><t xml:space="preserve"></t></is></c>';
+                    }
+                } elseif ($c === $metaLabelIdx) {
+                    $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="11"><is><t xml:space="preserve">' . self::xmlText($headerMetaRows[$r]['label']) . '</t></is></c>';
+                } elseif ($c === $metaValIdx) {
+                    $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="11"><is><t xml:space="preserve">' . self::xmlText($headerMetaRows[$r]['val']) . '</t></is></c>';
+                } else {
+                    $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="' . $headerMetaRows[$r]['legendStyle'] . '"><is><t xml:space="preserve">' . self::xmlText($headerMetaRows[$r]['legend']) . '</t></is></c>';
+                }
+            }
+            $rowsXml .= '</row>';
+        }
+
+        $rowsXml .= '<row r="5" ht="18" customHeight="1">'
+            . '<c r="A5" t="inlineStr" s="2"><is><t xml:space="preserve">' . self::xmlText($subtitle) . '</t></is></c>'
+            . '</row>';
+
+        $rowsXml .= '<row r="6" ht="24" customHeight="1">';
         foreach ($columns as $i => $col) {
-            $ref = self::colLetter($i) . '5';
+            $ref = self::colLetter($i) . '6';
             $label = (string) ($col['label'] ?? '');
             $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="3"><is><t xml:space="preserve">' . self::xmlText($label) . '</t></is></c>';
         }
         $rowsXml .= '</row>';
 
-        $rowNum = 6;
+        $rowNum = 7;
         foreach ($rows as $rowIdx => $row) {
             $rowState = (string) ($row['row_state'] ?? 'normal');
-            $zebra = ($rowIdx % 2 === 1);
             $cells = $row['cells'] ?? [];
             $maxLines = 1;
 
             foreach ($cells as $cIdx => $cell) {
                 $text = is_array($cell) ? (string) ($cell['text'] ?? '') : (string) $cell;
-                $colWidth = (float) ($columns[$cIdx]['width'] ?? 22);
-                $lines = self::estimateLineCount($text, max(10, (int) floor($colWidth - 2)));
+                $colWidth = (float) ($columns[$cIdx]['width'] ?? 20);
+                $lines = self::estimateLineCount($text, max(6, (int) floor($colWidth - 2)));
                 if ($lines > $maxLines) {
                     $maxLines = $lines;
                 }
             }
 
-            $rowHeight = round(max(22, min(180, $maxLines * 14.5 + 8)), 1);
+            $rowHeight = round(max(22, min(180, $maxLines * 14.2 + 8)), 1);
             $rowsXml .= '<row r="' . $rowNum . '" ht="' . $rowHeight . '" customHeight="1">';
 
             foreach ($columns as $cIdx => $col) {
                 $cell = $cells[$cIdx] ?? '';
                 $text = is_array($cell) ? (string) ($cell['text'] ?? '') : (string) $cell;
+                $center = is_array($cell) && !empty($cell['center']);
                 $bold = is_array($cell) && !empty($cell['bold']);
-                $tone = is_array($cell) ? (string) ($cell['tone'] ?? '') : '';
-                $styleId = self::resolveCellStyle($rowState, $zebra, $bold, $tone);
+                $styleId = self::resolveDataCellStyle($rowState, $center, $bold);
                 $ref = self::colLetter($cIdx) . $rowNum;
                 $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="' . $styleId . '"><is><t xml:space="preserve">' . self::xmlText($text) . '</t></is></c>';
             }
@@ -123,129 +214,107 @@ class XlsxExportService
             $rowNum++;
         }
 
-        $lastRow = max(5, 5 + count($rows));
-        $mergesXml = '';
-        if (count($columns) > 1) {
-            $mergesXml = '<mergeCells count="2">'
-                . '<mergeCell ref="A1:' . $lastCol . '1"/>'
-                . '<mergeCell ref="A2:' . $lastCol . '2"/>'
-                . '</mergeCells>';
+        $lastRow = max(6, 6 + count($rows));
+        $merges = [
+            'A1:' . $logoEndCol . '4',
+            $midStartCol . '1:' . $midEndCol . '2',
+            $midStartCol . '3:' . $midEndCol . '4',
+            'A5:' . $lastCol . '5',
+        ];
+        $mergesXml = '<mergeCells count="' . count($merges) . '">';
+        foreach ($merges as $mRef) {
+            $mergesXml .= '<mergeCell ref="' . $mRef . '"/>';
         }
+        $mergesXml .= '</mergeCells>';
+
+        $drawingTag = $hasLogo ? '<drawing r:id="rId1"/>' : '';
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+            . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             . '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
             . '<sheetViews><sheetView workbookViewId="0">'
-            . '<pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/>'
+            . '<pane ySplit="6" topLeftCell="A7" activePane="bottomLeft" state="frozen"/>'
             . '</sheetView></sheetViews>'
             . '<sheetFormatPr defaultRowHeight="18"/>'
             . $colsXml
             . '<sheetData>' . $rowsXml . '</sheetData>'
-            . '<autoFilter ref="A5:' . $lastCol . $lastRow . '"/>'
+            . '<autoFilter ref="A6:' . $lastCol . $lastRow . '"/>'
             . $mergesXml
-            . '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
+            . '<pageMargins left="0.35" right="0.35" top="0.45" bottom="0.45" header="0.2" footer="0.2"/>'
             . '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
+            . $drawingTag
             . '</worksheet>';
     }
 
-    protected static function resolveCellStyle(string $rowState, bool $zebra, bool $bold, string $tone): int
+    protected static function resolveDataCellStyle(string $rowState, bool $center, bool $bold): int
     {
-        if ($rowState === 'approved') {
-            if ($tone === 'success') {
-                return 17;
-            }
-            if ($tone === 'danger') {
-                return 20;
-            }
-            if ($tone === 'warning') {
-                return 21;
-            }
-            return $bold ? 19 : 18;
-        }
         if ($rowState === 'expired') {
-            if ($tone === 'danger') {
-                return 6;
-            }
-            return $bold ? 15 : 10;
+            return $center ? 16 : 6;
         }
         if ($rowState === 'warning') {
-            if ($tone === 'warning') {
-                return 7;
-            }
-            return $bold ? 16 : 11;
+            return $center ? 17 : 7;
         }
-        if ($tone === 'danger') {
-            return 13;
+        if ($rowState === 'approved') {
+            return $center ? 18 : 8;
         }
-        if ($tone === 'warning') {
-            return 14;
+        if ($center) {
+            return 15;
         }
-        if ($tone === 'success') {
-            return 12;
-        }
-        if ($bold) {
-            return $zebra ? 9 : 8;
-        }
-        return $zebra ? 5 : 4;
+        return $bold ? 5 : 4;
     }
 
     protected static function buildStylesXml(): string
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . '<fonts count="8">'
-            . '<font><sz val="10"/><color rgb="FF1E293B"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="13"/><color rgb="FF1E293B"/><name val="Segoe UI"/></font>'
-            . '<font><sz val="9"/><color rgb="FF475569"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="10"/><color rgb="FF1E293B"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="10"/><color rgb="FFB91C1C"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="10"/><color rgb="FFB45309"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="10"/><color rgb="FF15803D"/><name val="Segoe UI"/></font>'
+            . '<fonts count="5">'
+            . '<font><sz val="9.5"/><color rgb="FF111827"/><name val="Arial"/></font>'
+            . '<font><b/><sz val="11"/><color rgb="FF111827"/><name val="Arial"/></font>'
+            . '<font><sz val="8.5"/><color rgb="FF374151"/><name val="Arial"/></font>'
+            . '<font><b/><sz val="9.5"/><color rgb="FF111827"/><name val="Arial"/></font>'
+            . '<font><b/><sz val="8.5"/><color rgb="FF111827"/><name val="Arial"/></font>'
             . '</fonts>'
             . '<fills count="7">'
             . '<fill><patternFill patternType="none"/></fill>'
             . '<fill><patternFill patternType="gray125"/></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FF1E293B"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFE2E8F0"/></patternFill></fill>'
             . '<fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFEE2E2"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFDCFCE7"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFCA5A5"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFEF08A"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFBBF7D0"/></patternFill></fill>'
             . '</fills>'
             . '<borders count="2">'
             . '<border><left/><right/><top/><bottom/><diagonal/></border>'
             . '<border>'
-            . '<left style="thin"><color rgb="FFCBD5E1"/></left>'
-            . '<right style="thin"><color rgb="FFCBD5E1"/></right>'
-            . '<top style="thin"><color rgb="FFCBD5E1"/></top>'
-            . '<bottom style="thin"><color rgb="FFCBD5E1"/></bottom>'
+            . '<left style="thin"><color rgb="FF1E293B"/></left>'
+            . '<right style="thin"><color rgb="FF1E293B"/></right>'
+            . '<top style="thin"><color rgb="FF1E293B"/></top>'
+            . '<bottom style="thin"><color rgb="FF1E293B"/></bottom>'
             . '<diagonal/>'
             . '</border>'
             . '</borders>'
             . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            . '<cellXfs count="22">'
+            . '<cellXfs count="19">'
             . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
-            . '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            . '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
-            . '<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="4" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="7" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="5" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="6" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="7" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="4" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
-            . '<xf numFmtId="0" fontId="6" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
             . '</cellXfs>'
             . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             . '</styleSheet>';

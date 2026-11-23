@@ -388,15 +388,26 @@ class MedquestSystemTest extends TestCase
         $exportAll->assertStatus(200);
         $exportAll->assertSee('Export Excel (.xlsx)');
         $exportAll->assertSee('Export PDF (.pdf)');
-        $exportAll->assertSee('Document No');
-        $exportAll->assertSee('Detail');
+        $exportAll->assertSee('MJG-FOR-LAC.12-001');
+        $exportAll->assertSee('Document Title / Customer');
+        $exportAll->assertSee('Effective Date');
+        $exportAll->assertSee('Expiry Date');
+        $exportAll->assertSee('Created By');
         $exportAll->assertSee('RS Medquest Export Test');
+
+        $exportPrincipal = $this->get('/export?doc_type=PRINCIPAL');
+        $exportPrincipal->assertStatus(200);
+        $exportPrincipal->assertSee('MJG-FOR-LAC.12-001-09');
+        $exportPrincipal->assertSee('Document Title');
+        $exportPrincipal->assertSee('Issued by');
+        $exportPrincipal->assertSee('Principal');
 
         $exportCoopSelesai = $this->get('/export?doc_type=COOPERATION&proses=SELESAI');
         $exportCoopSelesai->assertStatus(200);
-        $exportCoopSelesai->assertSee('Customer &amp; Document No', false);
-        $exportCoopSelesai->assertSee('Product &amp; S/N', false);
-        $exportCoopSelesai->assertSee('Completed Date');
+        $exportCoopSelesai->assertSee('MJG-FOR-LAC.12-001-03');
+        $exportCoopSelesai->assertSee('Customer');
+        $exportCoopSelesai->assertSee('Product');
+        $exportCoopSelesai->assertSee('S/N');
         $exportCoopSelesai->assertSee('RS Medquest Export Test');
 
         $exportDeadlines = $this->get('/export?dataset=deadlines&dept=LAC');
@@ -415,6 +426,8 @@ class MedquestSystemTest extends TestCase
         $this->assertTrue(str_starts_with($xlsxBytes, "PK\x03\x04"));
         $this->assertStringContainsString('xl/worksheets/sheet1.xml', $xlsxBytes);
         $this->assertStringContainsString('xl/styles.xml', $xlsxBytes);
+        $this->assertStringContainsString('xl/media/image1.png', $xlsxBytes);
+        $this->assertStringContainsString('xl/drawings/drawing1.xml', $xlsxBytes);
 
         $regularUser = \App\Models\User::create([
             'nama_lengkap'       => 'Regular Scope Tester',

@@ -22,6 +22,12 @@ if ($searchQuery !== '') {
     $exportQueryParams['q'] = $searchQuery;
 }
 $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParams, ['download' => 'xlsx'])));
+$formMeta = $dataset['form_meta'] ?? [
+    'doc_no'         => 'MJG-FOR-LAC.12-001',
+    'effective_date' => '22 AUG 2024',
+    'revision_no'    => '01',
+    'page_no'        => '1 of 1',
+];
 ?>
 
 <div class="cp-header-row no-print">
@@ -178,30 +184,47 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
     </form>
 </div>
 
-<div class="cp-table-card mq-export-print-area mt-0">
-    <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-2 mb-3 gap-2">
-        <div>
-            <h6 class="fw-bold text-dark mb-1"><?= htmlspecialchars($dataset['title']) ?></h6>
-            <div class="text-muted small"><?= htmlspecialchars($dataset['subtitle']) ?></div>
-        </div>
-        <div class="d-flex flex-wrap align-items-center gap-3 small fw-semibold">
-            <span>
-                <span class="d-inline-block border me-1" style="width:12px;height:12px;background:#fee2e2;border-color:#fca5a5 !important;vertical-align:middle;"></span>
-                Past Deadline
-            </span>
-            <span>
-                <span class="d-inline-block border me-1" style="width:12px;height:12px;background:#fef3c7;border-color:#fcd34d !important;vertical-align:middle;"></span>
-                Near Deadline (&lt;= 90 Days)
-            </span>
-            <span>
-                <span class="d-inline-block border me-1" style="width:12px;height:12px;background:#dcfce7;border-color:#86efac !important;vertical-align:middle;"></span>
-                Completed / Approved (ACC)
-            </span>
-        </div>
-    </div>
-
+<div class="cp-table-card mq-export-print-area mt-0 p-3">
     <div class="table-responsive">
-        <table class="cp-table" id="mqExportPreviewTable">
+        <table class="mq-iso-header-table mb-0">
+            <tbody>
+                <tr>
+                    <td rowspan="4" style="width:16%;text-align:center;background:#ffffff;padding:8px;">
+                        <img src="<?= base_url('assets/img/logo_medquest.png') ?>" alt="Medquest Logo" style="max-width:140px;width:100%;height:auto;display:inline-block;">
+                    </td>
+                    <td rowspan="2" style="width:41%;text-align:center;font-weight:700;font-size:0.95rem;letter-spacing:0.4px;">
+                        FORM
+                    </td>
+                    <td style="width:11%;font-size:0.72rem;border-right:none;border-bottom:none;">Doc. No.</td>
+                    <td style="width:17%;font-size:0.72rem;border-left:none;border-bottom:none;">: <?= htmlspecialchars($formMeta['doc_no']) ?></td>
+                    <td style="width:15%;background:#fca5a5;font-weight:700;font-size:0.71rem;">Past Deadline / ED</td>
+                </tr>
+                <tr>
+                    <td style="font-size:0.72rem;border-right:none;border-top:none;border-bottom:none;">Effective Date</td>
+                    <td style="font-size:0.72rem;border-left:none;border-top:none;border-bottom:none;">: <?= htmlspecialchars($formMeta['effective_date']) ?></td>
+                    <td style="background:#fef08a;font-weight:700;font-size:0.71rem;">Near Deadline (&lt;=90d)</td>
+                </tr>
+                <tr>
+                    <td rowspan="2" style="text-align:center;font-weight:700;font-size:0.95rem;letter-spacing:0.3px;">
+                        <?= htmlspecialchars($dataset['title']) ?>
+                    </td>
+                    <td style="font-size:0.72rem;border-right:none;border-top:none;border-bottom:none;">Revision No.</td>
+                    <td style="font-size:0.72rem;border-left:none;border-top:none;border-bottom:none;">: <?= htmlspecialchars($formMeta['revision_no']) ?></td>
+                    <td style="background:#bbf7d0;font-weight:700;font-size:0.71rem;">Approved (ACC)</td>
+                </tr>
+                <tr>
+                    <td style="font-size:0.72rem;border-right:none;border-top:none;">Page No.</td>
+                    <td style="font-size:0.72rem;border-left:none;border-top:none;">: <?= htmlspecialchars($formMeta['page_no']) ?></td>
+                    <td style="font-size:0.7rem;color:#475569;"><?= count($dataset['rows']) ?> Document(s)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="border border-top-0 px-2 py-1 bg-light text-secondary small" style="border-color:#1e293b !important;font-size:0.72rem;">
+            <?= htmlspecialchars($dataset['subtitle']) ?>
+        </div>
+
+        <table class="cp-table mq-iso-table mt-0" id="mqExportPreviewTable">
             <thead>
                 <tr>
                     <?php foreach ($dataset['columns'] as $col): ?>
@@ -229,15 +252,9 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
                             <?php foreach ($row['cells'] as $cell):
                                 $text = is_array($cell) ? (string) ($cell['text'] ?? '') : (string) $cell;
                                 $bold = is_array($cell) && !empty($cell['bold']);
-                                $tone = is_array($cell) ? (string) ($cell['tone'] ?? '') : '';
-                                $toneClass = match ($tone) {
-                                    'danger'  => 'text-danger',
-                                    'warning' => 'text-warning-emphasis',
-                                    'success' => 'text-success',
-                                    default   => 'text-dark',
-                                };
+                                $center = is_array($cell) && !empty($cell['center']);
                             ?>
-                                <td class="<?= $bold ? 'fw-semibold ' : '' ?><?= $toneClass ?>" style="white-space:pre-line;vertical-align:top;"><?= nl2br(htmlspecialchars($text)) ?></td>
+                                <td class="<?= ($bold ? 'fw-semibold ' : '') . ($center ? 'text-center ' : '') ?>" style="white-space:pre-line;"><?= nl2br(htmlspecialchars($text)) ?></td>
                             <?php endforeach; ?>
                         </tr>
                     <?php endforeach; ?>
@@ -251,6 +268,87 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 <script>
 const MQ_EXPORT_DATASET = <?= json_encode($dataset, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
+const MQ_LOGO_DATA_URI = <?= json_encode($logoDataUri ?? '', JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
+
+function drawFormalIsoHeader(doc, pageNumber, totalPagesToken) {
+    const startX = 10;
+    const headerTop = 8;
+    const col1W = 42;
+    const col2W = 113;
+    const col3W = 76;
+    const col4W = 46;
+    const totalW = col1W + col2W + col3W + col4W;
+    const rowH = 5.5;
+    const fullH = rowH * 4;
+    const meta = MQ_EXPORT_DATASET.form_meta || {};
+
+    doc.setDrawColor(30, 41, 59);
+    doc.setLineWidth(0.25);
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(startX, headerTop, col1W, fullH, 'FD');
+    if (MQ_LOGO_DATA_URI) {
+        doc.addImage(MQ_LOGO_DATA_URI, 'PNG', startX + 3, headerTop + 6.5, 36, 8.5);
+    } else {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text('Medquest', startX + col1W / 2, headerTop + 12, { align: 'center' });
+    }
+
+    const col2X = startX + col1W;
+    doc.rect(col2X, headerTop, col2W, rowH * 2, 'FD');
+    doc.rect(col2X, headerTop + rowH * 2, col2W, rowH * 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(17, 24, 39);
+    doc.text('FORM', col2X + col2W / 2, headerTop + 6.5, { align: 'center' });
+    doc.setFontSize(9.5);
+    doc.text(String(MQ_EXPORT_DATASET.title || 'MEDQUEST LEGAL DOCUMENTS'), col2X + col2W / 2, headerTop + 17.5, { align: 'center', maxWidth: col2W - 4 });
+
+    const col3X = col2X + col2W;
+    doc.rect(col3X, headerTop, col3W, fullH, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(17, 24, 39);
+    const metaLabels = [
+        ['Doc. No.', ': ' + (meta.doc_no || 'MJG-FOR-LAC.12-001')],
+        ['Effective Date', ': ' + (meta.effective_date || '22 AUG 2024')],
+        ['Revision No.', ': ' + (meta.revision_no || '01')],
+        ['Page No.', ': ' + pageNumber + ' of ' + totalPagesToken]
+    ];
+    metaLabels.forEach((pair, idx) => {
+        const y = headerTop + 3.8 + (idx * rowH);
+        doc.text(pair[0], col3X + 2, y);
+        doc.text(pair[1], col3X + 24, y);
+    });
+
+    const col4X = col3X + col3W;
+    doc.setFillColor(252, 165, 165);
+    doc.rect(col4X, headerTop, col4W, rowH, 'FD');
+    doc.setFillColor(254, 240, 138);
+    doc.rect(col4X, headerTop + rowH, col4W, rowH, 'FD');
+    doc.setFillColor(187, 247, 208);
+    doc.rect(col4X, headerTop + rowH * 2, col4W, rowH, 'FD');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(col4X, headerTop + rowH * 3, col4W, rowH, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(17, 24, 39);
+    doc.text('Past Deadline / ED', col4X + 2, headerTop + 3.8);
+    doc.text('Near Deadline (<=90d)', col4X + 2, headerTop + rowH + 3.8);
+    doc.text('Approved (ACC)', col4X + 2, headerTop + rowH * 2 + 3.8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(String((MQ_EXPORT_DATASET.rows || []).length) + ' Document(s)', col4X + 2, headerTop + rowH * 3 + 3.8);
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(startX, headerTop + fullH, totalW, 5, 'FD');
+    doc.setFontSize(6.8);
+    doc.setTextColor(55, 65, 81);
+    doc.text(String(MQ_EXPORT_DATASET.subtitle || ''), startX + 2, headerTop + fullH + 3.4, { maxWidth: totalW - 4 });
+}
 
 function exportMedquestPdf() {
     if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
@@ -269,6 +367,7 @@ function exportMedquestPdf() {
         return;
     }
 
+    const totalPagesToken = '{total_pages_count_string}';
     const columns = MQ_EXPORT_DATASET.columns || [];
     const totalWeight = columns.reduce((sum, col) => sum + (Number(col.width) || 20), 0) || 1;
     const usableWidth = 277;
@@ -278,33 +377,6 @@ function exportMedquestPdf() {
             cellWidth: Number((((Number(col.width) || 20) / totalWeight) * usableWidth).toFixed(2))
         };
     });
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(30, 41, 59);
-    doc.text(MQ_EXPORT_DATASET.title || 'MEDQUEST LEGAL DOCUMENTS', 10, 12);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(71, 85, 105);
-    doc.text(MQ_EXPORT_DATASET.subtitle || '', 10, 17);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.setFillColor(254, 226, 226);
-    doc.rect(10, 19.5, 42, 4.5, 'F');
-    doc.setTextColor(185, 28, 28);
-    doc.text('RED: Past Deadline', 11.5, 22.7);
-
-    doc.setFillColor(254, 243, 199);
-    doc.rect(54, 19.5, 56, 4.5, 'F');
-    doc.setTextColor(180, 83, 9);
-    doc.text('YELLOW: Near Deadline (<= 90d)', 55.5, 22.7);
-
-    doc.setFillColor(220, 252, 231);
-    doc.rect(112, 19.5, 58, 4.5, 'F');
-    doc.setTextColor(21, 128, 61);
-    doc.text('GREEN: Completed / Approved (ACC)', 113.5, 22.7);
 
     const head = [columns.map(c => c.label || '')];
     const rowStates = [];
@@ -317,7 +389,7 @@ function exportMedquestPdf() {
             const text = typeof cell === 'object' && cell !== null ? String(cell.text || '') : String(cell || '');
             cellMeta[rIdx][cIdx] = {
                 bold: Boolean(cell && cell.bold),
-                tone: (cell && cell.tone) ? String(cell.tone) : ''
+                center: Boolean(cell && cell.center)
             };
             return text;
         });
@@ -326,30 +398,30 @@ function exportMedquestPdf() {
     doc.autoTable({
         head: head,
         body: body,
-        startY: 26,
-        margin: { top: 14, right: 10, bottom: 14, left: 10 },
+        startY: 36,
+        margin: { top: 36, right: 10, bottom: 12, left: 10 },
         theme: 'grid',
         showHead: 'everyPage',
         headStyles: {
-            fillColor: [30, 41, 59],
-            textColor: [255, 255, 255],
+            fillColor: [226, 232, 240],
+            textColor: [17, 24, 39],
             fontStyle: 'bold',
-            fontSize: 8,
-            halign: 'left',
+            fontSize: 7.5,
+            halign: 'center',
             valign: 'middle',
-            cellPadding: 2.3,
-            lineColor: [203, 213, 225],
-            lineWidth: 0.2
+            cellPadding: 2,
+            lineColor: [30, 41, 59],
+            lineWidth: 0.25
         },
         styles: {
             font: 'helvetica',
-            fontSize: 7.5,
-            textColor: [30, 41, 59],
-            cellPadding: 2.1,
-            lineColor: [203, 213, 225],
+            fontSize: 7.2,
+            textColor: [17, 24, 39],
+            cellPadding: 1.8,
+            lineColor: [30, 41, 59],
             lineWidth: 0.2,
             overflow: 'linebreak',
-            valign: 'top'
+            valign: 'middle'
         },
         columnStyles: columnStyles,
         didParseCell: function (data) {
@@ -357,37 +429,38 @@ function exportMedquestPdf() {
                 return;
             }
             const state = rowStates[data.row.index] || 'normal';
-            if (state === 'approved') {
-                data.cell.styles.fillColor = [220, 252, 231];
-            } else if (state === 'expired') {
-                data.cell.styles.fillColor = [254, 226, 226];
+            if (state === 'expired') {
+                data.cell.styles.fillColor = [252, 165, 165];
             } else if (state === 'warning') {
-                data.cell.styles.fillColor = [254, 243, 199];
-            } else if (data.row.index % 2 === 1) {
-                data.cell.styles.fillColor = [248, 250, 252];
+                data.cell.styles.fillColor = [254, 240, 138];
+            } else if (state === 'approved') {
+                data.cell.styles.fillColor = [187, 247, 208];
+            } else {
+                data.cell.styles.fillColor = [255, 255, 255];
             }
             const meta = (cellMeta[data.row.index] && cellMeta[data.row.index][data.column.index]) || {};
             if (meta.bold) {
                 data.cell.styles.fontStyle = 'bold';
             }
-            if (meta.tone === 'danger') {
-                data.cell.styles.textColor = [185, 28, 28];
-            } else if (meta.tone === 'warning') {
-                data.cell.styles.textColor = [180, 83, 9];
-            } else if (meta.tone === 'success') {
-                data.cell.styles.textColor = [21, 128, 61];
+            if (meta.center) {
+                data.cell.styles.halign = 'center';
             }
         },
         didDrawPage: function (data) {
+            drawFormalIsoHeader(doc, data.pageNumber, totalPagesToken);
             const pageSize = doc.internal.pageSize;
             const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
             const pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth();
-            doc.setFontSize(7.5);
-            doc.setTextColor(100, 116, 139);
-            doc.text('PT Medquest Jaya Global - Legal Document Monitoring', 10, pageHeight - 6);
-            doc.text('Page ' + data.pageNumber, pageWidth - 22, pageHeight - 6);
+            doc.setFontSize(7);
+            doc.setTextColor(71, 85, 105);
+            doc.text('PT Medquest Jaya Global - ' + (MQ_EXPORT_DATASET.title || ''), 10, pageHeight - 5);
+            doc.text('Page ' + data.pageNumber + ' of ' + totalPagesToken, pageWidth - 28, pageHeight - 5);
         }
     });
+
+    if (typeof doc.putTotalPages === 'function') {
+        doc.putTotalPages(totalPagesToken);
+    }
 
     doc.save((MQ_EXPORT_DATASET.filename || 'Medquest_Export') + '.pdf');
 }

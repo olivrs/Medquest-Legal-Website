@@ -12,7 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v10_export" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v11_iso" rel="stylesheet">
 </head>
 <body>
 

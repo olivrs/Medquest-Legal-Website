@@ -1745,16 +1745,55 @@ span.badge-h3,
 }
 
 .mq-row-approved > td {
-    background-color: #dcfce7 !important;
-    border-color: #bbf7d0 !important;
+    background-color: #bbf7d0 !important;
+    border-color: #1e293b !important;
+    color: #111827 !important;
 }
 
 .mq-row-expired > td {
-    background-color: #fee2e2 !important;
-    border-color: #fecaca !important;
+    background-color: #fca5a5 !important;
+    border-color: #1e293b !important;
+    color: #111827 !important;
 }
 
 .mq-row-warning > td {
-    background-color: #fef3c7 !important;
-    border-color: #fde68a !important;
+    background-color: #fef08a !important;
+    border-color: #1e293b !important;
+    color: #111827 !important;
+}
+
+.mq-iso-header-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #1e293b;
+    background: #ffffff;
+    font-size: 0.78rem;
+}
+
+.mq-iso-header-table td {
+    border: 1px solid #1e293b;
+    padding: 4px 8px;
+    vertical-align: middle;
+    color: #111827;
+}
+
+.cp-table.mq-iso-table {
+    border: 1px solid #1e293b;
+}
+
+.cp-table.mq-iso-table thead th {
+    background-color: #e2e8f0 !important;
+    color: #111827 !important;
+    border: 1px solid #1e293b !important;
+    text-align: center;
+    font-size: 0.74rem;
+    text-transform: none;
+    padding: 7px 6px;
+}
+
+.cp-table.mq-iso-table tbody td {
+    border: 1px solid #1e293b !important;
+    font-size: 0.76rem;
+    padding: 6px 8px;
+    vertical-align: middle !important;
 }

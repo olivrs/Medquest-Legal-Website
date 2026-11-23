@@ -21,7 +21,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-23-v16-export-colors-dates';
+            $currentRev = '2026-11-23-v17-formal-export-form';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -1630,39 +1630,50 @@ class MedquestController extends Controller
             $dateRangeText = $fieldName . ': ' . ($dateFrom ?: 'Start') . ' - ' . ($dateTo ?: 'End');
         }
 
+        $formDocNo = match ($selectedDocType) {
+            'COMPANY'     => 'MJG-FOR-LAC.12-001-04',
+            'PRINCIPAL'   => 'MJG-FOR-LAC.12-001-09',
+            'COOPERATION' => 'MJG-FOR-LAC.12-001-03',
+            default       => 'MJG-FOR-LAC.12-001',
+        };
+        $formMeta = [
+            'doc_no'         => $datasetMode === 'deadlines' ? 'MJG-FOR-LAC.12-001' : $formDocNo,
+            'effective_date' => '22 AUG 2024',
+            'revision_no'    => '01',
+            'page_no'        => '1 of 1',
+        ];
+
         if ($datasetMode === 'deadlines') {
             $columns = [
-                ['label' => 'Dept', 'width' => 12],
-                ['label' => 'Customer & Product', 'width' => 38],
-                ['label' => 'Document No', 'width' => 24],
-                ['label' => 'Expiry Date', 'width' => 18],
-                ['label' => 'Deadline Status', 'width' => 20],
-                ['label' => 'Process Status', 'width' => 18],
-                ['label' => 'Created By', 'width' => 26],
+                ['label' => 'No.', 'width' => 6],
+                ['label' => 'Dept', 'width' => 9],
+                ['label' => 'Customer / Document Title', 'width' => 28],
+                ['label' => 'Document No.', 'width' => 18],
+                ['label' => 'Expiry Date', 'width' => 14],
+                ['label' => 'Days Left', 'width' => 15],
+                ['label' => 'Status', 'width' => 16],
+                ['label' => 'Created By', 'width' => 20],
             ];
             $rows = [];
-            foreach ($deadlines as $item) {
+            foreach ($deadlines as $idx => $item) {
                 $expInfo = get_expiry_info($item['expiry_date']);
                 $rowState = $this->resolveExportRowState($item, $expInfo);
                 $rowProses = strtoupper(trim((string) ($item['status_proses'] ?? 'PENGAJUAN')));
                 $pMeta = get_process_status_meta($rowProses);
                 $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Document #' . $item['id']);
                 $displaySub = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
-                $tone = $rowState === 'approved' ? 'success' : (in_array($expInfo['days'] ?? 99, [0, 1, 2, 3], true) || $expInfo['status'] === 'expired' ? 'danger' : 'warning');
-                $createdText = (string) ($item['created_by_code'] ?? '-');
-                if (!empty($item['user_email'])) {
-                    $createdText .= "\n" . $item['user_email'];
-                }
+                $createdText = (string) ($item['created_by_log'] ?: ($item['created_by_code'] ?? '-'));
 
                 $rows[] = [
                     'row_state' => $rowState,
                     'cells' => [
-                        ['text' => (string) $item['department'], 'bold' => true],
-                        ['text' => $displayTitle . "\n" . $displaySub, 'bold' => true],
+                        ['text' => (string) ($idx + 1), 'center' => true],
+                        ['text' => (string) $item['department'], 'center' => true, 'bold' => true],
+                        ['text' => $displayTitle . "\n" . $displaySub],
                         ['text' => (string) ($item['document_number'] ?: 'N/A')],
-                        ['text' => format_date_medquest($item['expiry_date']), 'bold' => true, 'tone' => $rowState === 'approved' ? 'success' : 'danger'],
-                        ['text' => $this->sanitizeExportLabel($expInfo['short_label']), 'bold' => true, 'tone' => $tone],
-                        ['text' => $pMeta['label'], 'bold' => true, 'tone' => $rowProses === 'SELESAI' ? 'success' : ''],
+                        ['text' => format_date_medquest($item['expiry_date']), 'center' => true],
+                        ['text' => $this->sanitizeExportLabel($expInfo['short_label']), 'center' => true],
+                        ['text' => $pMeta['label'], 'center' => true],
                         ['text' => $createdText],
                     ],
                 ];
@@ -1681,92 +1692,140 @@ class MedquestController extends Controller
                 'title'       => 'DEADLINE MONITORING (H-90 TO H-0)',
                 'subtitle'    => implode(' | ', $subParts),
                 'filename'    => 'Medquest_Deadlines_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $deptTag) . '_' . $dateStamp,
+                'form_meta'   => $formMeta,
                 'columns'     => $columns,
                 'rows'        => $rows,
             ];
         }
 
-        $colDocLabel = match ($selectedDocType) {
-            'COMPANY'     => 'Document Title & Document No.',
-            'PRINCIPAL'   => 'Document Title & Document No.',
-            'COOPERATION' => 'Customer & Document No',
-            default       => 'Document No',
-        };
-        $colDetailLabel = match ($selectedDocType) {
-            'COMPANY'     => 'Issued By',
-            'PRINCIPAL'   => 'Issued By & Principal',
-            'COOPERATION' => 'Product & S/N',
-            default       => 'Detail',
-        };
-
-        $columns = [
-            ['label' => 'Dept / No', 'width' => 16],
-            ['label' => $colDocLabel, 'width' => 32],
-            ['label' => $colDetailLabel, 'width' => 30],
-            ['label' => 'Effective, Expiry & Deadline', 'width' => 30],
-            ['label' => 'Status', 'width' => 18],
-        ];
-        if ($selectedProses === 'SELESAI') {
-            $columns[] = ['label' => 'Completed Date', 'width' => 18];
+        if ($selectedDocType === 'PRINCIPAL') {
+            $columns = [
+                ['label' => 'No.', 'width' => 6],
+                ['label' => 'Document Title', 'width' => 28],
+                ['label' => 'Document No.', 'width' => 18],
+                ['label' => 'Issued by', 'width' => 24],
+                ['label' => 'Effective Date', 'width' => 14],
+                ['label' => 'Expiry Date', 'width' => 14],
+                ['label' => 'Principal', 'width' => 20],
+                ['label' => 'Note', 'width' => 26],
+                ['label' => 'Created By', 'width' => 20],
+            ];
+        } elseif ($selectedDocType === 'COOPERATION') {
+            $columns = [
+                ['label' => 'No.', 'width' => 6],
+                ['label' => 'Customer', 'width' => 26],
+                ['label' => 'Document No.', 'width' => 20],
+                ['label' => 'Product', 'width' => 24],
+                ['label' => 'S/N', 'width' => 15],
+                ['label' => 'Effective Date', 'width' => 14],
+                ['label' => 'Expiry Date', 'width' => 14],
+                ['label' => 'Note', 'width' => 26],
+                ['label' => 'Created By', 'width' => 20],
+            ];
+        } elseif ($selectedDocType === 'COMPANY') {
+            $columns = [
+                ['label' => 'No.', 'width' => 6],
+                ['label' => 'Document Title', 'width' => 28],
+                ['label' => 'Document No.', 'width' => 20],
+                ['label' => 'Issued by', 'width' => 24],
+                ['label' => 'Effective Date', 'width' => 14],
+                ['label' => 'Expiry Date', 'width' => 14],
+                ['label' => 'Note', 'width' => 28],
+                ['label' => 'Created By', 'width' => 20],
+            ];
+        } else {
+            $columns = [
+                ['label' => 'No.', 'width' => 6],
+                ['label' => 'Dept', 'width' => 9],
+                ['label' => 'Document Title / Customer', 'width' => 26],
+                ['label' => 'Document No.', 'width' => 18],
+                ['label' => 'Detail', 'width' => 24],
+                ['label' => 'Effective Date', 'width' => 14],
+                ['label' => 'Expiry Date', 'width' => 14],
+                ['label' => 'Status', 'width' => 16],
+                ['label' => 'Note', 'width' => 24],
+                ['label' => 'Created By', 'width' => 19],
+            ];
         }
-        $columns[] = ['label' => 'Note', 'width' => 34];
-        $columns[] = ['label' => 'Created By', 'width' => 22];
 
         $rows = [];
-        foreach ($agreements as $row) {
+        foreach ($agreements as $idx => $row) {
             $rowType = strtoupper(trim((string) ($row['doc_type'] ?? 'COOPERATION')));
-            $typeMeta = get_doc_type_meta($rowType);
             $isExpNa = !empty($row['expiry_date_na']) || empty($row['expiry_date']);
             $expInfo = get_expiry_info($row['expiry_date'], $isExpNa);
             $effFormatted = format_date_medquest($row['effective_date'], $row['effective_date_na']);
             $expFormatted = format_date_medquest($row['expiry_date'], $isExpNa);
-            $seq = (string) ($row['no_urut_dokumen'] ?: $row['id']);
-            $displayTitle = ($rowType === 'COOPERATION')
-                ? ($row['customer'] ?: '-')
-                : ($row['document_title'] ?: $row['product_description'] ?: '-');
-
-            $deptCell = $row['department'] . "\n#" . $seq;
-            if ($selectedDocType === 'ALL') {
-                $deptCell .= "\n" . $typeMeta['short_title'];
-            }
-
-            $docCell = $displayTitle . "\nNo: " . ($row['document_number'] ?: 'N/A');
-
-            if ($rowType === 'COMPANY') {
-                $detailCell = 'Issued By: ' . ($row['issued_by'] ?: $row['customer'] ?: '-');
-            } elseif ($rowType === 'PRINCIPAL') {
-                $detailCell = 'Principal: ' . ($row['principal_name'] ?: $row['customer'] ?: '-') . "\nIssued By: " . ($row['issued_by'] ?: '-');
-            } else {
-                $detailCell = ($row['product_description'] ?: '-') . "\nS/N: " . ($row['serial_number'] ?: 'N/A');
-            }
-
             $rowState = $this->resolveExportRowState($row, $expInfo);
-            $validityLabel = $this->sanitizeExportLabel($expInfo['short_label']);
-            $validityCell = 'Effective: ' . $effFormatted . ' -> Expiry: ' . $expFormatted . "\n" . $validityLabel;
-            $validityTone = $rowState === 'approved'
-                ? 'success'
-                : ($expInfo['status'] === 'expired' ? 'danger' : ($expInfo['status'] === 'warning' ? 'warning' : 'success'));
 
             $rowProses = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
             $pMeta = get_process_status_meta($rowProses);
-            $statusCell = $pMeta['label'];
-            if ($rowProses === 'SELESAI' && $selectedProses !== 'SELESAI') {
-                $statusCell .= "\nCompleted: " . format_date_medquest($row['tanggal_selesai']);
-            }
-            $statusTone = $rowProses === 'SELESAI' ? 'success' : ($rowProses === 'BERJALAN' ? '' : 'warning');
+            $noteText = (string) ($row['note'] ?: 'N/A');
+            $createdByText = (string) ($row['created_by_log'] ?: ($row['created_by_code'] ?? '-'));
 
-            $cells = [
-                ['text' => $deptCell, 'bold' => true],
-                ['text' => $docCell, 'bold' => true],
-                ['text' => $detailCell],
-                ['text' => $validityCell, 'bold' => true, 'tone' => $validityTone],
-                ['text' => $statusCell, 'bold' => true, 'tone' => $statusTone],
-            ];
-            if ($selectedProses === 'SELESAI') {
-                $cells[] = ['text' => format_date_medquest($row['tanggal_selesai']), 'bold' => true, 'tone' => 'success'];
+            if ($selectedDocType === 'PRINCIPAL') {
+                $cells = [
+                    ['text' => (string) ($idx + 1), 'center' => true],
+                    ['text' => (string) ($row['document_title'] ?: $row['product_description'] ?: '-')],
+                    ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
+                    ['text' => (string) ($row['issued_by'] ?: $row['customer'] ?: '-')],
+                    ['text' => $effFormatted, 'center' => true],
+                    ['text' => $expFormatted, 'center' => true],
+                    ['text' => (string) ($row['principal_name'] ?: $row['customer'] ?: '-')],
+                    ['text' => $noteText],
+                    ['text' => $createdByText],
+                ];
+            } elseif ($selectedDocType === 'COOPERATION') {
+                $cells = [
+                    ['text' => (string) ($idx + 1), 'center' => true],
+                    ['text' => (string) ($row['customer'] ?: '-')],
+                    ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
+                    ['text' => (string) ($row['product_description'] ?: '-')],
+                    ['text' => (string) ($row['serial_number'] ?: 'N/A'), 'center' => true],
+                    ['text' => $effFormatted, 'center' => true],
+                    ['text' => $expFormatted, 'center' => true],
+                    ['text' => $noteText],
+                    ['text' => $createdByText],
+                ];
+            } elseif ($selectedDocType === 'COMPANY') {
+                $cells = [
+                    ['text' => (string) ($idx + 1), 'center' => true],
+                    ['text' => (string) ($row['document_title'] ?: $row['product_description'] ?: '-')],
+                    ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
+                    ['text' => (string) ($row['issued_by'] ?: $row['customer'] ?: '-')],
+                    ['text' => $effFormatted, 'center' => true],
+                    ['text' => $expFormatted, 'center' => true],
+                    ['text' => $noteText],
+                    ['text' => $createdByText],
+                ];
+            } else {
+                $displayTitle = ($rowType === 'COOPERATION')
+                    ? ($row['customer'] ?: '-')
+                    : ($row['document_title'] ?: $row['product_description'] ?: '-');
+                if ($rowType === 'COMPANY') {
+                    $detailCell = 'Issued By: ' . ($row['issued_by'] ?: $row['customer'] ?: '-');
+                } elseif ($rowType === 'PRINCIPAL') {
+                    $detailCell = 'Principal: ' . ($row['principal_name'] ?: $row['customer'] ?: '-') . "\nIssued By: " . ($row['issued_by'] ?: '-');
+                } else {
+                    $detailCell = ($row['product_description'] ?: '-') . "\nS/N: " . ($row['serial_number'] ?: 'N/A');
+                }
+                $statusText = $pMeta['label'];
+                if ($rowProses === 'SELESAI' && !empty($row['tanggal_selesai'])) {
+                    $statusText .= "\n" . format_date_medquest($row['tanggal_selesai']);
+                }
+
+                $cells = [
+                    ['text' => (string) ($idx + 1), 'center' => true],
+                    ['text' => (string) $row['department'], 'center' => true, 'bold' => true],
+                    ['text' => $displayTitle],
+                    ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
+                    ['text' => $detailCell],
+                    ['text' => $effFormatted, 'center' => true],
+                    ['text' => $expFormatted, 'center' => true],
+                    ['text' => $statusText, 'center' => true],
+                    ['text' => $noteText],
+                    ['text' => $createdByText],
+                ];
             }
-            $cells[] = ['text' => (string) ($row['note'] ?: 'N/A')];
-            $cells[] = ['text' => (string) ($row['created_by_log'] ?: ($row['created_by_code'] ?? '-')), 'bold' => true];
 
             $rows[] = [
                 'row_state' => $rowState,
@@ -1810,6 +1869,7 @@ class MedquestController extends Controller
             'title'       => $activeTableTitle,
             'subtitle'    => implode(' | ', $filterParts),
             'filename'    => 'Medquest_Documents_' . $fileDept . '_' . $fileType . '_' . $dateStamp,
+            'form_meta'   => $formMeta,
             'columns'     => $columns,
             'rows'        => $rows,
         ];
@@ -1839,13 +1899,17 @@ class MedquestController extends Controller
             $filtered
         );
 
+        $logoPath = public_path('assets/img/logo_medquest.png');
+
         if (strtolower((string) $request->query('download', '')) === 'xlsx') {
             $xlsxBytes = XlsxExportService::generate(
                 $dataset['sheet_title'],
                 $dataset['title'],
                 $dataset['subtitle'],
                 $dataset['columns'],
-                $dataset['rows']
+                $dataset['rows'],
+                $dataset['form_meta'] ?? [],
+                $logoPath
             );
 
             return response($xlsxBytes, 200, [
@@ -1855,10 +1919,14 @@ class MedquestController extends Controller
             ]);
         }
 
+        $logoDataUri = is_file($logoPath)
+            ? 'data:image/png;base64,' . base64_encode((string) file_get_contents($logoPath))
+            : '';
+
         return view('pages.export', array_merge(
             $this->getLayoutData($request, 'export'),
             $filtered,
-            compact('datasetMode', 'dataset')
+            compact('datasetMode', 'dataset', 'logoDataUri')
         ));
     }
 }
