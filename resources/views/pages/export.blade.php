@@ -3,14 +3,21 @@
 @section('content')
 <?php
 $exportQueryParams = [
-    'page'     => 'export',
-    'dataset'  => $datasetMode,
-    'dept'     => $selectedDept,
-    'doc_type' => $selectedDocType,
-    'proses'   => $selectedProses,
-    'status'   => $selectedStatus,
-    'sort'     => $selectedSort,
+    'page'       => 'export',
+    'dataset'    => $datasetMode,
+    'dept'       => $selectedDept,
+    'doc_type'   => $selectedDocType,
+    'proses'     => $selectedProses,
+    'status'     => $selectedStatus,
+    'date_field' => $selectedDateField,
+    'sort'       => $selectedSort,
 ];
+if ($dateFrom !== '') {
+    $exportQueryParams['date_from'] = $dateFrom;
+}
+if ($dateTo !== '') {
+    $exportQueryParams['date_to'] = $dateTo;
+}
 if ($searchQuery !== '') {
     $exportQueryParams['q'] = $searchQuery;
 }
@@ -87,7 +94,7 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
                         <option value="ALL" <?= $selectedProses === 'ALL' ? 'selected' : '' ?>>All Statuses</option>
                         <option value="PENGAJUAN" <?= $selectedProses === 'PENGAJUAN' ? 'selected' : '' ?>>Submission</option>
                         <option value="BERJALAN" <?= $selectedProses === 'BERJALAN' ? 'selected' : '' ?>>In Progress</option>
-                        <option value="SELESAI" <?= $selectedProses === 'SELESAI' ? 'selected' : '' ?>>Completed</option>
+                        <option value="SELESAI" <?= $selectedProses === 'SELESAI' ? 'selected' : '' ?>>Completed (ACC)</option>
                     </select>
                 </div>
 
@@ -103,32 +110,68 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
                     </select>
                 </div>
 
-                <div class="col-md-3 col-sm-6">
-                    <label class="form-label fw-bold small text-dark mb-1">Sort By</label>
-                    <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <option value="default" <?= $selectedSort === 'default' ? 'selected' : '' ?>>Form Number (Default)</option>
-                        <option value="newest" <?= $selectedSort === 'newest' ? 'selected' : '' ?>>Newest &gt; Oldest</option>
-                        <option value="oldest" <?= $selectedSort === 'oldest' ? 'selected' : '' ?>>Oldest &gt; Newest</option>
-                        <option value="deadline_asc" <?= $selectedSort === 'deadline_asc' ? 'selected' : '' ?>>Nearest Deadline</option>
-                        <option value="deadline_desc" <?= $selectedSort === 'deadline_desc' ? 'selected' : '' ?>>Farthest Deadline</option>
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Filter Date By</label>
+                    <select name="date_field" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="expiry_date" <?= $selectedDateField === 'expiry_date' ? 'selected' : '' ?>>Expiry / Deadline</option>
+                        <option value="effective_date" <?= $selectedDateField === 'effective_date' ? 'selected' : '' ?>>Effective Date</option>
+                        <option value="created_at" <?= $selectedDateField === 'created_at' ? 'selected' : '' ?>>Input Date</option>
+                        <option value="tanggal_selesai" <?= $selectedDateField === 'tanggal_selesai' ? 'selected' : '' ?>>Completed (ACC) Date</option>
                     </select>
                 </div>
 
-                <div class="col-md-6 col-sm-8">
-                    <label class="form-label fw-bold small text-dark mb-1">Search Keyword (Optional)</label>
-                    <input type="text" name="q" class="form-control form-control-sm" value="<?= htmlspecialchars($searchQuery) ?>" placeholder="Search document number, customer, product, principal, note...">
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Date From</label>
+                    <input type="text" name="date_from" class="form-control form-control-sm mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= htmlspecialchars($dateFrom) ?>">
                 </div>
 
-                <div class="col-md-3 col-sm-4 d-flex gap-2">
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Date To</label>
+                    <input type="text" name="date_to" class="form-control form-control-sm mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= htmlspecialchars($dateTo) ?>">
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Sort By</label>
+                    <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="default" <?= $selectedSort === 'default' ? 'selected' : '' ?>>Form Number (Default)</option>
+                        <option value="deadline_asc" <?= $selectedSort === 'deadline_asc' ? 'selected' : '' ?>>Deadline (Earliest &gt; Latest)</option>
+                        <option value="deadline_desc" <?= $selectedSort === 'deadline_desc' ? 'selected' : '' ?>>Deadline (Latest &gt; Earliest)</option>
+                        <option value="effective_asc" <?= $selectedSort === 'effective_asc' ? 'selected' : '' ?>>Effective Date (Earliest &gt; Latest)</option>
+                        <option value="effective_desc" <?= $selectedSort === 'effective_desc' ? 'selected' : '' ?>>Effective Date (Latest &gt; Earliest)</option>
+                        <option value="completed_desc" <?= $selectedSort === 'completed_desc' ? 'selected' : '' ?>>Completed Date (Newest)</option>
+                        <option value="newest" <?= $selectedSort === 'newest' ? 'selected' : '' ?>>Newest &gt; Oldest</option>
+                        <option value="oldest" <?= $selectedSort === 'oldest' ? 'selected' : '' ?>>Oldest &gt; Newest</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Search Keyword</label>
+                    <input type="text" name="q" class="form-control form-control-sm" value="<?= htmlspecialchars($searchQuery) ?>" placeholder="Doc no, customer...">
+                </div>
+
+                <div class="col-md-2 col-sm-12 d-flex gap-2">
                     <button type="submit" class="btn btn-sm btn-primary fw-semibold flex-grow-1">
-                        <i class="fas fa-filter me-1"></i> Apply Filter
+                        <i class="fas fa-filter me-1"></i> Apply
                     </button>
                     <a href="<?= base_url('?page=export') ?>" class="btn btn-sm btn-light border fw-semibold">Reset</a>
                 </div>
             <?php else: ?>
-                <div class="col-md-7 col-sm-12 d-flex align-items-center justify-content-between bg-light border px-3 py-2 small text-muted">
-                    <span>Showing all accessible documents approaching expiry within H-90 to H-0 sorted by nearest deadline.</span>
-                    <a href="<?= base_url('?page=export&dataset=deadlines') ?>" class="btn btn-xs btn-light border ms-2">Reset</a>
+                <input type="hidden" name="date_field" value="expiry_date">
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Expiry From</label>
+                    <input type="text" name="date_from" class="form-control form-control-sm mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= htmlspecialchars($dateFrom) ?>">
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label fw-bold small text-dark mb-1">Expiry To</label>
+                    <input type="text" name="date_to" class="form-control form-control-sm mq-date-input" placeholder="dd/mm/yyyy" maxlength="10" inputmode="numeric" autocomplete="off" value="<?= htmlspecialchars($dateTo) ?>">
+                </div>
+
+                <div class="col-md-3 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary fw-semibold flex-grow-1">
+                        <i class="fas fa-filter me-1"></i> Apply
+                    </button>
+                    <a href="<?= base_url('?page=export&dataset=deadlines') ?>" class="btn btn-sm btn-light border fw-semibold">Reset</a>
                 </div>
             <?php endif; ?>
         </div>
@@ -141,8 +184,19 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
             <h6 class="fw-bold text-dark mb-1"><?= htmlspecialchars($dataset['title']) ?></h6>
             <div class="text-muted small"><?= htmlspecialchars($dataset['subtitle']) ?></div>
         </div>
-        <div class="small text-secondary no-print">
-            Preview matches the exact exported Excel &amp; PDF table layout.
+        <div class="d-flex flex-wrap align-items-center gap-3 small fw-semibold">
+            <span>
+                <span class="d-inline-block border me-1" style="width:12px;height:12px;background:#fee2e2;border-color:#fca5a5 !important;vertical-align:middle;"></span>
+                Past Deadline
+            </span>
+            <span>
+                <span class="d-inline-block border me-1" style="width:12px;height:12px;background:#fef3c7;border-color:#fcd34d !important;vertical-align:middle;"></span>
+                Near Deadline (&lt;= 90 Days)
+            </span>
+            <span>
+                <span class="d-inline-block border me-1" style="width:12px;height:12px;background:#dcfce7;border-color:#86efac !important;vertical-align:middle;"></span>
+                Completed / Approved (ACC)
+            </span>
         </div>
     </div>
 
@@ -165,9 +219,10 @@ $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParam
                 <?php else: ?>
                     <?php foreach ($dataset['rows'] as $row):
                         $rowClass = match ($row['row_state']) {
-                            'expired' => 'row-expired',
-                            'warning' => 'row-warning',
-                            default   => '',
+                            'approved' => 'mq-row-approved',
+                            'expired'  => 'mq-row-expired',
+                            'warning'  => 'mq-row-warning',
+                            default    => '',
                         };
                     ?>
                         <tr class="<?= $rowClass ?>">
@@ -227,12 +282,29 @@ function exportMedquestPdf() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(30, 41, 59);
-    doc.text(MQ_EXPORT_DATASET.title || 'MEDQUEST LEGAL DOCUMENTS', 10, 13);
+    doc.text(MQ_EXPORT_DATASET.title || 'MEDQUEST LEGAL DOCUMENTS', 10, 12);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    doc.text(MQ_EXPORT_DATASET.subtitle || '', 10, 18.5);
+    doc.text(MQ_EXPORT_DATASET.subtitle || '', 10, 17);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setFillColor(254, 226, 226);
+    doc.rect(10, 19.5, 42, 4.5, 'F');
+    doc.setTextColor(185, 28, 28);
+    doc.text('RED: Past Deadline', 11.5, 22.7);
+
+    doc.setFillColor(254, 243, 199);
+    doc.rect(54, 19.5, 56, 4.5, 'F');
+    doc.setTextColor(180, 83, 9);
+    doc.text('YELLOW: Near Deadline (<= 90d)', 55.5, 22.7);
+
+    doc.setFillColor(220, 252, 231);
+    doc.rect(112, 19.5, 58, 4.5, 'F');
+    doc.setTextColor(21, 128, 61);
+    doc.text('GREEN: Completed / Approved (ACC)', 113.5, 22.7);
 
     const head = [columns.map(c => c.label || '')];
     const rowStates = [];
@@ -254,7 +326,7 @@ function exportMedquestPdf() {
     doc.autoTable({
         head: head,
         body: body,
-        startY: 22,
+        startY: 26,
         margin: { top: 14, right: 10, bottom: 14, left: 10 },
         theme: 'grid',
         showHead: 'everyPage',
@@ -285,10 +357,12 @@ function exportMedquestPdf() {
                 return;
             }
             const state = rowStates[data.row.index] || 'normal';
-            if (state === 'expired') {
-                data.cell.styles.fillColor = [254, 242, 242];
+            if (state === 'approved') {
+                data.cell.styles.fillColor = [220, 252, 231];
+            } else if (state === 'expired') {
+                data.cell.styles.fillColor = [254, 226, 226];
             } else if (state === 'warning') {
-                data.cell.styles.fillColor = [255, 251, 235];
+                data.cell.styles.fillColor = [254, 243, 199];
             } else if (data.row.index % 2 === 1) {
                 data.cell.styles.fillColor = [248, 250, 252];
             }
@@ -301,7 +375,7 @@ function exportMedquestPdf() {
             } else if (meta.tone === 'warning') {
                 data.cell.styles.textColor = [180, 83, 9];
             } else if (meta.tone === 'success') {
-                data.cell.styles.textColor = [4, 120, 87];
+                data.cell.styles.textColor = [21, 128, 61];
             }
         },
         didDrawPage: function (data) {

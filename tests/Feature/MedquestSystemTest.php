@@ -431,5 +431,56 @@ class MedquestSystemTest extends TestCase
         $scopedExport->assertStatus(200);
         $scopedExport->assertSee('RS Medquest Export Test');
         $scopedExport->assertDontSee('ITD Secret Customer');
+
+        $this->actingAs($superadmin);
+
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 912,
+            'department'          => 'LAC',
+            'document_number'     => 'EXP-RED-912',
+            'customer'            => 'Overdue Doc Test',
+            'product_description' => 'Overdue Item',
+            'serial_number'       => 'N/A',
+            'effective_date'      => '2026-09-01',
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d', strtotime('-5 days')),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'PENGAJUAN',
+            'note'                => 'Overdue row',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 23 NOV 2026',
+        ]);
+
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 913,
+            'department'          => 'LAC',
+            'document_number'     => 'EXP-YEL-913',
+            'customer'            => 'Near Deadline Doc Test',
+            'product_description' => 'Near Item',
+            'serial_number'       => 'N/A',
+            'effective_date'      => '2026-09-15',
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d', strtotime('+5 days')),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'BERJALAN',
+            'note'                => 'Near deadline row',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 23 NOV 2026',
+        ]);
+
+        $rangeResp = $this->get('/export?dept=LAC&date_field=effective_date&date_from=01/09/2026&date_to=10/09/2026&sort=deadline_asc');
+        $rangeResp->assertStatus(200);
+        $rangeResp->assertSee('Overdue Doc Test');
+        $rangeResp->assertDontSee('Near Deadline Doc Test');
+
+        $colorResp = $this->get('/export?dept=LAC&doc_type=COOPERATION&sort=deadline_asc');
+        $colorResp->assertStatus(200);
+        $colorResp->assertSee('mq-row-approved');
+        $colorResp->assertSee('mq-row-expired');
+        $colorResp->assertSee('mq-row-warning');
     }
 }

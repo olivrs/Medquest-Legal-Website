@@ -75,17 +75,22 @@ class XlsxExportService
         $rowsXml .= '<row r="2" ht="18" customHeight="1">'
             . '<c r="A2" t="inlineStr" s="2"><is><t xml:space="preserve">' . self::xmlText($subtitle) . '</t></is></c>'
             . '</row>';
-        $rowsXml .= '<row r="3" ht="8" customHeight="1"/>';
+        $rowsXml .= '<row r="3" ht="28" customHeight="1">'
+            . '<c r="A3" t="inlineStr" s="6"><is><t xml:space="preserve">RED = Past Deadline</t></is></c>'
+            . '<c r="B3" t="inlineStr" s="7"><is><t xml:space="preserve">YELLOW = Approaching Deadline (&lt;= 90d)</t></is></c>'
+            . '<c r="C3" t="inlineStr" s="17"><is><t xml:space="preserve">GREEN = Completed / Approved (ACC)</t></is></c>'
+            . '</row>';
+        $rowsXml .= '<row r="4" ht="8" customHeight="1"/>';
 
-        $rowsXml .= '<row r="4" ht="26" customHeight="1">';
+        $rowsXml .= '<row r="5" ht="26" customHeight="1">';
         foreach ($columns as $i => $col) {
-            $ref = self::colLetter($i) . '4';
+            $ref = self::colLetter($i) . '5';
             $label = (string) ($col['label'] ?? '');
             $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="3"><is><t xml:space="preserve">' . self::xmlText($label) . '</t></is></c>';
         }
         $rowsXml .= '</row>';
 
-        $rowNum = 5;
+        $rowNum = 6;
         foreach ($rows as $rowIdx => $row) {
             $rowState = (string) ($row['row_state'] ?? 'normal');
             $zebra = ($rowIdx % 2 === 1);
@@ -118,7 +123,7 @@ class XlsxExportService
             $rowNum++;
         }
 
-        $lastRow = max(4, 4 + count($rows));
+        $lastRow = max(5, 5 + count($rows));
         $mergesXml = '';
         if (count($columns) > 1) {
             $mergesXml = '<mergeCells count="2">'
@@ -131,12 +136,12 @@ class XlsxExportService
             . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
             . '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
             . '<sheetViews><sheetView workbookViewId="0">'
-            . '<pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/>'
+            . '<pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/>'
             . '</sheetView></sheetViews>'
             . '<sheetFormatPr defaultRowHeight="18"/>'
             . $colsXml
             . '<sheetData>' . $rowsXml . '</sheetData>'
-            . '<autoFilter ref="A4:' . $lastCol . $lastRow . '"/>'
+            . '<autoFilter ref="A5:' . $lastCol . $lastRow . '"/>'
             . $mergesXml
             . '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
             . '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
@@ -145,20 +150,38 @@ class XlsxExportService
 
     protected static function resolveCellStyle(string $rowState, bool $zebra, bool $bold, string $tone): int
     {
-        if ($tone === 'danger') {
-            return $rowState === 'expired' ? 6 : 13;
-        }
-        if ($tone === 'warning') {
-            return $rowState === 'warning' ? 7 : 14;
-        }
-        if ($tone === 'success') {
-            return 12;
+        if ($rowState === 'approved') {
+            if ($tone === 'success') {
+                return 17;
+            }
+            if ($tone === 'danger') {
+                return 20;
+            }
+            if ($tone === 'warning') {
+                return 21;
+            }
+            return $bold ? 19 : 18;
         }
         if ($rowState === 'expired') {
+            if ($tone === 'danger') {
+                return 6;
+            }
             return $bold ? 15 : 10;
         }
         if ($rowState === 'warning') {
+            if ($tone === 'warning') {
+                return 7;
+            }
             return $bold ? 16 : 11;
+        }
+        if ($tone === 'danger') {
+            return 13;
+        }
+        if ($tone === 'warning') {
+            return 14;
+        }
+        if ($tone === 'success') {
+            return 12;
         }
         if ($bold) {
             return $zebra ? 9 : 8;
@@ -178,15 +201,16 @@ class XlsxExportService
             . '<font><b/><sz val="10"/><color rgb="FF1E293B"/><name val="Segoe UI"/></font>'
             . '<font><b/><sz val="10"/><color rgb="FFB91C1C"/><name val="Segoe UI"/></font>'
             . '<font><b/><sz val="10"/><color rgb="FFB45309"/><name val="Segoe UI"/></font>'
-            . '<font><b/><sz val="10"/><color rgb="FF047857"/><name val="Segoe UI"/></font>'
+            . '<font><b/><sz val="10"/><color rgb="FF15803D"/><name val="Segoe UI"/></font>'
             . '</fonts>'
-            . '<fills count="6">'
+            . '<fills count="7">'
             . '<fill><patternFill patternType="none"/></fill>'
             . '<fill><patternFill patternType="gray125"/></fill>'
             . '<fill><patternFill patternType="solid"><fgColor rgb="FF1E293B"/></patternFill></fill>'
             . '<fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFEF2F2"/></patternFill></fill>'
-            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFBEB"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFEE2E2"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/></patternFill></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFDCFCE7"/></patternFill></fill>'
             . '</fills>'
             . '<borders count="2">'
             . '<border><left/><right/><top/><bottom/><diagonal/></border>'
@@ -199,7 +223,7 @@ class XlsxExportService
             . '</border>'
             . '</borders>'
             . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            . '<cellXfs count="17">'
+            . '<cellXfs count="22">'
             . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
             . '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
             . '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
@@ -217,6 +241,11 @@ class XlsxExportService
             . '<xf numFmtId="0" fontId="6" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
             . '<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
             . '<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="7" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="6" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
             . '</cellXfs>'
             . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             . '</styleSheet>';

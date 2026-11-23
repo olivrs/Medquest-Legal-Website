@@ -1743,3 +1743,18 @@ span.badge-h3,
     background: var(--mq-primary) !important;
     border-color: var(--mq-primary) !important;
 }
+
+.mq-row-approved > td {
+    background-color: #dcfce7 !important;
+    border-color: #bbf7d0 !important;
+}
+
+.mq-row-expired > td {
+    background-color: #fee2e2 !important;
+    border-color: #fecaca !important;
+}
+
+.mq-row-warning > td {
+    background-color: #fef3c7 !important;
+    border-color: #fde68a !important;
+}

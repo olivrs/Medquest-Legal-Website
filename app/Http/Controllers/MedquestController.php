@@ -21,7 +21,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-23-v15-export-page';
+            $currentRev = '2026-11-23-v16-export-colors-dates';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -1374,6 +1374,61 @@ class MedquestController extends Controller
         ]);
     }
 
+    protected function extractRowDateYmd(array $row, string $field): ?string
+    {
+        return match ($field) {
+            'effective_date' => !empty($row['effective_date_na'])
+                ? null
+                : parse_date_medquest((string) ($row['effective_date'] ?? '')),
+            'created_at' => ($raw = trim((string) ($row['created_at'] ?? ''))) !== ''
+                ? parse_date_medquest(substr($raw, 0, 10))
+                : null,
+            'tanggal_selesai' => parse_date_medquest((string) ($row['tanggal_selesai'] ?? '')),
+            default => !empty($row['expiry_date_na'])
+                ? null
+                : parse_date_medquest((string) ($row['expiry_date'] ?? '')),
+        };
+    }
+
+    protected function rowMatchesDateRange(array $row, string $field, ?string $fromYmd, ?string $toYmd): bool
+    {
+        if ($fromYmd === null && $toYmd === null) {
+            return true;
+        }
+        $val = $this->extractRowDateYmd($row, $field);
+        if ($val === null) {
+            return false;
+        }
+        if ($fromYmd !== null && $val < $fromYmd) {
+            return false;
+        }
+        if ($toYmd !== null && $val > $toYmd) {
+            return false;
+        }
+        return true;
+    }
+
+    protected function resolveExportRowState(array $row, array $expInfo): string
+    {
+        $rowProses = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+        if ($rowProses === 'SELESAI') {
+            return 'approved';
+        }
+        if (($expInfo['status'] ?? '') === 'expired') {
+            return 'expired';
+        }
+        if (($expInfo['status'] ?? '') === 'warning') {
+            return 'warning';
+        }
+        return 'normal';
+    }
+
+    protected function sanitizeExportLabel(string $text): string
+    {
+        $clean = str_replace(["\xE2\x9A\xA0\xEF\xB8\x8F", "\xE2\x9A\xA0"], '', $text);
+        return trim(preg_replace('/\s+/', ' ', $clean) ?? $clean);
+    }
+
     protected function queryFilteredAgreements(Request $request): array
     {
         $selectedDept    = strtoupper(trim((string) $request->query('dept', 'ALL')));
@@ -1386,6 +1441,18 @@ class MedquestController extends Controller
         if (!in_array($selectedProses, ['ALL', 'PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
             $selectedProses = 'ALL';
         }
+        $selectedDateField = strtolower(trim((string) $request->query('date_field', 'expiry_date')));
+        if (!in_array($selectedDateField, ['expiry_date', 'effective_date', 'created_at', 'tanggal_selesai'], true)) {
+            $selectedDateField = 'expiry_date';
+        }
+        $dateFromYmd = parse_date_medquest((string) $request->query('date_from', ''));
+        $dateToYmd   = parse_date_medquest((string) $request->query('date_to', ''));
+        if ($dateFromYmd !== null && $dateToYmd !== null && $dateFromYmd > $dateToYmd) {
+            [$dateFromYmd, $dateToYmd] = [$dateToYmd, $dateFromYmd];
+        }
+        $dateFrom = $dateFromYmd ? format_date_input_medquest($dateFromYmd) : '';
+        $dateTo   = $dateToYmd ? format_date_input_medquest($dateToYmd) : '';
+
         $searchQuery  = trim((string) $request->query('q', ''));
         $selectedSort = trim((string) $request->query('sort', 'default'));
 
@@ -1425,14 +1492,21 @@ class MedquestController extends Controller
         }
 
         match ($selectedSort) {
-            'newest'        => $query->orderByDesc('a.id'),
-            'oldest'        => $query->orderBy('a.id', 'asc'),
-            'deadline_asc'  => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date ASC, a.id DESC'),
-            'deadline_desc' => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date DESC, a.id DESC'),
-            default         => $query->orderByRaw('COALESCE(a.no_urut_dokumen, a.id) ASC, a.id ASC'),
+            'newest'         => $query->orderByDesc('a.id'),
+            'oldest'         => $query->orderBy('a.id', 'asc'),
+            'deadline_asc'   => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date ASC, a.id DESC'),
+            'deadline_desc'  => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date DESC, a.id DESC'),
+            'effective_asc'  => $query->orderByRaw('CASE WHEN a.effective_date IS NULL OR a.effective_date_na = 1 THEN 1 ELSE 0 END ASC, a.effective_date ASC, a.id DESC'),
+            'effective_desc' => $query->orderByRaw('CASE WHEN a.effective_date IS NULL OR a.effective_date_na = 1 THEN 1 ELSE 0 END ASC, a.effective_date DESC, a.id DESC'),
+            'completed_desc' => $query->orderByRaw('CASE WHEN a.tanggal_selesai IS NULL THEN 1 ELSE 0 END ASC, a.tanggal_selesai DESC, a.id DESC'),
+            default          => $query->orderByRaw('COALESCE(a.no_urut_dokumen, a.id) ASC, a.id ASC'),
         };
 
-        $fetchedRows = $query->get()->map(fn ($r) => (array) $r)->all();
+        $rawRows = $query->get()->map(fn ($r) => (array) $r)->all();
+        $fetchedRows = array_values(array_filter(
+            $rawRows,
+            fn (array $row) => $this->rowMatchesDateRange($row, $selectedDateField, $dateFromYmd, $dateToYmd)
+        ));
 
         $countProsesAll = count($fetchedRows);
         $countPengajuan = 0;
@@ -1486,6 +1560,11 @@ class MedquestController extends Controller
             'selectedStatus',
             'selectedDocType',
             'selectedProses',
+            'selectedDateField',
+            'dateFrom',
+            'dateTo',
+            'dateFromYmd',
+            'dateToYmd',
             'searchQuery',
             'selectedSort',
             'countProsesAll',
@@ -1496,7 +1575,7 @@ class MedquestController extends Controller
         );
     }
 
-    protected function getUpcomingDeadlineItems(string $selectedDept = 'ALL'): array
+    protected function getUpcomingDeadlineItems(string $selectedDept = 'ALL', ?string $fromYmd = null, ?string $toYmd = null): array
     {
         $agrQuery = DB::table('agreements as a')
             ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
@@ -1510,6 +1589,9 @@ class MedquestController extends Controller
         $upcomingH = [];
         foreach ($allUserAgreements as $item) {
             if (!empty($item['expiry_date_na']) || empty($item['expiry_date'])) {
+                continue;
+            }
+            if (!$this->rowMatchesDateRange($item, 'expiry_date', $fromYmd, $toYmd)) {
                 continue;
             }
             $sisa = get_days_until_expiry($item['expiry_date']);
@@ -1529,8 +1611,24 @@ class MedquestController extends Controller
         $selectedDocType = $filters['selectedDocType'] ?? 'ALL';
         $selectedProses = $filters['selectedProses'] ?? 'ALL';
         $selectedStatus = $filters['selectedStatus'] ?? 'ALL';
+        $selectedDateField = $filters['selectedDateField'] ?? 'expiry_date';
+        $dateFrom = $filters['dateFrom'] ?? '';
+        $dateTo = $filters['dateTo'] ?? '';
+        $dateFromYmd = $filters['dateFromYmd'] ?? null;
+        $dateToYmd = $filters['dateToYmd'] ?? null;
         $searchQuery = $filters['searchQuery'] ?? '';
         $dateStamp = date('Y-m-d');
+
+        $dateRangeText = '';
+        if ($dateFromYmd !== null || $dateToYmd !== null) {
+            $fieldName = match ($selectedDateField) {
+                'effective_date'  => 'Effective Date',
+                'created_at'      => 'Input Date',
+                'tanggal_selesai' => 'Completed Date',
+                default           => 'Expiry Date',
+            };
+            $dateRangeText = $fieldName . ': ' . ($dateFrom ?: 'Start') . ' - ' . ($dateTo ?: 'End');
+        }
 
         if ($datasetMode === 'deadlines') {
             $columns = [
@@ -1538,16 +1636,19 @@ class MedquestController extends Controller
                 ['label' => 'Customer & Product', 'width' => 38],
                 ['label' => 'Document No', 'width' => 24],
                 ['label' => 'Expiry Date', 'width' => 18],
-                ['label' => 'Status', 'width' => 20],
-                ['label' => 'Created By', 'width' => 28],
+                ['label' => 'Deadline Status', 'width' => 20],
+                ['label' => 'Process Status', 'width' => 18],
+                ['label' => 'Created By', 'width' => 26],
             ];
             $rows = [];
             foreach ($deadlines as $item) {
                 $expInfo = get_expiry_info($item['expiry_date']);
+                $rowState = $this->resolveExportRowState($item, $expInfo);
+                $rowProses = strtoupper(trim((string) ($item['status_proses'] ?? 'PENGAJUAN')));
+                $pMeta = get_process_status_meta($rowProses);
                 $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Document #' . $item['id']);
                 $displaySub = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
-                $rowState = $expInfo['status'] === 'expired' ? 'expired' : ($expInfo['status'] !== 'safe' ? 'warning' : 'normal');
-                $tone = in_array($expInfo['status'], ['expired', 'critical'], true) ? 'danger' : 'warning';
+                $tone = $rowState === 'approved' ? 'success' : (in_array($expInfo['days'] ?? 99, [0, 1, 2, 3], true) || $expInfo['status'] === 'expired' ? 'danger' : 'warning');
                 $createdText = (string) ($item['created_by_code'] ?? '-');
                 if (!empty($item['user_email'])) {
                     $createdText .= "\n" . $item['user_email'];
@@ -1559,18 +1660,26 @@ class MedquestController extends Controller
                         ['text' => (string) $item['department'], 'bold' => true],
                         ['text' => $displayTitle . "\n" . $displaySub, 'bold' => true],
                         ['text' => (string) ($item['document_number'] ?: 'N/A')],
-                        ['text' => format_date_medquest($item['expiry_date']), 'bold' => true, 'tone' => 'danger'],
-                        ['text' => $expInfo['short_label'], 'bold' => true, 'tone' => $tone],
+                        ['text' => format_date_medquest($item['expiry_date']), 'bold' => true, 'tone' => $rowState === 'approved' ? 'success' : 'danger'],
+                        ['text' => $this->sanitizeExportLabel($expInfo['short_label']), 'bold' => true, 'tone' => $tone],
+                        ['text' => $pMeta['label'], 'bold' => true, 'tone' => $rowProses === 'SELESAI' ? 'success' : ''],
                         ['text' => $createdText],
                     ],
                 ];
             }
 
             $deptTag = $selectedDept !== 'ALL' ? $selectedDept : 'ALL';
+            $subParts = ['Department: ' . ($selectedDept === 'ALL' ? 'All Departments' : $selectedDept)];
+            if ($dateRangeText !== '') {
+                $subParts[] = $dateRangeText;
+            }
+            $subParts[] = 'Exported: ' . strtoupper(date('d M Y H:i'));
+            $subParts[] = 'Total: ' . count($rows) . ' document(s)';
+
             return [
                 'sheet_title' => 'Deadline Monitoring',
                 'title'       => 'DEADLINE MONITORING (H-90 TO H-0)',
-                'subtitle'    => 'Department: ' . ($selectedDept === 'ALL' ? 'All Departments' : $selectedDept) . ' | Exported: ' . strtoupper(date('d M Y H:i')) . ' | Total: ' . count($rows) . ' document(s)',
+                'subtitle'    => implode(' | ', $subParts),
                 'filename'    => 'Medquest_Deadlines_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $deptTag) . '_' . $dateStamp,
                 'columns'     => $columns,
                 'rows'        => $rows,
@@ -1631,10 +1740,12 @@ class MedquestController extends Controller
                 $detailCell = ($row['product_description'] ?: '-') . "\nS/N: " . ($row['serial_number'] ?: 'N/A');
             }
 
-            $validityCell = 'Effective: ' . $effFormatted . ' -> Expiry: ' . $expFormatted . "\n" . $expInfo['short_label'];
-            $validityTone = in_array($expInfo['status'], ['expired', 'critical'], true)
-                ? 'danger'
-                : (in_array($expInfo['status'], ['warning', 'h30'], true) ? 'warning' : 'success');
+            $rowState = $this->resolveExportRowState($row, $expInfo);
+            $validityLabel = $this->sanitizeExportLabel($expInfo['short_label']);
+            $validityCell = 'Effective: ' . $effFormatted . ' -> Expiry: ' . $expFormatted . "\n" . $validityLabel;
+            $validityTone = $rowState === 'approved'
+                ? 'success'
+                : ($expInfo['status'] === 'expired' ? 'danger' : ($expInfo['status'] === 'warning' ? 'warning' : 'success'));
 
             $rowProses = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
             $pMeta = get_process_status_meta($rowProses);
@@ -1643,10 +1754,6 @@ class MedquestController extends Controller
                 $statusCell .= "\nCompleted: " . format_date_medquest($row['tanggal_selesai']);
             }
             $statusTone = $rowProses === 'SELESAI' ? 'success' : ($rowProses === 'BERJALAN' ? '' : 'warning');
-
-            $rowState = $expInfo['status'] === 'expired'
-                ? 'expired'
-                : (in_array($expInfo['status'], ['critical', 'warning', 'h30'], true) ? 'warning' : 'normal');
 
             $cells = [
                 ['text' => $deptCell, 'bold' => true],
@@ -1686,6 +1793,9 @@ class MedquestController extends Controller
             'Status: ' . ($selectedProses === 'ALL' ? 'All' : $selectedProses),
             'Deadline: ' . ($selectedStatus === 'ALL' ? 'All' : $selectedStatus),
         ];
+        if ($dateRangeText !== '') {
+            $filterParts[] = $dateRangeText;
+        }
         if ($searchQuery !== '') {
             $filterParts[] = 'Search: "' . $searchQuery . '"';
         }
@@ -1719,7 +1829,7 @@ class MedquestController extends Controller
 
         $filtered = $this->queryFilteredAgreements($request);
         $deadlines = $datasetMode === 'deadlines'
-            ? $this->getUpcomingDeadlineItems($filtered['selectedDept'])
+            ? $this->getUpcomingDeadlineItems($filtered['selectedDept'], $filtered['dateFromYmd'], $filtered['dateToYmd'])
             : [];
 
         $dataset = $this->buildExportDataset(
