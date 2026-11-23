@@ -1817,12 +1817,14 @@ span.badge-h3,
     background: #ffffff;
     color: #0f172a;
     padding: 9px 12px;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    text-align: left;
+    text-align: center;
+    position: relative;
     cursor: pointer;
     transition: background-color 0.15s ease;
 }
@@ -1843,7 +1845,14 @@ span.badge-h3,
 
 .mq-preview-count {
     font-weight: 500;
-    font-size: 0.73rem;
+    font-size: 0.72rem;
     color: #64748b;
-    margin-left: auto;
+    position: absolute;
+    right: 12px;
+}
+
+@media (max-width: 767.98px) {
+    .mq-preview-count {
+        display: none;
+    }
 }
