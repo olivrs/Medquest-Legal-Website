@@ -88,9 +88,9 @@ $formMeta = $dataset['form_meta'] ?? [
                     <label class="form-label fw-bold small text-dark mb-1">Document Type</label>
                     <select name="doc_type" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="ALL" <?= $selectedDocType === 'ALL' ? 'selected' : '' ?>>ALL TYPES</option>
-                        <option value="COOPERATION" <?= $selectedDocType === 'COOPERATION' ? 'selected' : '' ?>>COOPERATION AGREEMENT</option>
-                        <option value="COMPANY" <?= $selectedDocType === 'COMPANY' ? 'selected' : '' ?>>ORIGINAL COMPANY DOC</option>
-                        <option value="PRINCIPAL" <?= $selectedDocType === 'PRINCIPAL' ? 'selected' : '' ?>>PRINCIPAL DOCUMENT</option>
+                        <option value="COOPERATION" <?= $selectedDocType === 'COOPERATION' ? 'selected' : '' ?>>LOG OF COOPERATION AGREEMENT</option>
+                        <option value="COMPANY" <?= $selectedDocType === 'COMPANY' ? 'selected' : '' ?>>ORIGINAL COMPANY DOCUMENT</option>
+                        <option value="PRINCIPAL" <?= $selectedDocType === 'PRINCIPAL' ? 'selected' : '' ?>>LOG OF PRINCIPAL DOCUMENT</option>
                     </select>
                 </div>
 
@@ -226,11 +226,50 @@ $formMeta = $dataset['form_meta'] ?? [
 
         <table class="cp-table mq-iso-table mt-0" id="mqExportPreviewTable">
             <thead>
-                <tr>
-                    <?php foreach ($dataset['columns'] as $col): ?>
-                        <th><?= htmlspecialchars($col['label']) ?></th>
-                    <?php endforeach; ?>
-                </tr>
+                <?php
+                $headerGroups = $dataset['header_groups'] ?? [];
+                $groupSpanSum = 0;
+                foreach ($headerGroups as $grp) {
+                    $groupSpanSum += max(1, (int) ($grp['colspan'] ?? 1));
+                }
+                $hasGroupedHeaders = !empty($headerGroups) && $groupSpanSum === count($dataset['columns']);
+                ?>
+                <?php if ($hasGroupedHeaders): ?>
+                    <tr>
+                        <?php foreach ($headerGroups as $grp):
+                            $span = max(1, (int) ($grp['colspan'] ?? 1));
+                        ?>
+                            <?php if ($span > 1): ?>
+                                <th colspan="<?= $span ?>"><?= htmlspecialchars($grp['label']) ?></th>
+                            <?php else: ?>
+                                <th rowspan="2"><?= htmlspecialchars($grp['label']) ?></th>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </tr>
+                    <tr>
+                        <?php
+                        $leafIdx = 0;
+                        foreach ($headerGroups as $grp):
+                            $span = max(1, (int) ($grp['colspan'] ?? 1));
+                            if ($span > 1):
+                                for ($k = 0; $k < $span; $k++):
+                                    $subCol = $dataset['columns'][$leafIdx + $k] ?? ['label' => ''];
+                        ?>
+                                    <th><?= htmlspecialchars($subCol['label']) ?></th>
+                        <?php
+                                endfor;
+                            endif;
+                            $leafIdx += $span;
+                        endforeach;
+                        ?>
+                    </tr>
+                <?php else: ?>
+                    <tr>
+                        <?php foreach ($dataset['columns'] as $col): ?>
+                            <th><?= htmlspecialchars($col['label']) ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                <?php endif; ?>
             </thead>
             <tbody>
                 <?php if (empty($dataset['rows'])): ?>
@@ -388,7 +427,41 @@ function exportMedquestPdf() {
         };
     });
 
-    const head = [columns.map(c => c.label || '')];
+    let head;
+    const headerGroups = Array.isArray(MQ_EXPORT_DATASET.header_groups) ? MQ_EXPORT_DATASET.header_groups : [];
+    const groupSpanSum = headerGroups.reduce((sum, g) => sum + Math.max(1, Number(g.colspan) || 1), 0);
+    if (headerGroups.length > 0 && groupSpanSum === columns.length) {
+        const row1 = [];
+        const row2 = [];
+        let leafIdx = 0;
+        headerGroups.forEach((grp) => {
+            const span = Math.max(1, Number(grp.colspan) || 1);
+            if (span > 1) {
+                row1.push({
+                    content: String(grp.label || ''),
+                    colSpan: span,
+                    styles: { halign: 'center', valign: 'middle' }
+                });
+                for (let k = 0; k < span; k++) {
+                    const leaf = columns[leafIdx + k] || {};
+                    row2.push({
+                        content: String(leaf.label || ''),
+                        styles: { halign: 'center', valign: 'middle' }
+                    });
+                }
+            } else {
+                row1.push({
+                    content: String(grp.label || ''),
+                    rowSpan: 2,
+                    styles: { halign: 'center', valign: 'middle' }
+                });
+            }
+            leafIdx += span;
+        });
+        head = [row1, row2];
+    } else {
+        head = [columns.map(c => c.label || '')];
+    }
     const rowStates = [];
     const cellMeta = [];
 

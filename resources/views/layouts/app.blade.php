@@ -106,7 +106,7 @@
                 <span>Add Document</span>
             </a>
 
-            <a href="<?= base_url('?page=export' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '') . (($selectedProses ?? 'ALL') !== 'ALL' ? '&proses=' . urlencode($selectedProses) : '')) ?>"
+            <a href="<?= base_url('?page=export' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '') . (($selectedDocType ?? 'ALL') !== 'ALL' ? '&doc_type=' . urlencode($selectedDocType) : '') . (($selectedProses ?? 'ALL') !== 'ALL' ? '&proses=' . urlencode($selectedProses) : '')) ?>"
                class="sidebar-link <?= $currPage === 'export' ? 'active' : '' ?>">
                 <span class="s-icon"><i class="fas fa-file-export"></i></span>
                 <span>Export Documents</span>

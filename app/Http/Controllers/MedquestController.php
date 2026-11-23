@@ -21,7 +21,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-23-v18-export-clean-ui';
+            $currentRev = '2026-11-23-v19-export-per-doctype';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -1698,16 +1698,18 @@ class MedquestController extends Controller
             $subParts[] = 'Total: ' . count($rows) . ' document(s)';
 
             return [
-                'sheet_title' => 'Deadline Monitoring',
-                'title'       => 'DEADLINE MONITORING (H-90 TO H-0)',
-                'subtitle'    => implode(' | ', $subParts),
-                'filename'    => 'Medquest_Deadlines_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $deptTag) . '_' . $dateStamp,
-                'form_meta'   => $formMeta,
-                'columns'     => $columns,
-                'rows'        => $rows,
+                'sheet_title'   => 'Deadline Monitoring',
+                'title'         => 'DEADLINE MONITORING (H-90 TO H-0)',
+                'subtitle'      => implode(' | ', $subParts),
+                'filename'      => 'Medquest_Deadlines_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $deptTag) . '_' . $dateStamp,
+                'form_meta'     => $formMeta,
+                'header_groups' => [],
+                'columns'       => $columns,
+                'rows'          => $rows,
             ];
         }
 
+        $headerGroups = [];
         if ($selectedDocType === 'PRINCIPAL') {
             $columns = [
                 ['label' => 'No.', 'width' => 6],
@@ -1721,27 +1723,39 @@ class MedquestController extends Controller
                 ['label' => 'Created By', 'width' => 20],
             ];
         } elseif ($selectedDocType === 'COOPERATION') {
+            $headerGroups = [
+                ['label' => 'Department / Division', 'colspan' => 1],
+                ['label' => 'Document Number', 'colspan' => 1],
+                ['label' => 'Customer', 'colspan' => 1],
+                ['label' => 'Product', 'colspan' => 2],
+                ['label' => 'Effective Date', 'colspan' => 1],
+                ['label' => 'Expiry Date', 'colspan' => 1],
+                ['label' => 'Note', 'colspan' => 1],
+                ['label' => 'Created By', 'colspan' => 1],
+                ['label' => 'No.', 'colspan' => 1],
+            ];
             $columns = [
-                ['label' => 'No.', 'width' => 6],
-                ['label' => 'Customer', 'width' => 26],
-                ['label' => 'Document No.', 'width' => 20],
-                ['label' => 'Product', 'width' => 24],
-                ['label' => 'S/N', 'width' => 15],
+                ['label' => 'Department / Division', 'width' => 12],
+                ['label' => 'Document Number', 'width' => 22],
+                ['label' => 'Customer', 'width' => 24],
+                ['label' => 'Description', 'width' => 24],
+                ['label' => 'Serial Number', 'width' => 14],
                 ['label' => 'Effective Date', 'width' => 14],
                 ['label' => 'Expiry Date', 'width' => 14],
                 ['label' => 'Note', 'width' => 26],
                 ['label' => 'Created By', 'width' => 20],
+                ['label' => 'No.', 'width' => 7],
             ];
         } elseif ($selectedDocType === 'COMPANY') {
             $columns = [
                 ['label' => 'No.', 'width' => 6],
-                ['label' => 'Document Title', 'width' => 28],
+                ['label' => 'Document Title', 'width' => 30],
                 ['label' => 'Document No.', 'width' => 20],
                 ['label' => 'Issued by', 'width' => 24],
                 ['label' => 'Effective Date', 'width' => 14],
                 ['label' => 'Expiry Date', 'width' => 14],
                 ['label' => 'Note', 'width' => 28],
-                ['label' => 'Created By', 'width' => 20],
+                ['label' => 'Created By', 'width' => 22],
             ];
         } else {
             $columns = [
@@ -1771,10 +1785,11 @@ class MedquestController extends Controller
             $pMeta = get_process_status_meta($rowProses);
             $noteText = (string) ($row['note'] ?: 'N/A');
             $createdByText = (string) ($row['created_by_log'] ?: ($row['created_by_code'] ?? '-'));
+            $docOrderNo = (string) (!empty($row['no_urut_dokumen']) ? $row['no_urut_dokumen'] : ($idx + 1));
 
             if ($selectedDocType === 'PRINCIPAL') {
                 $cells = [
-                    ['text' => (string) ($idx + 1), 'center' => true],
+                    ['text' => $docOrderNo, 'center' => true],
                     ['text' => (string) ($row['document_title'] ?: $row['product_description'] ?: '-')],
                     ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
                     ['text' => (string) ($row['issued_by'] ?: $row['customer'] ?: '-')],
@@ -1786,19 +1801,20 @@ class MedquestController extends Controller
                 ];
             } elseif ($selectedDocType === 'COOPERATION') {
                 $cells = [
-                    ['text' => (string) ($idx + 1), 'center' => true],
-                    ['text' => (string) ($row['customer'] ?: '-')],
+                    ['text' => (string) $row['department'], 'center' => true, 'bold' => true],
                     ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
+                    ['text' => (string) ($row['customer'] ?: '-')],
                     ['text' => (string) ($row['product_description'] ?: '-')],
                     ['text' => (string) ($row['serial_number'] ?: 'N/A'), 'center' => true],
                     ['text' => $effFormatted, 'center' => true],
                     ['text' => $expFormatted, 'center' => true],
                     ['text' => $noteText],
                     ['text' => $createdByText],
+                    ['text' => $docOrderNo, 'center' => true],
                 ];
             } elseif ($selectedDocType === 'COMPANY') {
                 $cells = [
-                    ['text' => (string) ($idx + 1), 'center' => true],
+                    ['text' => $docOrderNo, 'center' => true],
                     ['text' => (string) ($row['document_title'] ?: $row['product_description'] ?: '-')],
                     ['text' => (string) ($row['document_number'] ?: 'N/A'), 'center' => true],
                     ['text' => (string) ($row['issued_by'] ?: $row['customer'] ?: '-')],
@@ -1875,13 +1891,14 @@ class MedquestController extends Controller
         $fileType = preg_replace('/[^A-Za-z0-9_-]/', '_', $selectedDocType);
 
         return [
-            'sheet_title' => $selectedDocType === 'ALL' ? 'All Documents' : ucfirst(strtolower($selectedDocType)),
-            'title'       => $activeTableTitle,
-            'subtitle'    => implode(' | ', $filterParts),
-            'filename'    => 'Medquest_Documents_' . $fileDept . '_' . $fileType . '_' . $dateStamp,
-            'form_meta'   => $formMeta,
-            'columns'     => $columns,
-            'rows'        => $rows,
+            'sheet_title'   => $selectedDocType === 'ALL' ? 'All Documents' : ucfirst(strtolower($selectedDocType)),
+            'title'         => $activeTableTitle,
+            'subtitle'      => implode(' | ', $filterParts),
+            'filename'      => 'Medquest_Documents_' . $fileDept . '_' . $fileType . '_' . $dateStamp,
+            'form_meta'     => $formMeta,
+            'header_groups' => $headerGroups,
+            'columns'       => $columns,
+            'rows'          => $rows,
         ];
     }
 
@@ -1919,7 +1936,8 @@ class MedquestController extends Controller
                 $dataset['columns'],
                 $dataset['rows'],
                 $dataset['form_meta'] ?? [],
-                $logoPath
+                $logoPath,
+                $dataset['header_groups'] ?? []
             );
 
             return response($xlsxBytes, 200, [

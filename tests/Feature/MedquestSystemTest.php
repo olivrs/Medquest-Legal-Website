@@ -387,13 +387,38 @@ class MedquestSystemTest extends TestCase
         $todayDateMeta = strtoupper(date('d M Y'));
         $todayDocCode = date('dmy');
 
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COMPANY',
+            'no_urut_dokumen'     => 185,
+            'department'          => 'LAC',
+            'document_title'      => 'Akta Pendirian PT Medquest',
+            'document_number'     => 'AHU-0185',
+            'issued_by'           => 'Notaris Putranto',
+            'customer'            => 'PT Medquest Jaya Global',
+            'product_description' => 'Akta Pendirian PT Medquest',
+            'serial_number'       => 'N/A',
+            'effective_date'      => '2025-10-01',
+            'effective_date_na'   => false,
+            'expiry_date'         => '2031-10-01',
+            'expiry_date_na'      => false,
+            'status_proses'       => 'SELESAI',
+            'tanggal_selesai'     => '2025-10-01',
+            'note'                => 'Original company record',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 01 OCT 2025',
+        ]);
+
         $exportAll = $this->get('/?page=export');
         $exportAll->assertStatus(200);
         $exportAll->assertSee('Export Excel (.xlsx)');
         $exportAll->assertSee('Export PDF (.pdf)');
         $exportAll->assertSee('MJG-EXP-ALL-ALL-' . $todayDocCode);
         $exportAll->assertSee(': ' . $todayDateMeta);
+        $exportAll->assertSee('MEDQUEST LEGAL DOCUMENTS LIST');
         $exportAll->assertSee('Document Title / Customer');
+        $exportAll->assertSee('Detail');
+        $exportAll->assertSee('Status');
         $exportAll->assertSee('Effective Date');
         $exportAll->assertSee('Expiry Date');
         $exportAll->assertSee('Created By');
@@ -402,16 +427,33 @@ class MedquestSystemTest extends TestCase
         $exportPrincipal = $this->get('/export?doc_type=PRINCIPAL');
         $exportPrincipal->assertStatus(200);
         $exportPrincipal->assertSee('MJG-EXP-PRIN-ALL-' . $todayDocCode);
+        $exportPrincipal->assertSee('LOG OF PRINCIPAL DOCUMENT');
         $exportPrincipal->assertSee('Document Title');
         $exportPrincipal->assertSee('Issued by');
         $exportPrincipal->assertSee('Principal');
 
+        $exportCompany = $this->get('/export?doc_type=COMPANY&dept=LAC');
+        $exportCompany->assertStatus(200);
+        $exportCompany->assertSee('MJG-EXP-COMP-LAC-' . $todayDocCode);
+        $exportCompany->assertSee('ORIGINAL COMPANY DOCUMENT');
+        $exportCompany->assertSee('Document Title');
+        $exportCompany->assertSee('Document No.');
+        $exportCompany->assertSee('Issued by');
+        $exportCompany->assertSee('185');
+        $exportCompany->assertSee('Akta Pendirian PT Medquest');
+        $exportCompany->assertSee('Notaris Putranto');
+
         $exportCoopSelesai = $this->get('/export?doc_type=COOPERATION&dept=LAC&proses=SELESAI');
         $exportCoopSelesai->assertStatus(200);
         $exportCoopSelesai->assertSee('MJG-EXP-COOP-LAC-ACC-' . $todayDocCode);
+        $exportCoopSelesai->assertSee('LOG OF COOPERATION AGREEMENT');
+        $exportCoopSelesai->assertSee('Department / Division');
+        $exportCoopSelesai->assertSee('Document Number');
         $exportCoopSelesai->assertSee('Customer');
         $exportCoopSelesai->assertSee('Product');
-        $exportCoopSelesai->assertSee('S/N');
+        $exportCoopSelesai->assertSee('Description');
+        $exportCoopSelesai->assertSee('Serial Number');
+        $exportCoopSelesai->assertSee('910');
         $exportCoopSelesai->assertSee('RS Medquest Export Test');
 
         $exportDeadlines = $this->get('/export?dataset=deadlines&dept=LAC');
@@ -433,6 +475,27 @@ class MedquestSystemTest extends TestCase
         $this->assertStringContainsString('xl/styles.xml', $xlsxBytes);
         $this->assertStringContainsString('xl/media/image1.png', $xlsxBytes);
         $this->assertStringContainsString('xl/drawings/drawing1.xml', $xlsxBytes);
+
+        $sheetXml = '';
+        $pos = 0;
+        while (substr($xlsxBytes, $pos, 4) === "PK\x03\x04") {
+            $hdr = unpack('Vsig/vver/vflag/vmethod/vmtime/vmdate/Vcrc/Vcomp/Vuncomp/vnlen/velen', substr($xlsxBytes, $pos, 30));
+            $nameStart = $pos + 30;
+            $entryName = substr($xlsxBytes, $nameStart, $hdr['nlen']);
+            $dataStart = $nameStart + $hdr['nlen'] + $hdr['elen'];
+            $rawData = substr($xlsxBytes, $dataStart, $hdr['comp']);
+            if ($entryName === 'xl/worksheets/sheet1.xml') {
+                $sheetXml = $hdr['method'] === 8 ? (string) gzinflate($rawData) : $rawData;
+                break;
+            }
+            $pos = $dataStart + $hdr['comp'];
+        }
+        $this->assertStringContainsString('LOG OF COOPERATION AGREEMENT', $sheetXml);
+        $this->assertStringContainsString('Department / Division', $sheetXml);
+        $this->assertStringContainsString('<mergeCell ref="D6:E6"/>', $sheetXml);
+        $this->assertStringContainsString('<mergeCell ref="I1:J1"/>', $sheetXml);
+        $this->assertStringContainsString('<autoFilter ref="A7:J', $sheetXml);
+        $this->assertStringContainsString('Serial Number', $sheetXml);
 
         $regularUser = \App\Models\User::create([
             'nama_lengkap'       => 'Regular Scope Tester',

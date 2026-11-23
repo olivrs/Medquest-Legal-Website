@@ -11,7 +11,8 @@ class XlsxExportService
         array $columns,
         array $rows,
         array $formMeta = [],
-        ?string $logoPath = null
+        ?string $logoPath = null,
+        array $headerGroups = []
     ): string {
         $colCount = max(6, count($columns));
         $lastCol = self::colLetter($colCount - 1);
@@ -20,7 +21,7 @@ class XlsxExportService
         $logoBytes = ($logoPath && is_file($logoPath)) ? @file_get_contents($logoPath) : false;
         $hasLogo = is_string($logoBytes) && $logoBytes !== '';
 
-        $sheetXml = self::buildWorksheetXml($reportTitle, $subtitle, $columns, $rows, $formMeta, $colCount, $lastCol, $hasLogo);
+        $sheetXml = self::buildWorksheetXml($reportTitle, $subtitle, $columns, $rows, $formMeta, $colCount, $lastCol, $hasLogo, $headerGroups);
         $stylesXml = self::buildStylesXml();
         $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
@@ -111,7 +112,8 @@ class XlsxExportService
         array $formMeta,
         int $colCount,
         string $lastCol,
-        bool $hasLogo
+        bool $hasLogo,
+        array $headerGroups = []
     ): string {
         $colsXml = '<cols>';
         foreach ($columns as $i => $col) {
@@ -125,10 +127,14 @@ class XlsxExportService
         $logoEndCol = self::colLetter($logoEndIdx);
         $midStartIdx = $logoEndIdx + 1;
         $midStartCol = self::colLetter($midStartIdx);
-        $midEndIdx = max($midStartIdx, $colCount - 4);
+
+        $lastColWidth = (float) ($columns[$colCount - 1]['width'] ?? 20);
+        $legendStartIdx = ($lastColWidth < 16 && $colCount >= 9) ? ($colCount - 2) : ($colCount - 1);
+        $legendStartCol = self::colLetter($legendStartIdx);
+        $metaValIdx = $legendStartIdx - 1;
+        $metaLabelIdx = $legendStartIdx - 2;
+        $midEndIdx = max($midStartIdx, $legendStartIdx - 3);
         $midEndCol = self::colLetter($midEndIdx);
-        $metaLabelIdx = $colCount - 3;
-        $metaValIdx = $colCount - 2;
 
         $docNo = (string) ($formMeta['doc_no'] ?? 'MJG-FOR-LAC.12-001');
         $effDate = (string) ($formMeta['effective_date'] ?? '22 AUG 2024');
@@ -140,6 +146,13 @@ class XlsxExportService
             2 => ['label' => 'Effective Date', 'val' => ': ' . $effDate, 'legend' => 'Near Deadline (<=90d)', 'legendStyle' => 13],
             3 => ['label' => 'Revision No.',   'val' => ': ' . $revNo,   'legend' => 'Approved (ACC)',       'legendStyle' => 14],
             4 => ['label' => 'Page No.',       'val' => ': ' . $pageNo,  'legend' => '',                     'legendStyle' => 11],
+        ];
+
+        $merges = [
+            'A1:' . $logoEndCol . '4',
+            $midStartCol . '1:' . $midEndCol . '2',
+            $midStartCol . '3:' . $midEndCol . '4',
+            'A5:' . $lastCol . '5',
         ];
 
         $rowsXml = '';
@@ -164,8 +177,12 @@ class XlsxExportService
                 } elseif ($c === $metaValIdx) {
                     $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="11"><is><t xml:space="preserve">' . self::xmlText($headerMetaRows[$r]['val']) . '</t></is></c>';
                 } else {
-                    $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="' . $headerMetaRows[$r]['legendStyle'] . '"><is><t xml:space="preserve">' . self::xmlText($headerMetaRows[$r]['legend']) . '</t></is></c>';
+                    $legendText = ($c === $legendStartIdx) ? $headerMetaRows[$r]['legend'] : '';
+                    $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="' . $headerMetaRows[$r]['legendStyle'] . '"><is><t xml:space="preserve">' . self::xmlText($legendText) . '</t></is></c>';
                 }
+            }
+            if ($legendStartIdx < $colCount - 1) {
+                $merges[] = $legendStartCol . $r . ':' . $lastCol . $r;
             }
             $rowsXml .= '</row>';
         }
@@ -174,15 +191,59 @@ class XlsxExportService
             . '<c r="A5" t="inlineStr" s="2"><is><t xml:space="preserve">' . self::xmlText($subtitle) . '</t></is></c>'
             . '</row>';
 
-        $rowsXml .= '<row r="6" ht="24" customHeight="1">';
-        foreach ($columns as $i => $col) {
-            $ref = self::colLetter($i) . '6';
-            $label = (string) ($col['label'] ?? '');
-            $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="3"><is><t xml:space="preserve">' . self::xmlText($label) . '</t></is></c>';
+        $groupSpanSum = 0;
+        foreach ($headerGroups as $grp) {
+            $groupSpanSum += max(1, (int) ($grp['colspan'] ?? 1));
         }
-        $rowsXml .= '</row>';
+        $hasGroupedHeaders = !empty($headerGroups) && $groupSpanSum === count($columns);
 
-        $rowNum = 7;
+        if ($hasGroupedHeaders) {
+            $subHeaderCols = array_fill(0, count($columns), false);
+            $rowsXml .= '<row r="6" ht="20" customHeight="1">';
+            $c = 0;
+            foreach ($headerGroups as $grp) {
+                $span = max(1, (int) ($grp['colspan'] ?? 1));
+                $gLabel = (string) ($grp['label'] ?? '');
+                for ($k = 0; $k < $span; $k++) {
+                    $colL = self::colLetter($c + $k);
+                    $cellText = ($k === 0) ? $gLabel : '';
+                    $rowsXml .= '<c r="' . $colL . '6" t="inlineStr" s="3"><is><t xml:space="preserve">' . self::xmlText($cellText) . '</t></is></c>';
+                    if ($span > 1) {
+                        $subHeaderCols[$c + $k] = true;
+                    }
+                }
+                if ($span > 1) {
+                    $merges[] = self::colLetter($c) . '6:' . self::colLetter($c + $span - 1) . '6';
+                } else {
+                    $merges[] = self::colLetter($c) . '6:' . self::colLetter($c) . '7';
+                }
+                $c += $span;
+            }
+            $rowsXml .= '</row>';
+
+            $rowsXml .= '<row r="7" ht="20" customHeight="1">';
+            foreach ($columns as $i => $col) {
+                $ref = self::colLetter($i) . '7';
+                $label = !empty($subHeaderCols[$i]) ? (string) ($col['label'] ?? '') : '';
+                $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="3"><is><t xml:space="preserve">' . self::xmlText($label) . '</t></is></c>';
+            }
+            $rowsXml .= '</row>';
+
+            $filterRow = 7;
+            $rowNum = 8;
+        } else {
+            $rowsXml .= '<row r="6" ht="24" customHeight="1">';
+            foreach ($columns as $i => $col) {
+                $ref = self::colLetter($i) . '6';
+                $label = (string) ($col['label'] ?? '');
+                $rowsXml .= '<c r="' . $ref . '" t="inlineStr" s="3"><is><t xml:space="preserve">' . self::xmlText($label) . '</t></is></c>';
+            }
+            $rowsXml .= '</row>';
+
+            $filterRow = 6;
+            $rowNum = 7;
+        }
+
         foreach ($rows as $rowIdx => $row) {
             $rowState = (string) ($row['row_state'] ?? 'normal');
             $cells = $row['cells'] ?? [];
@@ -214,13 +275,7 @@ class XlsxExportService
             $rowNum++;
         }
 
-        $lastRow = max(6, 6 + count($rows));
-        $merges = [
-            'A1:' . $logoEndCol . '4',
-            $midStartCol . '1:' . $midEndCol . '2',
-            $midStartCol . '3:' . $midEndCol . '4',
-            'A5:' . $lastCol . '5',
-        ];
+        $lastRow = max($filterRow, $filterRow + count($rows));
         $mergesXml = '<mergeCells count="' . count($merges) . '">';
         foreach ($merges as $mRef) {
             $mergesXml .= '<mergeCell ref="' . $mRef . '"/>';
@@ -234,12 +289,12 @@ class XlsxExportService
             . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             . '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
             . '<sheetViews><sheetView workbookViewId="0">'
-            . '<pane ySplit="6" topLeftCell="A7" activePane="bottomLeft" state="frozen"/>'
+            . '<pane ySplit="' . $filterRow . '" topLeftCell="A' . ($filterRow + 1) . '" activePane="bottomLeft" state="frozen"/>'
             . '</sheetView></sheetViews>'
             . '<sheetFormatPr defaultRowHeight="18"/>'
             . $colsXml
             . '<sheetData>' . $rowsXml . '</sheetData>'
-            . '<autoFilter ref="A6:' . $lastCol . $lastRow . '"/>'
+            . '<autoFilter ref="A' . $filterRow . ':' . $lastCol . $lastRow . '"/>'
             . $mergesXml
             . '<pageMargins left="0.35" right="0.35" top="0.45" bottom="0.45" header="0.2" footer="0.2"/>'
             . '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>'
