@@ -21,7 +21,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-23-v17-formal-export-form';
+            $currentRev = '2026-11-23-v18-export-clean-ui';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -1630,15 +1630,25 @@ class MedquestController extends Controller
             $dateRangeText = $fieldName . ': ' . ($dateFrom ?: 'Start') . ' - ' . ($dateTo ?: 'End');
         }
 
-        $formDocNo = match ($selectedDocType) {
-            'COMPANY'     => 'MJG-FOR-LAC.12-001-04',
-            'PRINCIPAL'   => 'MJG-FOR-LAC.12-001-09',
-            'COOPERATION' => 'MJG-FOR-LAC.12-001-03',
-            default       => 'MJG-FOR-LAC.12-001',
+        $deptTagCode = preg_replace('/[^A-Z0-9_-]/', '', $selectedDept) ?: 'ALL';
+        $typeTagCode = $datasetMode === 'deadlines'
+            ? 'DL'
+            : match ($selectedDocType) {
+                'COMPANY'     => 'COMP',
+                'PRINCIPAL'   => 'PRIN',
+                'COOPERATION' => 'COOP',
+                default       => 'ALL',
+            };
+        $prosesTagCode = match ($selectedProses) {
+            'SELESAI'   => '-ACC',
+            'PENGAJUAN' => '-SUB',
+            'BERJALAN'  => '-PRO',
+            default     => '',
         };
+        $formDocNo = 'MJG-EXP-' . $typeTagCode . '-' . $deptTagCode . $prosesTagCode . '-' . date('dmy');
         $formMeta = [
-            'doc_no'         => $datasetMode === 'deadlines' ? 'MJG-FOR-LAC.12-001' : $formDocNo,
-            'effective_date' => '22 AUG 2024',
+            'doc_no'         => $formDocNo,
+            'effective_date' => strtoupper(date('d M Y')),
             'revision_no'    => '01',
             'page_no'        => '1 of 1',
         ];
@@ -1651,8 +1661,8 @@ class MedquestController extends Controller
                 ['label' => 'Document No.', 'width' => 18],
                 ['label' => 'Expiry Date', 'width' => 14],
                 ['label' => 'Days Left', 'width' => 15],
-                ['label' => 'Status', 'width' => 16],
-                ['label' => 'Created By', 'width' => 20],
+                ['label' => 'Status', 'width' => 24],
+                ['label' => 'Created By', 'width' => 22],
             ];
             $rows = [];
             foreach ($deadlines as $idx => $item) {

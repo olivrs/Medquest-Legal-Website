@@ -384,11 +384,15 @@ class MedquestSystemTest extends TestCase
         $dash->assertStatus(200);
         $dash->assertSee('Export Documents');
 
+        $todayDateMeta = strtoupper(date('d M Y'));
+        $todayDocCode = date('dmy');
+
         $exportAll = $this->get('/?page=export');
         $exportAll->assertStatus(200);
         $exportAll->assertSee('Export Excel (.xlsx)');
         $exportAll->assertSee('Export PDF (.pdf)');
-        $exportAll->assertSee('MJG-FOR-LAC.12-001');
+        $exportAll->assertSee('MJG-EXP-ALL-ALL-' . $todayDocCode);
+        $exportAll->assertSee(': ' . $todayDateMeta);
         $exportAll->assertSee('Document Title / Customer');
         $exportAll->assertSee('Effective Date');
         $exportAll->assertSee('Expiry Date');
@@ -397,14 +401,14 @@ class MedquestSystemTest extends TestCase
 
         $exportPrincipal = $this->get('/export?doc_type=PRINCIPAL');
         $exportPrincipal->assertStatus(200);
-        $exportPrincipal->assertSee('MJG-FOR-LAC.12-001-09');
+        $exportPrincipal->assertSee('MJG-EXP-PRIN-ALL-' . $todayDocCode);
         $exportPrincipal->assertSee('Document Title');
         $exportPrincipal->assertSee('Issued by');
         $exportPrincipal->assertSee('Principal');
 
-        $exportCoopSelesai = $this->get('/export?doc_type=COOPERATION&proses=SELESAI');
+        $exportCoopSelesai = $this->get('/export?doc_type=COOPERATION&dept=LAC&proses=SELESAI');
         $exportCoopSelesai->assertStatus(200);
-        $exportCoopSelesai->assertSee('MJG-FOR-LAC.12-001-03');
+        $exportCoopSelesai->assertSee('MJG-EXP-COOP-LAC-ACC-' . $todayDocCode);
         $exportCoopSelesai->assertSee('Customer');
         $exportCoopSelesai->assertSee('Product');
         $exportCoopSelesai->assertSee('S/N');
@@ -412,6 +416,7 @@ class MedquestSystemTest extends TestCase
 
         $exportDeadlines = $this->get('/export?dataset=deadlines&dept=LAC');
         $exportDeadlines->assertStatus(200);
+        $exportDeadlines->assertSee('MJG-EXP-DL-LAC-' . $todayDocCode);
         $exportDeadlines->assertSee('DEADLINE MONITORING (H-90 TO H-0)');
         $exportDeadlines->assertSee('RS Medquest Export Test');
         $exportDeadlines->assertDontSee('ITD Secret Customer');

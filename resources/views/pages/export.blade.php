@@ -23,8 +23,8 @@ if ($searchQuery !== '') {
 }
 $xlsxDownloadUrl = base_url('?' . http_build_query(array_merge($exportQueryParams, ['download' => 'xlsx'])));
 $formMeta = $dataset['form_meta'] ?? [
-    'doc_no'         => 'MJG-FOR-LAC.12-001',
-    'effective_date' => '22 AUG 2024',
+    'doc_no'         => 'MJG-EXP-ALL-ALL-' . date('dmy'),
+    'effective_date' => strtoupper(date('d M Y')),
     'revision_no'    => '01',
     'page_no'        => '1 of 1',
 ];
@@ -197,12 +197,12 @@ $formMeta = $dataset['form_meta'] ?? [
                     </td>
                     <td style="width:11%;font-size:0.72rem;border-right:none;border-bottom:none;">Doc. No.</td>
                     <td style="width:17%;font-size:0.72rem;border-left:none;border-bottom:none;">: <?= htmlspecialchars($formMeta['doc_no']) ?></td>
-                    <td style="width:15%;background:#fca5a5;font-weight:700;font-size:0.71rem;">Past Deadline / ED</td>
+                    <td class="mq-legend-expired" style="width:15%;background:#ffffff;font-weight:600;font-size:0.71rem;">Past Deadline / ED</td>
                 </tr>
                 <tr>
                     <td style="font-size:0.72rem;border-right:none;border-top:none;border-bottom:none;">Effective Date</td>
                     <td style="font-size:0.72rem;border-left:none;border-top:none;border-bottom:none;">: <?= htmlspecialchars($formMeta['effective_date']) ?></td>
-                    <td style="background:#fef08a;font-weight:700;font-size:0.71rem;">Near Deadline (&lt;=90d)</td>
+                    <td class="mq-legend-warning" style="background:#ffffff;font-weight:600;font-size:0.71rem;">Near Deadline (&lt;=90d)</td>
                 </tr>
                 <tr>
                     <td rowspan="2" style="text-align:center;font-weight:700;font-size:0.95rem;letter-spacing:0.3px;">
@@ -210,7 +210,7 @@ $formMeta = $dataset['form_meta'] ?? [
                     </td>
                     <td style="font-size:0.72rem;border-right:none;border-top:none;border-bottom:none;">Revision No.</td>
                     <td style="font-size:0.72rem;border-left:none;border-top:none;border-bottom:none;">: <?= htmlspecialchars($formMeta['revision_no']) ?></td>
-                    <td style="background:#bbf7d0;font-weight:700;font-size:0.71rem;">Approved (ACC)</td>
+                    <td class="mq-legend-approved" style="background:#ffffff;font-weight:600;font-size:0.71rem;">Approved (ACC)</td>
                 </tr>
                 <tr>
                     <td style="font-size:0.72rem;border-right:none;border-top:none;">Page No.</td>
@@ -270,6 +270,15 @@ $formMeta = $dataset['form_meta'] ?? [
 const MQ_EXPORT_DATASET = <?= json_encode($dataset, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
 const MQ_LOGO_DATA_URI = <?= json_encode($logoDataUri ?? '', JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
 
+function mqFormatTodayMetaDate() {
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = months[now.getMonth()];
+    const yyyy = now.getFullYear();
+    return dd + ' ' + mm + ' ' + yyyy;
+}
+
 function drawFormalIsoHeader(doc, pageNumber, totalPagesToken) {
     const startX = 10;
     const headerTop = 8;
@@ -281,6 +290,7 @@ function drawFormalIsoHeader(doc, pageNumber, totalPagesToken) {
     const rowH = 5.5;
     const fullH = rowH * 4;
     const meta = MQ_EXPORT_DATASET.form_meta || {};
+    const exportEffDate = mqFormatTodayMetaDate();
 
     doc.setDrawColor(30, 41, 59);
     doc.setLineWidth(0.25);
@@ -312,8 +322,8 @@ function drawFormalIsoHeader(doc, pageNumber, totalPagesToken) {
     doc.setFontSize(7.5);
     doc.setTextColor(17, 24, 39);
     const metaLabels = [
-        ['Doc. No.', ': ' + (meta.doc_no || 'MJG-FOR-LAC.12-001')],
-        ['Effective Date', ': ' + (meta.effective_date || '22 AUG 2024')],
+        ['Doc. No.', ': ' + (meta.doc_no || 'MJG-EXP-ALL-ALL')],
+        ['Effective Date', ': ' + exportEffDate],
         ['Revision No.', ': ' + (meta.revision_no || '01')],
         ['Page No.', ': ' + pageNumber + ' of ' + totalPagesToken]
     ];

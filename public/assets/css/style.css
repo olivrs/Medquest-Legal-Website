@@ -1544,6 +1544,18 @@ a:hover {
         font-size: 9.5px !important;
         padding: 5px 6px !important;
     }
+    .cp-table.mq-iso-table tbody tr.mq-row-approved > td,
+    .mq-iso-header-table .mq-legend-approved {
+        background-color: #bbf7d0 !important;
+    }
+    .cp-table.mq-iso-table tbody tr.mq-row-expired > td,
+    .mq-iso-header-table .mq-legend-expired {
+        background-color: #fca5a5 !important;
+    }
+    .cp-table.mq-iso-table tbody tr.mq-row-warning > td,
+    .mq-iso-header-table .mq-legend-warning {
+        background-color: #fef08a !important;
+    }
 }
 
 .cp-tab-toggle-btn {
@@ -1744,20 +1756,10 @@ span.badge-h3,
     border-color: var(--mq-primary) !important;
 }
 
-.mq-row-approved > td {
-    background-color: #bbf7d0 !important;
-    border-color: #1e293b !important;
-    color: #111827 !important;
-}
-
-.mq-row-expired > td {
-    background-color: #fca5a5 !important;
-    border-color: #1e293b !important;
-    color: #111827 !important;
-}
-
+.mq-row-approved > td,
+.mq-row-expired > td,
 .mq-row-warning > td {
-    background-color: #fef08a !important;
+    background-color: #ffffff !important;
     border-color: #1e293b !important;
     color: #111827 !important;
 }
