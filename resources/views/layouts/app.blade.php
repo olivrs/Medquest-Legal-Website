@@ -12,7 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
-    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v8_dmy" rel="stylesheet">
+    <link href="<?= base_url('assets/css/style.css') ?>?v=mq_square_v9_export" rel="stylesheet">
 </head>
 <body>
 
@@ -104,6 +104,12 @@
                class="sidebar-link <?= $currPage === 'create' ? 'active' : '' ?>">
                 <span class="s-icon"><i class="fas fa-plus"></i></span>
                 <span>Add Document</span>
+            </a>
+
+            <a href="<?= base_url('?page=export' . ($currDept !== 'ALL' ? '&dept=' . urlencode($currDept) : '') . (($selectedProses ?? 'ALL') !== 'ALL' ? '&proses=' . urlencode($selectedProses) : '')) ?>"
+               class="sidebar-link <?= $currPage === 'export' ? 'active' : '' ?>">
+                <span class="s-icon"><i class="fas fa-file-export"></i></span>
+                <span>Export Documents</span>
             </a>
 
             <a href="<?= base_url('?page=notifications') ?>"

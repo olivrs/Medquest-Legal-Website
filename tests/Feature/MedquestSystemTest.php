@@ -334,4 +334,102 @@ class MedquestSystemTest extends TestCase
         $editPage->assertSee('value="18/11/2026"', false);
         $editPage->assertSee('placeholder="dd/mm/yyyy"', false);
     }
+
+    public function test_export_documents_page_and_xlsx_download_match_table_layout_and_scope(): void
+    {
+        $superadmin = \App\Models\User::where('kode_singkatan', 'FJR')->first();
+        $this->assertNotNull($superadmin);
+        $this->actingAs($superadmin);
+
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 910,
+            'department'          => 'LAC',
+            'document_number'     => 'EXP-LAC-910',
+            'customer'            => 'RS Medquest Export Test',
+            'product_description' => 'Ventilator Pro',
+            'serial_number'       => 'SN-910',
+            'effective_date'      => date('Y-m-d'),
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d', strtotime('+10 days')),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'SELESAI',
+            'tanggal_selesai'     => date('Y-m-d'),
+            'note'                => 'Exported note row',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 23 NOV 2026',
+        ]);
+
+        \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 911,
+            'department'          => 'ITD',
+            'document_number'     => 'EXP-ITD-911',
+            'customer'            => 'ITD Secret Customer',
+            'product_description' => 'Server Unit',
+            'serial_number'       => 'SN-911',
+            'effective_date'      => date('Y-m-d'),
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d', strtotime('+200 days')),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'PENGAJUAN',
+            'note'                => 'ITD note',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 23 NOV 2026',
+        ]);
+
+        $dash = $this->get('/agreements');
+        $dash->assertStatus(200);
+        $dash->assertSee('Export Documents');
+
+        $exportAll = $this->get('/?page=export');
+        $exportAll->assertStatus(200);
+        $exportAll->assertSee('Export Excel (.xlsx)');
+        $exportAll->assertSee('Export PDF (.pdf)');
+        $exportAll->assertSee('Document No');
+        $exportAll->assertSee('Detail');
+        $exportAll->assertSee('RS Medquest Export Test');
+
+        $exportCoopSelesai = $this->get('/export?doc_type=COOPERATION&proses=SELESAI');
+        $exportCoopSelesai->assertStatus(200);
+        $exportCoopSelesai->assertSee('Customer &amp; Document No', false);
+        $exportCoopSelesai->assertSee('Product &amp; S/N', false);
+        $exportCoopSelesai->assertSee('Completed Date');
+        $exportCoopSelesai->assertSee('RS Medquest Export Test');
+
+        $exportDeadlines = $this->get('/export?dataset=deadlines&dept=LAC');
+        $exportDeadlines->assertStatus(200);
+        $exportDeadlines->assertSee('DEADLINE MONITORING (H-90 TO H-0)');
+        $exportDeadlines->assertSee('RS Medquest Export Test');
+        $exportDeadlines->assertDontSee('ITD Secret Customer');
+
+        $xlsxResp = $this->get('/?page=export&dept=LAC&doc_type=COOPERATION&proses=SELESAI&download=xlsx');
+        $xlsxResp->assertStatus(200);
+        $this->assertStringContainsString(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            (string) $xlsxResp->headers->get('Content-Type')
+        );
+        $xlsxBytes = $xlsxResp->getContent();
+        $this->assertTrue(str_starts_with($xlsxBytes, "PK\x03\x04"));
+        $this->assertStringContainsString('xl/worksheets/sheet1.xml', $xlsxBytes);
+        $this->assertStringContainsString('xl/styles.xml', $xlsxBytes);
+
+        $regularUser = \App\Models\User::create([
+            'nama_lengkap'       => 'Regular Scope Tester',
+            'kode_singkatan'     => 'RST',
+            'email'              => 'rst@medquest.co.id',
+            'password'           => bcrypt('password'),
+            'departemen_default' => 'LAC',
+            'role'               => 'user',
+            'status'             => 'approved',
+        ]);
+        $this->actingAs($regularUser);
+
+        $scopedExport = $this->get('/export');
+        $scopedExport->assertStatus(200);
+        $scopedExport->assertSee('RS Medquest Export Test');
+        $scopedExport->assertDontSee('ITD Secret Customer');
+    }
 }

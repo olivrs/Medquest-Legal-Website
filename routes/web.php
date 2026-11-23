@@ -17,6 +17,7 @@ Route::match(['get', 'post'], '/edit/{routeId?}', [MedquestController::class, 'e
 Route::match(['get', 'post'], '/detail/{routeId?}', [MedquestController::class, 'detailPage'])->name('agreements.detail');
 
 Route::match(['get', 'post'], '/notifications', [MedquestController::class, 'notificationsPage'])->name('notifications.index');
+Route::match(['get', 'post'], '/export', [MedquestController::class, 'exportPage'])->name('export.index');
 Route::match(['get', 'post'], '/smtp-settings', [MedquestController::class, 'smtpSettingsPage'])->name('smtp.settings');
 Route::match(['get', 'post'], '/user-approvals', [MedquestController::class, 'userApprovalsPage'])->name('user.approvals');
 

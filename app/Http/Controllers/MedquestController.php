@@ -9,6 +9,7 @@ use App\Models\EmailNotification;
 use App\Models\SmtpSetting;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\XlsxExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-17-v14-storage-dirs';
+            $currentRev = '2026-11-23-v15-export-page';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -105,6 +106,7 @@ class MedquestController extends Controller
             'create'           => $this->createPage($request),
             'edit'             => $this->editPage($request),
             'detail'           => $this->detailPage($request),
+            'export'           => $this->exportPage($request),
             'notifications'    => $this->notificationsPage($request),
             'smtp_settings'    => $this->smtpSettingsPage($request),
             'user_approvals'   => $this->userApprovalsPage($request),
@@ -568,109 +570,10 @@ class MedquestController extends Controller
             }
         }
 
-        $selectedDept    = strtoupper(trim((string) $request->query('dept', 'ALL')));
-        $selectedStatus  = trim((string) $request->query('status', 'ALL'));
-        $selectedDocType = strtoupper(trim((string) $request->query('doc_type', 'ALL')));
-        $selectedProses  = strtoupper(trim((string) $request->query('proses', 'ALL')));
-        if (!in_array($selectedProses, ['ALL', 'PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
-            $selectedProses = 'ALL';
-        }
-        $searchQuery     = trim((string) $request->query('q', ''));
-        $selectedSort    = trim((string) $request->query('sort', 'default'));
-        $currentPage     = max(1, (int) $request->query('p', 1));
-        $perPage         = 15;
-
-        $query = DB::table('agreements as a')
-            ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
-            ->select('a.*', 'u.nama_lengkap as creator_name', 'u.email as creator_email');
-        $this->applyAgreementAccessScope($query, 'a');
-
-        if ($selectedDept !== 'ALL' && $selectedDept !== '') {
-            $query->where('a.department', $selectedDept);
-        }
-
-        if (in_array($selectedDocType, ['COOPERATION', 'COMPANY', 'PRINCIPAL'], true)) {
-            if ($selectedDocType === 'COOPERATION') {
-                $query->where(function ($q) {
-                    $q->where('a.doc_type', 'COOPERATION')
-                      ->orWhereNull('a.doc_type');
-                });
-            } else {
-                $query->where('a.doc_type', $selectedDocType);
-            }
-        }
-
-        if ($searchQuery !== '') {
-            $like = '%' . $searchQuery . '%';
-            $query->where(function ($q) use ($like) {
-                $q->where('a.document_number', 'like', $like)
-                  ->orWhere('a.customer', 'like', $like)
-                  ->orWhere('a.product_description', 'like', $like)
-                  ->orWhere('a.document_title', 'like', $like)
-                  ->orWhere('a.issued_by', 'like', $like)
-                  ->orWhere('a.principal_name', 'like', $like)
-                  ->orWhere('a.serial_number', 'like', $like)
-                  ->orWhere('a.created_by_log', 'like', $like)
-                  ->orWhere('a.note', 'like', $like);
-            });
-        }
-
-        match ($selectedSort) {
-            'newest'        => $query->orderByDesc('a.id'),
-            'oldest'        => $query->orderBy('a.id', 'asc'),
-            'deadline_asc'  => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date ASC, a.id DESC'),
-            'deadline_desc' => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date DESC, a.id DESC'),
-            default         => $query->orderByRaw('COALESCE(a.no_urut_dokumen, a.id) ASC, a.id ASC'),
-        };
-
-        $fetchedRows = $query->get()->map(fn ($r) => (array) $r)->all();
-
-        $countProsesAll = count($fetchedRows);
-        $countPengajuan = 0;
-        $countBerjalan  = 0;
-        $countSelesai   = 0;
-
-        foreach ($fetchedRows as $row) {
-            $stP = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
-            if ($stP === 'BERJALAN') {
-                $countBerjalan++;
-            } elseif ($stP === 'SELESAI') {
-                $countSelesai++;
-            } else {
-                $countPengajuan++;
-            }
-        }
-
-        $allMatchingAgreements = array_values(array_filter($fetchedRows, function (array $row) use ($selectedStatus, $selectedProses) {
-            if ($selectedProses !== 'ALL') {
-                $stP = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
-                if ($selectedProses === 'PENGAJUAN' && ($stP !== 'PENGAJUAN' && !empty($row['status_proses']))) {
-                    return false;
-                }
-                if ($selectedProses === 'BERJALAN' && $stP !== 'BERJALAN') {
-                    return false;
-                }
-                if ($selectedProses === 'SELESAI' && $stP !== 'SELESAI') {
-                    return false;
-                }
-            }
-
-            if ($selectedStatus === 'ALL' || $selectedStatus === '') {
-                return true;
-            }
-            $isNa = !empty($row['expiry_date_na']) || empty($row['expiry_date']);
-            $days = $isNa ? 9999 : get_days_until_expiry($row['expiry_date']);
-
-            return match ($selectedStatus) {
-                'EXPIRED'      => !$isNa && $days < 0,
-                'H90_60'       => !$isNa && $days >= 31 && $days <= 90,
-                'H30_14'       => !$isNa && $days >= 8 && $days <= 30,
-                'H7_3'         => !$isNa && $days >= 0 && $days <= 7,
-                'DEADLINE_ALL' => !$isNa && $days >= 0 && $days <= 90,
-                'ACTIVE'       => $isNa || $days > 90,
-                default        => true,
-            };
-        }));
+        $filtered = $this->queryFilteredAgreements($request);
+        extract($filtered);
+        $currentPage = max(1, (int) $request->query('p', 1));
+        $perPage     = 15;
 
         $statTotal    = count($allMatchingAgreements);
         $statSafe     = 0;
@@ -1215,24 +1118,7 @@ class MedquestController extends Controller
             return redirect(base_url('?page=notifications'));
         }
 
-        $agrQuery = DB::table('agreements as a')
-            ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
-            ->select('a.*', 'u.nama_lengkap', 'u.email as user_email');
-        $this->applyAgreementAccessScope($agrQuery, 'a');
-        $allUserAgreements = $agrQuery->get()->map(fn ($r) => (array) $r)->all();
-
-        $upcomingH = [];
-        foreach ($allUserAgreements as $item) {
-            if (!empty($item['expiry_date_na']) || empty($item['expiry_date'])) {
-                continue;
-            }
-            $sisa = get_days_until_expiry($item['expiry_date']);
-            if ($sisa >= 0 && $sisa <= 90) {
-                $item['sisa_hari'] = $sisa;
-                $upcomingH[] = $item;
-            }
-        }
-        usort($upcomingH, fn ($a, $b) => $a['sisa_hari'] <=> $b['sisa_hari']);
+        $upcomingH = $this->getUpcomingDeadlineItems();
 
         $emailLogsQuery = DB::table('email_notifications as e')
             ->leftJoin('agreements as a', 'e.agreement_id', '=', 'a.id')
@@ -1486,5 +1372,383 @@ class MedquestController extends Controller
             'sent_count' => count($results),
             'details'    => $results,
         ]);
+    }
+
+    protected function queryFilteredAgreements(Request $request): array
+    {
+        $selectedDept    = strtoupper(trim((string) $request->query('dept', 'ALL')));
+        $selectedStatus  = trim((string) $request->query('status', 'ALL'));
+        $selectedDocType = strtoupper(trim((string) $request->query('doc_type', 'ALL')));
+        if (!in_array($selectedDocType, ['ALL', 'COOPERATION', 'COMPANY', 'PRINCIPAL'], true)) {
+            $selectedDocType = 'ALL';
+        }
+        $selectedProses  = strtoupper(trim((string) $request->query('proses', 'ALL')));
+        if (!in_array($selectedProses, ['ALL', 'PENGAJUAN', 'BERJALAN', 'SELESAI'], true)) {
+            $selectedProses = 'ALL';
+        }
+        $searchQuery  = trim((string) $request->query('q', ''));
+        $selectedSort = trim((string) $request->query('sort', 'default'));
+
+        $query = DB::table('agreements as a')
+            ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
+            ->select('a.*', 'u.nama_lengkap as creator_name', 'u.email as creator_email');
+        $this->applyAgreementAccessScope($query, 'a');
+
+        if ($selectedDept !== 'ALL' && $selectedDept !== '') {
+            $query->where('a.department', $selectedDept);
+        }
+
+        if (in_array($selectedDocType, ['COOPERATION', 'COMPANY', 'PRINCIPAL'], true)) {
+            if ($selectedDocType === 'COOPERATION') {
+                $query->where(function ($q) {
+                    $q->where('a.doc_type', 'COOPERATION')
+                      ->orWhereNull('a.doc_type');
+                });
+            } else {
+                $query->where('a.doc_type', $selectedDocType);
+            }
+        }
+
+        if ($searchQuery !== '') {
+            $like = '%' . $searchQuery . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('a.document_number', 'like', $like)
+                  ->orWhere('a.customer', 'like', $like)
+                  ->orWhere('a.product_description', 'like', $like)
+                  ->orWhere('a.document_title', 'like', $like)
+                  ->orWhere('a.issued_by', 'like', $like)
+                  ->orWhere('a.principal_name', 'like', $like)
+                  ->orWhere('a.serial_number', 'like', $like)
+                  ->orWhere('a.created_by_log', 'like', $like)
+                  ->orWhere('a.note', 'like', $like);
+            });
+        }
+
+        match ($selectedSort) {
+            'newest'        => $query->orderByDesc('a.id'),
+            'oldest'        => $query->orderBy('a.id', 'asc'),
+            'deadline_asc'  => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date ASC, a.id DESC'),
+            'deadline_desc' => $query->orderByRaw('CASE WHEN a.expiry_date IS NULL OR a.expiry_date_na = 1 THEN 1 ELSE 0 END ASC, a.expiry_date DESC, a.id DESC'),
+            default         => $query->orderByRaw('COALESCE(a.no_urut_dokumen, a.id) ASC, a.id ASC'),
+        };
+
+        $fetchedRows = $query->get()->map(fn ($r) => (array) $r)->all();
+
+        $countProsesAll = count($fetchedRows);
+        $countPengajuan = 0;
+        $countBerjalan  = 0;
+        $countSelesai   = 0;
+
+        foreach ($fetchedRows as $row) {
+            $stP = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+            if ($stP === 'BERJALAN') {
+                $countBerjalan++;
+            } elseif ($stP === 'SELESAI') {
+                $countSelesai++;
+            } else {
+                $countPengajuan++;
+            }
+        }
+
+        $allMatchingAgreements = array_values(array_filter($fetchedRows, function (array $row) use ($selectedStatus, $selectedProses) {
+            if ($selectedProses !== 'ALL') {
+                $stP = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+                if ($selectedProses === 'PENGAJUAN' && ($stP !== 'PENGAJUAN' && !empty($row['status_proses']))) {
+                    return false;
+                }
+                if ($selectedProses === 'BERJALAN' && $stP !== 'BERJALAN') {
+                    return false;
+                }
+                if ($selectedProses === 'SELESAI' && $stP !== 'SELESAI') {
+                    return false;
+                }
+            }
+
+            if ($selectedStatus === 'ALL' || $selectedStatus === '') {
+                return true;
+            }
+            $isNa = !empty($row['expiry_date_na']) || empty($row['expiry_date']);
+            $days = $isNa ? 9999 : get_days_until_expiry($row['expiry_date']);
+
+            return match ($selectedStatus) {
+                'EXPIRED'      => !$isNa && $days < 0,
+                'H90_60'       => !$isNa && $days >= 31 && $days <= 90,
+                'H30_14'       => !$isNa && $days >= 8 && $days <= 30,
+                'H7_3'         => !$isNa && $days >= 0 && $days <= 7,
+                'DEADLINE_ALL' => !$isNa && $days >= 0 && $days <= 90,
+                'ACTIVE'       => $isNa || $days > 90,
+                default        => true,
+            };
+        }));
+
+        return compact(
+            'selectedDept',
+            'selectedStatus',
+            'selectedDocType',
+            'selectedProses',
+            'searchQuery',
+            'selectedSort',
+            'countProsesAll',
+            'countPengajuan',
+            'countBerjalan',
+            'countSelesai',
+            'allMatchingAgreements'
+        );
+    }
+
+    protected function getUpcomingDeadlineItems(string $selectedDept = 'ALL'): array
+    {
+        $agrQuery = DB::table('agreements as a')
+            ->leftJoin('users as u', 'a.created_by_user_id', '=', 'u.id')
+            ->select('a.*', 'u.nama_lengkap', 'u.email as user_email');
+        $this->applyAgreementAccessScope($agrQuery, 'a');
+        if ($selectedDept !== 'ALL' && $selectedDept !== '') {
+            $agrQuery->where('a.department', $selectedDept);
+        }
+        $allUserAgreements = $agrQuery->get()->map(fn ($r) => (array) $r)->all();
+
+        $upcomingH = [];
+        foreach ($allUserAgreements as $item) {
+            if (!empty($item['expiry_date_na']) || empty($item['expiry_date'])) {
+                continue;
+            }
+            $sisa = get_days_until_expiry($item['expiry_date']);
+            if ($sisa >= 0 && $sisa <= 90) {
+                $item['sisa_hari'] = $sisa;
+                $upcomingH[] = $item;
+            }
+        }
+        usort($upcomingH, fn ($a, $b) => $a['sisa_hari'] <=> $b['sisa_hari']);
+
+        return $upcomingH;
+    }
+
+    protected function buildExportDataset(string $datasetMode, array $agreements, array $deadlines, array $filters): array
+    {
+        $selectedDept = $filters['selectedDept'] ?? 'ALL';
+        $selectedDocType = $filters['selectedDocType'] ?? 'ALL';
+        $selectedProses = $filters['selectedProses'] ?? 'ALL';
+        $selectedStatus = $filters['selectedStatus'] ?? 'ALL';
+        $searchQuery = $filters['searchQuery'] ?? '';
+        $dateStamp = date('Y-m-d');
+
+        if ($datasetMode === 'deadlines') {
+            $columns = [
+                ['label' => 'Dept', 'width' => 12],
+                ['label' => 'Customer & Product', 'width' => 38],
+                ['label' => 'Document No', 'width' => 24],
+                ['label' => 'Expiry Date', 'width' => 18],
+                ['label' => 'Status', 'width' => 20],
+                ['label' => 'Created By', 'width' => 28],
+            ];
+            $rows = [];
+            foreach ($deadlines as $item) {
+                $expInfo = get_expiry_info($item['expiry_date']);
+                $displayTitle = !empty($item['customer']) ? $item['customer'] : ($item['document_title'] ?: 'Document #' . $item['id']);
+                $displaySub = !empty($item['product_description']) ? $item['product_description'] : ($item['issued_by'] ?: '-');
+                $rowState = $expInfo['status'] === 'expired' ? 'expired' : ($expInfo['status'] !== 'safe' ? 'warning' : 'normal');
+                $tone = in_array($expInfo['status'], ['expired', 'critical'], true) ? 'danger' : 'warning';
+                $createdText = (string) ($item['created_by_code'] ?? '-');
+                if (!empty($item['user_email'])) {
+                    $createdText .= "\n" . $item['user_email'];
+                }
+
+                $rows[] = [
+                    'row_state' => $rowState,
+                    'cells' => [
+                        ['text' => (string) $item['department'], 'bold' => true],
+                        ['text' => $displayTitle . "\n" . $displaySub, 'bold' => true],
+                        ['text' => (string) ($item['document_number'] ?: 'N/A')],
+                        ['text' => format_date_medquest($item['expiry_date']), 'bold' => true, 'tone' => 'danger'],
+                        ['text' => $expInfo['short_label'], 'bold' => true, 'tone' => $tone],
+                        ['text' => $createdText],
+                    ],
+                ];
+            }
+
+            $deptTag = $selectedDept !== 'ALL' ? $selectedDept : 'ALL';
+            return [
+                'sheet_title' => 'Deadline Monitoring',
+                'title'       => 'DEADLINE MONITORING (H-90 TO H-0)',
+                'subtitle'    => 'Department: ' . ($selectedDept === 'ALL' ? 'All Departments' : $selectedDept) . ' | Exported: ' . strtoupper(date('d M Y H:i')) . ' | Total: ' . count($rows) . ' document(s)',
+                'filename'    => 'Medquest_Deadlines_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $deptTag) . '_' . $dateStamp,
+                'columns'     => $columns,
+                'rows'        => $rows,
+            ];
+        }
+
+        $colDocLabel = match ($selectedDocType) {
+            'COMPANY'     => 'Document Title & Document No.',
+            'PRINCIPAL'   => 'Document Title & Document No.',
+            'COOPERATION' => 'Customer & Document No',
+            default       => 'Document No',
+        };
+        $colDetailLabel = match ($selectedDocType) {
+            'COMPANY'     => 'Issued By',
+            'PRINCIPAL'   => 'Issued By & Principal',
+            'COOPERATION' => 'Product & S/N',
+            default       => 'Detail',
+        };
+
+        $columns = [
+            ['label' => 'Dept / No', 'width' => 16],
+            ['label' => $colDocLabel, 'width' => 32],
+            ['label' => $colDetailLabel, 'width' => 30],
+            ['label' => 'Effective, Expiry & Deadline', 'width' => 30],
+            ['label' => 'Status', 'width' => 18],
+        ];
+        if ($selectedProses === 'SELESAI') {
+            $columns[] = ['label' => 'Completed Date', 'width' => 18];
+        }
+        $columns[] = ['label' => 'Note', 'width' => 34];
+        $columns[] = ['label' => 'Created By', 'width' => 22];
+
+        $rows = [];
+        foreach ($agreements as $row) {
+            $rowType = strtoupper(trim((string) ($row['doc_type'] ?? 'COOPERATION')));
+            $typeMeta = get_doc_type_meta($rowType);
+            $isExpNa = !empty($row['expiry_date_na']) || empty($row['expiry_date']);
+            $expInfo = get_expiry_info($row['expiry_date'], $isExpNa);
+            $effFormatted = format_date_medquest($row['effective_date'], $row['effective_date_na']);
+            $expFormatted = format_date_medquest($row['expiry_date'], $isExpNa);
+            $seq = (string) ($row['no_urut_dokumen'] ?: $row['id']);
+            $displayTitle = ($rowType === 'COOPERATION')
+                ? ($row['customer'] ?: '-')
+                : ($row['document_title'] ?: $row['product_description'] ?: '-');
+
+            $deptCell = $row['department'] . "\n#" . $seq;
+            if ($selectedDocType === 'ALL') {
+                $deptCell .= "\n" . $typeMeta['short_title'];
+            }
+
+            $docCell = $displayTitle . "\nNo: " . ($row['document_number'] ?: 'N/A');
+
+            if ($rowType === 'COMPANY') {
+                $detailCell = 'Issued By: ' . ($row['issued_by'] ?: $row['customer'] ?: '-');
+            } elseif ($rowType === 'PRINCIPAL') {
+                $detailCell = 'Principal: ' . ($row['principal_name'] ?: $row['customer'] ?: '-') . "\nIssued By: " . ($row['issued_by'] ?: '-');
+            } else {
+                $detailCell = ($row['product_description'] ?: '-') . "\nS/N: " . ($row['serial_number'] ?: 'N/A');
+            }
+
+            $validityCell = 'Effective: ' . $effFormatted . ' -> Expiry: ' . $expFormatted . "\n" . $expInfo['short_label'];
+            $validityTone = in_array($expInfo['status'], ['expired', 'critical'], true)
+                ? 'danger'
+                : (in_array($expInfo['status'], ['warning', 'h30'], true) ? 'warning' : 'success');
+
+            $rowProses = strtoupper(trim((string) ($row['status_proses'] ?? 'PENGAJUAN')));
+            $pMeta = get_process_status_meta($rowProses);
+            $statusCell = $pMeta['label'];
+            if ($rowProses === 'SELESAI' && $selectedProses !== 'SELESAI') {
+                $statusCell .= "\nCompleted: " . format_date_medquest($row['tanggal_selesai']);
+            }
+            $statusTone = $rowProses === 'SELESAI' ? 'success' : ($rowProses === 'BERJALAN' ? '' : 'warning');
+
+            $rowState = $expInfo['status'] === 'expired'
+                ? 'expired'
+                : (in_array($expInfo['status'], ['critical', 'warning', 'h30'], true) ? 'warning' : 'normal');
+
+            $cells = [
+                ['text' => $deptCell, 'bold' => true],
+                ['text' => $docCell, 'bold' => true],
+                ['text' => $detailCell],
+                ['text' => $validityCell, 'bold' => true, 'tone' => $validityTone],
+                ['text' => $statusCell, 'bold' => true, 'tone' => $statusTone],
+            ];
+            if ($selectedProses === 'SELESAI') {
+                $cells[] = ['text' => format_date_medquest($row['tanggal_selesai']), 'bold' => true, 'tone' => 'success'];
+            }
+            $cells[] = ['text' => (string) ($row['note'] ?: 'N/A')];
+            $cells[] = ['text' => (string) ($row['created_by_log'] ?: ($row['created_by_code'] ?? '-')), 'bold' => true];
+
+            $rows[] = [
+                'row_state' => $rowState,
+                'cells'     => $cells,
+            ];
+        }
+
+        $prosesTitleSuffix = match ($selectedProses) {
+            'PENGAJUAN' => ' - SUBMISSION STAGE',
+            'BERJALAN'  => ' - IN PROGRESS',
+            'SELESAI'   => ' - COMPLETED',
+            default     => '',
+        };
+        $activeTableTitle = match ($selectedDocType) {
+            'COMPANY'     => 'ORIGINAL COMPANY DOCUMENT' . $prosesTitleSuffix,
+            'PRINCIPAL'   => 'LOG OF PRINCIPAL DOCUMENT' . $prosesTitleSuffix,
+            'COOPERATION' => 'LOG OF COOPERATION AGREEMENT' . $prosesTitleSuffix,
+            default       => 'MEDQUEST LEGAL DOCUMENTS LIST' . $prosesTitleSuffix,
+        };
+
+        $filterParts = [
+            'Dept: ' . ($selectedDept === 'ALL' ? 'All' : $selectedDept),
+            'Type: ' . $selectedDocType,
+            'Status: ' . ($selectedProses === 'ALL' ? 'All' : $selectedProses),
+            'Deadline: ' . ($selectedStatus === 'ALL' ? 'All' : $selectedStatus),
+        ];
+        if ($searchQuery !== '') {
+            $filterParts[] = 'Search: "' . $searchQuery . '"';
+        }
+        $filterParts[] = 'Exported: ' . strtoupper(date('d M Y H:i'));
+        $filterParts[] = 'Total: ' . count($rows) . ' document(s)';
+
+        $fileDept = preg_replace('/[^A-Za-z0-9_-]/', '_', $selectedDept);
+        $fileType = preg_replace('/[^A-Za-z0-9_-]/', '_', $selectedDocType);
+
+        return [
+            'sheet_title' => $selectedDocType === 'ALL' ? 'All Documents' : ucfirst(strtolower($selectedDocType)),
+            'title'       => $activeTableTitle,
+            'subtitle'    => implode(' | ', $filterParts),
+            'filename'    => 'Medquest_Documents_' . $fileDept . '_' . $fileType . '_' . $dateStamp,
+            'columns'     => $columns,
+            'rows'        => $rows,
+        ];
+    }
+
+    public function exportPage(Request $request)
+    {
+        $this->ensureDatabaseReady();
+        if (!Auth::check()) {
+            return redirect(base_url('?page=login'));
+        }
+
+        $datasetMode = strtolower(trim((string) $request->query('dataset', 'agreements')));
+        if (!in_array($datasetMode, ['agreements', 'deadlines'], true)) {
+            $datasetMode = 'agreements';
+        }
+
+        $filtered = $this->queryFilteredAgreements($request);
+        $deadlines = $datasetMode === 'deadlines'
+            ? $this->getUpcomingDeadlineItems($filtered['selectedDept'])
+            : [];
+
+        $dataset = $this->buildExportDataset(
+            $datasetMode,
+            $filtered['allMatchingAgreements'],
+            $deadlines,
+            $filtered
+        );
+
+        if (strtolower((string) $request->query('download', '')) === 'xlsx') {
+            $xlsxBytes = XlsxExportService::generate(
+                $dataset['sheet_title'],
+                $dataset['title'],
+                $dataset['subtitle'],
+                $dataset['columns'],
+                $dataset['rows']
+            );
+
+            return response($xlsxBytes, 200, [
+                'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $dataset['filename'] . '.xlsx"',
+                'Cache-Control'       => 'no-store, no-cache, must-revalidate',
+            ]);
+        }
+
+        return view('pages.export', array_merge(
+            $this->getLayoutData($request, 'export'),
+            $filtered,
+            compact('datasetMode', 'dataset')
+        ));
     }
 }

@@ -1508,6 +1508,15 @@ a:hover {
     }
 }
 
+@page mq_landscape {
+    size: landscape;
+    margin: 10mm;
+}
+
+.mq-export-print-area {
+    page: mq_landscape;
+}
+
 @media print {
     .app-sidebar, .mq-top-header, .app-topbar, .mq-footer, .mq-auth-footer, .no-print {
         display: none !important;
@@ -1520,6 +1529,20 @@ a:hover {
     }
     body {
         background: #ffffff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .cp-table-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    .table-responsive {
+        overflow: visible !important;
+    }
+    .cp-table th, .cp-table td {
+        font-size: 9.5px !important;
+        padding: 5px 6px !important;
     }
 }
 
