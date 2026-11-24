@@ -202,6 +202,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('4', '2026_11_09_0
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('5', '2026_11_12_000001_add_process_status_to_agreements_table', '2');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('6', '2026_11_16_000001_alter_aksi_in_agreement_histories_table', '2');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('7', '2026_11_24_000001_add_h0_and_notification_recipients', '3');
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('8', '2026_11_24_000002_add_relay_fields_to_notification_recipients', '4');
 
 DROP TABLE IF EXISTS `notification_recipients`;
 CREATE TABLE `notification_recipients` (
@@ -209,7 +210,10 @@ CREATE TABLE `notification_recipients` (
   `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ALL',
+  `formsubmit_token` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `is_verified` tinyint(1) NOT NULL DEFAULT '0',
+  `last_error` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `added_by_user_id` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,

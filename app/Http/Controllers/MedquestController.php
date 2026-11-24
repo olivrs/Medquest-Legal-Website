@@ -22,7 +22,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-24-v24-zeroconfig-formsubmit-flow';
+            $currentRev = '2026-11-24-v25-formsubmit-browser-activation-diagnostics';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -74,11 +74,30 @@ class MedquestController extends Controller
                         $table->string('email', 150);
                         $table->string('label', 120)->nullable();
                         $table->string('department', 30)->default('ALL');
+                        $table->string('formsubmit_token', 191)->nullable();
                         $table->boolean('is_active')->default(true);
+                        $table->boolean('is_verified')->default(false);
+                        $table->string('last_error', 255)->nullable();
                         $table->unsignedBigInteger('added_by_user_id')->nullable();
                         $table->timestamps();
                         $table->unique(['email', 'department']);
                     });
+                } else {
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('notification_recipients', 'formsubmit_token')) {
+                        \Illuminate\Support\Facades\Schema::table('notification_recipients', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('formsubmit_token', 191)->nullable()->after('department');
+                        });
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('notification_recipients', 'is_verified')) {
+                        \Illuminate\Support\Facades\Schema::table('notification_recipients', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->boolean('is_verified')->default(false)->after('is_active');
+                        });
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('notification_recipients', 'last_error')) {
+                        \Illuminate\Support\Facades\Schema::table('notification_recipients', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->string('last_error', 255)->nullable()->after('is_verified');
+                        });
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -1176,7 +1195,7 @@ class MedquestController extends Controller
                     }
                 }
 
-                NotificationRecipient::updateOrCreate(
+                $recModel = NotificationRecipient::updateOrCreate(
                     ['email' => $recEmail, 'department' => $recDept],
                     [
                         'label'            => $recLabel !== '' ? $recLabel : null,
@@ -1185,26 +1204,36 @@ class MedquestController extends Controller
                     ]
                 );
 
-                $actRes = NotificationService::sendRecipientActivationOrTest($recEmail, $recLabel, $recDept);
+                $actRes = NotificationService::sendRecipientActivationOrTest($recEmail, $recLabel, $recDept, $recModel->formsubmit_token);
+                $statusSummary = mb_substr((string) ($actRes['message'] ?? ''), 0, 250);
 
-                cache()->forget('medquest_last_auto_notify');
-                $dispatched = NotificationService::runAutoExpiryNotifications(true, true);
-                $sentForNew = count(array_filter(
-                    $dispatched,
-                    fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === $recEmail
-                ));
+                if (!empty($actRes['sent'])) {
+                    $recModel->update(['is_verified' => true, 'last_error' => 'Active & verified']);
+                    cache()->forget('medquest_last_auto_notify');
+                    $dispatched = NotificationService::runAutoExpiryNotifications(true, true);
+                    $sentForNew = count(array_filter(
+                        $dispatched,
+                        fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === $recEmail
+                    ));
 
-                if (!empty($actRes['needs_activation'])) {
-                    set_flash(
-                        'warning',
-                        'Email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') berhasil ditambahkan! '
-                        . '<strong>Langkah wajib (1x saja):</strong> buka Gmail Inbox / folder <strong>Spam</strong> Anda lalu klik tombol <strong>Activate Form</strong> dari FormSubmit. Setelah diklik, tekan tombol <strong>Test / Retry</strong>.'
-                    );
-                } else {
                     set_flash(
                         'success',
                         'Email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') aktif &amp; siap menerima pengingat! '
                         . ($sentForNew > 0 ? "<strong>{$sentForNew}</strong> notifikasi deadline (H-90 s/d Hari H) langsung dikirim." : 'Konfirmasi berhasil dikirim ke inbox.')
+                    );
+                } elseif (!empty($actRes['needs_activation'])) {
+                    $recModel->update(['is_verified' => false, 'last_error' => $statusSummary ?: 'Awaiting Activate Form click']);
+                    set_flash(
+                        'warning',
+                        'Email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') disimpan! '
+                        . '<strong>Langkah wajib (1x saja):</strong> cek Inbox / folder <strong>Spam</strong> Anda untuk klik <strong>Activate Form</strong> dari FormSubmit (atau klik <strong>Aktivasi via Browser</strong> di baris tabel di bawah), lalu tekan <strong>Test / Retry</strong>.'
+                    );
+                } else {
+                    $recModel->update(['is_verified' => false, 'last_error' => $statusSummary ?: 'FormSubmit relay failed']);
+                    set_flash(
+                        'error',
+                        'Email <strong>' . e($recEmail) . '</strong> tersimpan, tetapi server belum bisa mengirim aktivasi otomatis: <strong>' . e($actRes['message'] ?? 'Unknown error') . '</strong>. '
+                        . 'Klik tombol <strong>Aktivasi via Browser</strong> pada baris email Anda di bawah untuk memicu email <em>Activate Form</em> langsung dari browser.'
                     );
                 }
                 return redirect(base_url('?page=notifications'));
@@ -1214,20 +1243,47 @@ class MedquestController extends Controller
                 $recId = (int) $request->input('recipient_id', 0);
                 $rec = NotificationRecipient::find($recId);
                 if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
-                    $actRes = NotificationService::sendRecipientActivationOrTest($rec->email, (string) ($rec->label ?? ''), (string) $rec->department);
-                    cache()->forget('medquest_last_auto_notify');
-                    $dispatched = NotificationService::runAutoExpiryNotifications(true, true);
-                    $sentCount = count(array_filter(
-                        $dispatched,
-                        fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === strtolower($rec->email)
-                    ));
+                    $actRes = NotificationService::sendRecipientActivationOrTest($rec->email, (string) ($rec->label ?? ''), (string) $rec->department, $rec->formsubmit_token);
+                    $statusSummary = mb_substr((string) ($actRes['message'] ?? ''), 0, 250);
 
                     if (!empty($actRes['sent'])) {
+                        $rec->update(['is_verified' => true, 'last_error' => 'Active & verified']);
+                        cache()->forget('medquest_last_auto_notify');
+                        $dispatched = NotificationService::runAutoExpiryNotifications(true, true);
+                        $sentCount = count(array_filter(
+                            $dispatched,
+                            fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === strtolower($rec->email)
+                        ));
                         set_flash('success', 'Email <strong>' . e($rec->email) . '</strong> sudah <strong>AKTIF</strong>! Test email terkirim' . ($sentCount > 0 ? " + {$sentCount} pengingat deadline tertunda ikut dikirim." : '.'));
                     } elseif (!empty($actRes['needs_activation'])) {
-                        set_flash('warning', 'Email <strong>' . e($rec->email) . '</strong> masih menunggu klik <strong>Activate Form</strong> di Inbox/Spam Gmail Anda. Cek email dari FormSubmit lalu klik link aktivasinya.');
+                        $rec->update(['is_verified' => false, 'last_error' => $statusSummary ?: 'Awaiting Activate Form click']);
+                        set_flash('warning', 'Email <strong>' . e($rec->email) . '</strong> masih menunggu klik <strong>Activate Form</strong> di Inbox/Spam Gmail Anda. Jika belum ada email masuk, klik <strong>Aktivasi via Browser</strong> di baris email tersebut.');
                     } else {
-                        set_flash('error', 'Gagal memverifikasi ' . e($rec->email) . ': ' . e($actRes['message'] ?? 'Unknown error'));
+                        $rec->update(['is_verified' => false, 'last_error' => $statusSummary ?: 'FormSubmit relay failed']);
+                        set_flash('error', 'Verifikasi <strong>' . e($rec->email) . '</strong> tertahan: <strong>' . e($actRes['message'] ?? 'Unknown error') . '</strong>. Silakan gunakan tombol <strong>Aktivasi via Browser</strong> atau tempel FormSubmit Hash Token.');
+                    }
+                }
+                return redirect(base_url('?page=notifications'));
+            }
+
+            if ($action === 'save_recipient_token') {
+                $recId = (int) $request->input('recipient_id', 0);
+                $rawToken = trim((string) $request->input('formsubmit_token', ''));
+                $rec = NotificationRecipient::find($recId);
+                if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
+                    $normalized = $rawToken !== '' ? NotificationService::normalizeFormSubmitEndpoint($rawToken) : '';
+                    $rec->update(['formsubmit_token' => $normalized !== '' ? $normalized : null]);
+
+                    $actRes = NotificationService::sendRecipientActivationOrTest($rec->email, (string) ($rec->label ?? ''), (string) $rec->department, $rec->formsubmit_token);
+                    $statusSummary = mb_substr((string) ($actRes['message'] ?? ''), 0, 250);
+                    if (!empty($actRes['sent'])) {
+                        $rec->update(['is_verified' => true, 'last_error' => 'Active via FormSubmit Token']);
+                        cache()->forget('medquest_last_auto_notify');
+                        NotificationService::runAutoExpiryNotifications(true, true);
+                        set_flash('success', 'Token FormSubmit untuk <strong>' . e($rec->email) . '</strong> disimpan dan terverifikasi aktif!');
+                    } else {
+                        $rec->update(['is_verified' => false, 'last_error' => $statusSummary ?: 'Pending verification']);
+                        set_flash('warning', 'Token FormSubmit disimpan, status cek saat ini: ' . e($actRes['message'] ?? 'Pending verification'));
                     }
                 }
                 return redirect(base_url('?page=notifications'));
