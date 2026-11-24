@@ -678,34 +678,6 @@ class MedquestSystemTest extends TestCase
         $notifView->assertSee('HARI H (H-0)');
         $notifView->assertSee('legal.pic1@medquest.co.id');
         $notifView->assertSee('legal.pic2@medquest.co.id');
-        $notifView->assertSee('Test / Retry');
-        $notifView->assertSee('Save Token');
-
-        $pic1 = \App\Models\NotificationRecipient::where('email', 'legal.pic1@medquest.co.id')->first();
-        $this->assertNotNull($pic1);
-        $this->assertTrue((bool) $pic1->is_verified);
-
-        $this->assertSame('abc123token99', \App\Services\NotificationService::normalizeFormSubmitEndpoint('https://formsubmit.co/ajax/abc123token99'));
-        $this->assertSame('abc123token99', \App\Services\NotificationService::normalizeFormSubmitEndpoint('https://formsubmit.co/abc123token99'));
-        $this->assertSame('pic@medquest.co.id', \App\Services\NotificationService::normalizeFormSubmitEndpoint('PIC@Medquest.co.id'));
-
-        $this->post('/notifications', [
-            'action'           => 'save_recipient_token',
-            'recipient_id'     => $pic1->id,
-            'formsubmit_token' => 'https://formsubmit.co/abc123token99',
-        ])->assertRedirect();
-        $this->assertSame('abc123token99', $pic1->fresh()->formsubmit_token);
-
-        $this->post('/notifications', [
-            'action'       => 'test_recipient',
-            'recipient_id' => $pic1->id,
-        ])->assertRedirect();
-
-        $pic1->update(['is_verified' => false, 'last_error' => 'Awaiting Activate Form click']);
-        $unverifiedView = $this->get('/notifications');
-        $unverifiedView->assertStatus(200);
-        $unverifiedView->assertSee('Aktivasi via Browser');
-        $unverifiedView->assertSee('Needs Activation');
 
         $pendingUser = \App\Models\User::create([
             'nama_lengkap'       => 'Staff Baru LAC',
@@ -744,30 +716,5 @@ class MedquestSystemTest extends TestCase
         $this->assertNotNull($savedSmtp);
         $this->assertSame(1, (int) $savedSmtp->smtp_enabled);
         $this->assertSame('abcdefghijklmnop', $savedSmtp->smtp_password);
-
-        $this->get('/smtp-settings')->assertStatus(200)
-            ->assertSee('Google Apps Script')
-            ->assertSee('doPost(e)');
-
-        $this->post('/smtp-settings', [
-            'action'          => 'save_apps_script',
-            'apps_script_url' => 'http://invalid.example.com/hook',
-        ])->assertRedirect();
-        $this->assertNull($savedSmtp->fresh()->apps_script_url);
-
-        $this->post('/smtp-settings', [
-            'action'          => 'save_apps_script',
-            'apps_script_url' => 'https://script.google.com/macros/s/AKfycbTestBridge123/exec',
-        ])->assertRedirect();
-
-        $savedSmtp->update(['smtp_enabled' => false]);
-        $this->assertSame('https://script.google.com/macros/s/AKfycbTestBridge123/exec', $savedSmtp->fresh()->apps_script_url);
-        $statusGas = \App\Services\NotificationService::getSmtpStatus();
-        $this->assertTrue($statusGas['ready']);
-        $this->assertSame('apps_script', $statusGas['source']);
-
-        $gasNotifView = $this->get('/notifications');
-        $gasNotifView->assertStatus(200);
-        $gasNotifView->assertSee('Google Apps Script Active (No App Password)');
     }
 }

@@ -12,14 +12,11 @@
     <div class="d-flex flex-wrap align-items-center gap-2">
         <?php if (!empty($smtpStatus['ready'])): ?>
             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-2" style="font-size:0.74rem;">
-                <i class="fas fa-check-circle me-1"></i>
-                <?= ($smtpStatus['source'] ?? '') === 'apps_script'
-                    ? 'Google Apps Script Active (No App Password)'
-                    : 'Direct SMTP Active (' . htmlspecialchars($smtpStatus['sender_email']) . ')' ?>
+                <i class="fas fa-check-circle me-1"></i> Direct SMTP Active (<?= htmlspecialchars($smtpStatus['sender_email']) ?>)
             </span>
         <?php else: ?>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-2" style="font-size:0.74rem;">
-                <i class="fas fa-bolt me-1"></i> Zero-Config Relay Mode (No SMTP Required)
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-2" style="font-size:0.74rem;">
+                <i class="fas fa-exclamation-triangle me-1"></i> FormSubmit Relay Fallback
             </span>
         <?php endif; ?>
 
@@ -32,7 +29,7 @@
                 </button>
             </form>
             <a href="<?= base_url('?page=smtp_settings') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
-                <i class="fas fa-cog me-1"></i> Email Gateway Settings
+                <i class="fas fa-cog me-1"></i> System SMTP Gateway
             </a>
         <?php endif; ?>
     </div>
@@ -45,26 +42,11 @@
                 <i class="fas fa-envelope-open-text text-primary me-1"></i> Auto Reminder Email Recipients (H-90, H-60, H-30, H-14, H-7, H-3, Hari H)
             </h6>
             <div class="small text-muted">
-                Add an email once below to receive deadline alerts for active documents in the selected department.
+                Add an email once below to immediately receive deadline alerts for active documents in the selected department.
             </div>
         </div>
         <span class="badge bg-light text-dark border px-3 py-1"><?= count($recipients ?? []) ?> Recipient(s)</span>
     </div>
-
-    <?php if (empty($smtpStatus['ready'])): ?>
-        <div class="alert alert-info border border-info-subtle rounded-0 py-2 px-3 small mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background:#f0f9ff;">
-            <div>
-                <i class="fas fa-info-circle text-primary me-1"></i>
-                <strong>Ingin bebas FormSubmit HTTP 429 &amp; tanpa klik Activate Form?</strong>
-                Hubungkan <strong>Google Apps Script Email Bridge</strong> (gratis, tanpa App Password, kuota 100-1.500 email/hari langsung ke Gmail Inbox). Atau jika tetap memakai FormSubmit, klik <strong>Aktivasi via Browser</strong> di baris email Anda.
-            </div>
-            <?php if (is_superadmin()): ?>
-                <a href="<?= base_url('?page=smtp_settings') ?>" class="btn btn-sm btn-success fw-bold px-3 text-nowrap">
-                    <i class="fas fa-bolt me-1"></i> Setup Google Apps Script (1 Menit)
-                </a>
-            <?php endif; ?>
-        </div>
-    <?php endif; ?>
 
     <form method="POST" action="<?= base_url('?page=notifications') ?>" class="row g-2 align-items-end p-2 bg-light border mb-3 mt-2">
         @csrf
@@ -116,79 +98,33 @@
                 <?php else: ?>
                     <?php foreach ($recipients as $rec): ?>
                         <tr>
-                            <td class="fw-semibold text-dark">
-                                <?= htmlspecialchars($rec['email']) ?>
-                                <?php if (empty($smtpStatus['ready']) && !empty($rec['formsubmit_token'])): ?>
-                                    <div class="text-muted font-monospace" style="font-size:0.7rem;">Token: <?= htmlspecialchars($rec['formsubmit_token']) ?></div>
-                                <?php endif; ?>
-                            </td>
+                            <td class="fw-semibold text-dark"><?= htmlspecialchars($rec['email']) ?></td>
                             <td class="text-secondary"><?= htmlspecialchars($rec['label'] ?: '-') ?></td>
                             <td><span class="badge mq-dept-badge px-2 py-1"><?= htmlspecialchars($rec['department']) ?></span></td>
                             <td>
-                                <?php if (empty($rec['is_active'])): ?>
-                                    <span class="badge bg-secondary-subtle text-secondary border">Paused</span>
-                                <?php elseif (!empty($smtpStatus['ready'])): ?>
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Direct SMTP</span>
-                                <?php elseif (!empty($rec['is_verified'])): ?>
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Active &amp; Verified</span>
+                                <?php if (!empty($rec['is_active'])): ?>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
                                 <?php else: ?>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Needs Activation</span>
-                                <?php endif; ?>
-                                <?php if (empty($smtpStatus['ready']) && empty($rec['is_verified']) && !empty($rec['last_error'])): ?>
-                                    <div class="text-danger mt-1" style="font-size:0.7rem;max-width:250px;line-height:1.25;">
-                                        <?= htmlspecialchars($rec['last_error']) ?>
-                                    </div>
+                                    <span class="badge bg-secondary-subtle text-secondary border">Paused</span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
-                                <div class="d-inline-flex flex-wrap justify-content-end gap-1 align-items-center">
-                                    <?php if (empty($smtpStatus['ready']) && empty($rec['is_verified'])): ?>
-                                        <form method="POST" action="https://formsubmit.co/<?= htmlspecialchars($rec['email'], ENT_QUOTES) ?>" target="_blank" class="d-inline m-0">
-                                            <input type="hidden" name="name" value="PT Medquest Jaya Global">
-                                            <input type="hidden" name="email" value="noreply@medquest.co.id">
-                                            <input type="hidden" name="department" value="<?= htmlspecialchars($rec['department']) ?>">
-                                            <input type="hidden" name="_subject" value="[MEDQUEST] Activate Legal Deadline Reminders (<?= htmlspecialchars($rec['department']) ?>)">
-                                            <input type="hidden" name="_template" value="table">
-                                            <input type="hidden" name="message" value="Aktivasi penerima pengingat otomatis dokumen legal Medquest (H-90, H-60, H-30, H-14, H-7, H-3, Hari H).">
-                                            <button type="submit" class="btn btn-xs btn-warning text-dark fw-bold px-2 py-1" style="font-size:0.72rem;" title="Kirim permintaan aktivasi FormSubmit langsung dari browser Anda">
-                                                Aktivasi via Browser
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                    <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline m-0">
-                                        @csrf
-                                        <input type="hidden" name="action" value="test_recipient">
-                                        <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
-                                        <button type="submit" class="btn btn-xs btn-outline-primary px-2 py-1 fw-semibold" style="font-size:0.72rem;" title="Verify activation &amp; send pending reminders">
-                                            Test / Retry
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline m-0">
-                                        @csrf
-                                        <input type="hidden" name="action" value="toggle_recipient">
-                                        <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
-                                        <button type="submit" class="btn btn-xs btn-light border px-2 py-1" style="font-size:0.72rem;">
-                                            <?= !empty($rec['is_active']) ? 'Pause' : 'Activate' ?>
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline m-0" onsubmit="return confirm('Remove email <?= htmlspecialchars($rec['email']) ?> from reminder recipients?')">
-                                        @csrf
-                                        <input type="hidden" name="action" value="delete_recipient">
-                                        <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
-                                        <button type="submit" class="btn btn-xs btn-outline-danger px-2 py-1" style="font-size:0.72rem;">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                                <?php if (empty($smtpStatus['ready'])): ?>
-                                    <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-flex justify-content-end gap-1 mt-1">
-                                        @csrf
-                                        <input type="hidden" name="action" value="save_recipient_token">
-                                        <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
-                                        <input type="text" name="formsubmit_token" class="form-control form-control-sm py-0 px-2" style="max-width:210px;font-size:0.72rem;height:24px;" placeholder="Opsional: URL/Token FormSubmit" value="<?= htmlspecialchars($rec['formsubmit_token'] ?? '') ?>">
-                                        <button type="submit" class="btn btn-xs btn-light border px-2 py-0" style="font-size:0.7rem;height:24px;">Save Token</button>
-                                    </form>
-                                <?php endif; ?>
+                                <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="action" value="toggle_recipient">
+                                    <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
+                                    <button type="submit" class="btn btn-xs btn-light border px-2 py-1" style="font-size:0.72rem;">
+                                        <?= !empty($rec['is_active']) ? 'Pause' : 'Activate' ?>
+                                    </button>
+                                </form>
+                                <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline" onsubmit="return confirm('Remove email <?= htmlspecialchars($rec['email']) ?> from reminder recipients?')">
+                                    @csrf
+                                    <input type="hidden" name="action" value="delete_recipient">
+                                    <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
+                                    <button type="submit" class="btn btn-xs btn-outline-danger px-2 py-1" style="font-size:0.72rem;">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -311,22 +247,9 @@
                                 <div class="fw-semibold text-dark"><?= htmlspecialchars($log['subject']) ?></div>
                             </td>
                             <td>
-                                <?php
-                                    $logStatus = (string) ($log['status_kirim'] ?? '');
-                                    $isSentOk = str_starts_with($logStatus, 'SENT_') || $logStatus === 'SENT TO GMAIL';
-                                    $isWaiting = str_contains($logStatus, 'AWAITING');
-                                    $statusBadge = $isSentOk
-                                        ? 'bg-success-subtle text-success border-success-subtle'
-                                        : ($isWaiting ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle' : 'bg-danger-subtle text-danger border-danger-subtle');
-                                ?>
-                                <span class="badge border <?= $statusBadge ?>">
-                                    <?= htmlspecialchars($logStatus) ?>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <?= htmlspecialchars($log['status_kirim']) ?>
                                 </span>
-                                <?php if (!$isSentOk && !empty($log['keterangan_status'])): ?>
-                                    <div class="text-muted mt-1" style="font-size:0.7rem;max-width:230px;line-height:1.25;">
-                                        <?= htmlspecialchars($log['keterangan_status']) ?>
-                                    </div>
-                                <?php endif; ?>
                             </td>
                             <td class="text-end">
                                 <button type="button"

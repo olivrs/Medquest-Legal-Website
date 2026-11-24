@@ -13,26 +13,6 @@ use Illuminate\Support\Facades\Schema;
 
 class NotificationService
 {
-    public static function getAppsScriptWebhookUrl(): string
-    {
-        try {
-            if (Schema::hasTable('smtp_settings') && Schema::hasColumn('smtp_settings', 'apps_script_url')) {
-                $dbUrl = trim((string) SmtpSetting::where('id', 1)->value('apps_script_url'));
-                if ($dbUrl !== '' && stripos($dbUrl, 'https://script.google.com/') === 0) {
-                    return $dbUrl;
-                }
-            }
-        } catch (\Throwable $e) {
-        }
-
-        $envUrl = trim((string) config('mail.apps_script_url', ''));
-        if ($envUrl !== '' && stripos($envUrl, 'https://script.google.com/') === 0) {
-            return $envUrl;
-        }
-
-        return '';
-    }
-
     public static function getSmtpStatus(): array
     {
         try {
@@ -50,16 +30,6 @@ class NotificationService
         } catch (\Throwable $e) {
         }
 
-        $appsScriptUrl = self::getAppsScriptWebhookUrl();
-        if ($appsScriptUrl !== '') {
-            return [
-                'ready'        => true,
-                'source'       => 'apps_script',
-                'sender_email' => 'Google Apps Script (Free Gmail Bridge)',
-                'host'         => 'script.google.com',
-            ];
-        }
-
         $mailer = (string) config('mail.default', 'log');
         $envUser = trim((string) config('mail.mailers.smtp.username', ''));
         $envPass = trim((string) config('mail.mailers.smtp.password', ''));
@@ -75,15 +45,6 @@ class NotificationService
                 'source'       => 'env',
                 'sender_email' => (string) (config('mail.from.address') ?: $envUser),
                 'host'         => (string) config('mail.mailers.smtp.host', 'smtp.gmail.com'),
-            ];
-        }
-
-        if ($mailer === 'sendmail') {
-            return [
-                'ready'        => true,
-                'source'       => 'sendmail',
-                'sender_email' => (string) (config('mail.from.address') ?: 'noreply@medquest.co.id'),
-                'host'         => 'sendmail',
             ];
         }
 
@@ -290,110 +251,6 @@ class NotificationService
         }
     }
 
-    public static function sendViaAppsScript(
-        string $webhookUrl,
-        string $toEmail,
-        string $subject,
-        string $htmlBody,
-        string $senderName = '',
-        ?string &$errorMsg = null
-    ): bool {
-        $webhookUrl = trim($webhookUrl);
-        if (
-            !filter_var($webhookUrl, FILTER_VALIDATE_URL)
-            || stripos($webhookUrl, 'https://script.google.com/') !== 0
-        ) {
-            $errorMsg = 'Google Apps Script Webhook URL is invalid.';
-            return false;
-        }
-
-        $plainText = trim(preg_replace("/\n{3,}/", "\n\n", strip_tags(str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</tr>'], "\n", $htmlBody))));
-        $payload = json_encode([
-            'to'          => $toEmail,
-            'subject'     => $subject,
-            'html'        => $htmlBody,
-            'text'        => $plainText !== '' ? $plainText : $subject,
-            'sender_name' => $senderName !== '' ? $senderName : 'Medquest Agreement Alert (LAC)',
-        ]);
-
-        $httpCode = 0;
-        $resp = false;
-        $transportErr = '';
-
-        if (function_exists('curl_init')) {
-            $ch = curl_init($webhookUrl);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS      => 5,
-                CURLOPT_POST           => true,
-                CURLOPT_POSTFIELDS     => $payload,
-                CURLOPT_HTTPHEADER     => [
-                    'Content-Type: application/json',
-                    'Accept: application/json',
-                ],
-                CURLOPT_TIMEOUT        => 20,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-            ]);
-            $resp = curl_exec($ch);
-            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if ($resp === false) {
-                $transportErr = (string) curl_error($ch);
-            }
-            curl_close($ch);
-        } else {
-            $opts = [
-                'http' => [
-                    'method'          => 'POST',
-                    'header'          => "Content-Type: application/json\r\nAccept: application/json\r\n",
-                    'content'         => $payload,
-                    'timeout'         => 20,
-                    'ignore_errors'   => true,
-                    'follow_location' => 1,
-                    'max_redirects'   => 5,
-                ],
-                'ssl' => [
-                    'verify_peer'      => false,
-                    'verify_peer_name' => false,
-                ],
-            ];
-            $ctx = stream_context_create($opts);
-            $resp = @file_get_contents($webhookUrl, false, $ctx);
-            if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', (string) $http_response_header[0], $m)) {
-                $httpCode = (int) $m[1];
-            }
-        }
-
-        if ($resp === false || $httpCode === 0) {
-            $errorMsg = 'Tidak dapat terhubung ke Google Apps Script' . ($transportErr !== '' ? " ({$transportErr})" : '.');
-            return false;
-        }
-
-        $decoded = @json_decode((string) $resp, true);
-        if (is_array($decoded) && !empty($decoded['ok'])) {
-            return true;
-        }
-
-        if (is_array($decoded) && !empty($decoded['error'])) {
-            $errorMsg = 'Apps Script Error: ' . (string) $decoded['error'];
-            return false;
-        }
-
-        $rawStr = (string) $resp;
-        if (stripos($rawStr, 'accounts.google.com') !== false || stripos($rawStr, 'ServiceLogin') !== false) {
-            $errorMsg = 'Google Apps Script meminta login Google. Pastikan saat Deploy -> Web App memilih Who has access: Anyone.';
-            return false;
-        }
-        if (stripos($rawStr, 'Script function not found') !== false || stripos($rawStr, 'doPost') !== false) {
-            $errorMsg = 'Fungsi doPost(e) belum ditemukan di Google Apps Script. Pastikan sudah Save dan Deploy Web App versi terbaru.';
-            return false;
-        }
-
-        $errorMsg = "Google Apps Script HTTP {$httpCode}: respons tidak dikenali.";
-        return false;
-    }
-
     public static function sendHtmlViaConfiguredMailer(
         string $toEmail,
         string $subject,
@@ -420,7 +277,6 @@ class NotificationService
             }
         }
 
-        $smtp = null;
         try {
             if (Schema::hasTable('smtp_settings')) {
                 $smtp = SmtpSetting::find(1);
@@ -436,26 +292,13 @@ class NotificationService
             $errorMsg = $e->getMessage();
         }
 
-        $appsScriptUrl = self::getAppsScriptWebhookUrl();
-        if ($appsScriptUrl !== '') {
-            $senderName = ($smtp && !empty($smtp->sender_name)) ? (string) $smtp->sender_name : 'Medquest Agreement Alert (LAC)';
-            $gasErr = null;
-            if (self::sendViaAppsScript($appsScriptUrl, $toEmail, $subject, $htmlBody, $senderName, $gasErr)) {
-                $channel = 'SENT_APPS_SCRIPT';
-                return true;
-            }
-            $channel = 'FAILED_APPS_SCRIPT';
-            $errorMsg = $gasErr ?: $errorMsg;
-            return false;
-        }
-
         $status = self::getSmtpStatus();
-        if ($status['ready'] && in_array($status['source'], ['env', 'sendmail'], true)) {
+        if ($status['ready'] && $status['source'] === 'env') {
             try {
                 Mail::html($htmlBody, function ($message) use ($toEmail, $subject) {
                     $message->to($toEmail)->subject($subject);
                 });
-                $channel = ($status['source'] === 'sendmail') ? 'SENT_SENDMAIL' : 'SENT_ENV_SMTP';
+                $channel = 'SENT_ENV_SMTP';
                 return true;
             } catch (\Throwable $e) {
                 $errorMsg = $e->getMessage();
@@ -465,46 +308,6 @@ class NotificationService
 
         $channel = 'NEEDS_RELAY';
         return false;
-    }
-
-    public static function normalizeFormSubmitEndpoint(string $value): string
-    {
-        $trimmed = trim($value);
-        if ($trimmed === '') {
-            return '';
-        }
-        if (filter_var($trimmed, FILTER_VALIDATE_EMAIL)) {
-            return strtolower($trimmed);
-        }
-        $path = parse_url($trimmed, PHP_URL_PATH);
-        if (is_string($path) && trim($path, '/') !== '') {
-            $segments = array_values(array_filter(explode('/', trim($path, '/')), fn ($s) => $s !== ''));
-            if (!empty($segments)) {
-                return (string) end($segments);
-            }
-        }
-        return preg_replace('/[^A-Za-z0-9_.@+-]/', '', $trimmed) ?: '';
-    }
-
-    protected static function getRelayEndpointForEmail(string $toEmail): string
-    {
-        $cleanEmail = strtolower(trim($toEmail));
-        try {
-            if (Schema::hasTable('notification_recipients') && Schema::hasColumn('notification_recipients', 'formsubmit_token')) {
-                $token = NotificationRecipient::where('email', $cleanEmail)
-                    ->whereNotNull('formsubmit_token')
-                    ->where('formsubmit_token', '!=', '')
-                    ->value('formsubmit_token');
-                if (is_string($token) && trim($token) !== '') {
-                    $normalized = self::normalizeFormSubmitEndpoint($token);
-                    if ($normalized !== '') {
-                        return $normalized;
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-        }
-        return $cleanEmail;
     }
 
     protected static function resolveOriginUrl(): string
@@ -517,187 +320,45 @@ class NotificationService
         return $origin;
     }
 
-    protected static function postToFormSubmitRelayWithResult(string $toEmail, array $payload, ?string $customEndpoint = null): array
+    protected static function postToFormSubmitRelay(string $toEmail, array $payload): bool
     {
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'needs_activation' => false, 'rate_limited' => false, 'http_code' => 0, 'message' => 'Invalid email address.'];
-        }
-
-        $endpoint = ($customEndpoint !== null && trim($customEndpoint) !== '')
-            ? self::normalizeFormSubmitEndpoint($customEndpoint)
-            : self::getRelayEndpointForEmail($toEmail);
-        if ($endpoint === '') {
-            $endpoint = strtolower(trim($toEmail));
+            return false;
         }
 
         $origin = self::resolveOriginUrl();
-        $url = 'https://formsubmit.co/ajax/' . rawurlencode($endpoint);
-        $jsonBody = json_encode($payload);
-        $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-        $httpCode = 0;
-        $resp = false;
-        $transportErr = '';
-
-        if (function_exists('curl_init')) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_POST           => true,
-                CURLOPT_POSTFIELDS     => $jsonBody,
-                CURLOPT_HTTPHEADER     => [
-                    'Content-Type: application/json',
-                    'Accept: application/json',
-                    'Origin: ' . $origin,
-                    'Referer: ' . $origin . '/',
-                    'User-Agent: ' . $ua,
-                ],
-                CURLOPT_TIMEOUT        => 12,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-            ]);
-            $resp = curl_exec($ch);
-            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if ($resp === false) {
-                $transportErr = (string) curl_error($ch);
-            }
-            curl_close($ch);
-        } else {
-            $opts = [
-                'http' => [
-                    'method'        => 'POST',
-                    'header'        => "Content-Type: application/json\r\nAccept: application/json\r\nOrigin: {$origin}\r\nReferer: {$origin}/\r\nUser-Agent: {$ua}\r\n",
-                    'content'       => $jsonBody,
-                    'timeout'       => 12,
-                    'ignore_errors' => true,
-                ],
-                'ssl' => [
-                    'verify_peer'      => false,
-                    'verify_peer_name' => false,
-                ],
-            ];
-            $ctx = stream_context_create($opts);
-            $resp = @file_get_contents($url, false, $ctx);
-            if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', (string) $http_response_header[0], $m)) {
-                $httpCode = (int) $m[1];
-            }
-        }
-
-        if ($resp === false || $httpCode === 0) {
-            return [
-                'success'          => false,
-                'needs_activation' => false,
-                'rate_limited'     => false,
-                'http_code'        => 0,
-                'message'          => 'Tidak dapat terhubung ke server FormSubmit' . ($transportErr !== '' ? " ({$transportErr})" : '.'),
-            ];
-        }
-
-        $decoded = @json_decode((string) $resp, true);
-        $ok = is_array($decoded) && isset($decoded['success']) && ($decoded['success'] === true || $decoded['success'] === 'true');
-        $msg = is_array($decoded) ? trim((string) ($decoded['message'] ?? '')) : '';
-
-        if ($httpCode === 429 || stripos($msg, 'rate limit') !== false) {
-            return [
-                'success'          => false,
-                'needs_activation' => false,
-                'rate_limited'     => true,
-                'http_code'        => 429,
-                'message'          => 'FormSubmit HTTP 429 (' . ($msg ?: 'Rate limit exceeded') . '). Gunakan tombol Aktivasi via Browser di baris penerima, lalu tunggu beberapa menit sebelum Test / Retry.',
-            ];
-        }
-
-        if ($ok) {
-            return [
-                'success'          => true,
-                'needs_activation' => false,
-                'rate_limited'     => false,
-                'http_code'        => $httpCode,
-                'message'          => $msg !== '' ? $msg : 'Delivered via FormSubmit.',
-            ];
-        }
-
-        $needsAct = $msg !== '' && (stripos($msg, 'activat') !== false || stripos($msg, 'confirm') !== false);
-        $errText = $msg !== ''
-            ? $msg
-            : "FormSubmit HTTP {$httpCode}: respons non-JSON (kemungkinan diblokir proteksi bot/Cloudflare dari IP server; gunakan tombol Aktivasi via Browser).";
-
-        return [
-            'success'          => false,
-            'needs_activation' => $needsAct,
-            'rate_limited'     => false,
-            'http_code'        => $httpCode,
-            'message'          => $errText,
+        $url = 'https://formsubmit.co/ajax/' . rawurlencode($toEmail);
+        $opts = [
+            'http' => [
+                'method'        => 'POST',
+                'header'        => "Content-Type: application/json\r\nAccept: application/json\r\nOrigin: {$origin}\r\nReferer: {$origin}/\r\nUser-Agent: Mozilla/5.0\r\n",
+                'content'       => json_encode($payload),
+                'timeout'       => 8,
+                'ignore_errors' => true,
+            ],
+            'ssl' => [
+                'verify_peer'      => false,
+                'verify_peer_name' => false,
+            ],
         ];
-    }
 
-    protected static function postToFormSubmitRelay(string $toEmail, array $payload): bool
-    {
-        return self::postToFormSubmitRelayWithResult($toEmail, $payload)['success'];
-    }
-
-    public static function sendRecipientActivationOrTest(
-        string $toEmail,
-        string $label = '',
-        string $department = 'ALL',
-        ?string $customEndpoint = null
-    ): array {
-        $toEmail = strtolower(trim($toEmail));
-        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            return ['sent' => false, 'needs_activation' => false, 'rate_limited' => false, 'http_code' => 0, 'channel' => 'INVALID', 'message' => 'Invalid email address.'];
+        $ctx = stream_context_create($opts);
+        $resp = @file_get_contents($url, false, $ctx);
+        if ($resp === false) {
+            return false;
         }
-
-        $displayLabel = $label !== '' ? $label : $toEmail;
-        $subject = '[MEDQUEST] Auto Deadline Reminder Subscription Active (' . $department . ')';
-        $html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;">'
-            . '<div style="max-width:560px;margin:auto;background:#ffffff;border:1px solid #cbd5e1;padding:24px;">'
-            . '<h2 style="margin-top:0;color:#1e3a8a;">PT Medquest Jaya Global</h2>'
-            . '<p>Halo <strong>' . e($displayLabel) . '</strong>,</p>'
-            . '<p>Email <strong>' . e($toEmail) . '</strong> terdaftar untuk menerima pengingat otomatis dokumen legal (<strong>H-90, H-60, H-30, H-14, H-7, H-3, dan Hari H</strong>) pada departemen <strong>' . e($department) . '</strong>.</p>'
-            . '</div></body></html>';
-
-        $channel = null;
-        $err = null;
-        if (self::sendHtmlViaConfiguredMailer($toEmail, $subject, $html, $channel, $err)) {
-            return [
-                'sent'             => true,
-                'needs_activation' => false,
-                'rate_limited'     => false,
-                'http_code'        => 200,
-                'channel'          => $channel ?: 'SMTP',
-                'message'          => 'Confirmation email delivered directly.',
-            ];
-        }
-
-        $res = self::postToFormSubmitRelayWithResult($toEmail, [
-            '_subject'   => $subject,
-            '_template'  => 'table',
-            '_captcha'   => 'false',
-            'Recipient'  => $displayLabel,
-            'Email'      => $toEmail,
-            'Department' => $department,
-            'Reminders'  => 'H-90, H-60, H-30, H-14, H-7, H-3, dan HARI H (H-0)',
-            'Status'     => 'Jika baru pertama kali mendaftar, klik Activate Form di email ini 1 kali saja.',
-        ], $customEndpoint);
-
-        return [
-            'sent'             => $res['success'],
-            'needs_activation' => $res['needs_activation'],
-            'rate_limited'     => $res['rate_limited'] ?? false,
-            'http_code'        => $res['http_code'] ?? 0,
-            'channel'          => $res['success'] ? 'FORMSUBMIT_ACTIVE' : ($res['needs_activation'] ? 'FORMSUBMIT_PENDING' : 'FORMSUBMIT_ERROR'),
-            'message'          => $res['message'],
-        ];
+        $decoded = @json_decode($resp, true);
+        return isset($decoded['success']) && ($decoded['success'] === true || $decoded['success'] === 'true');
     }
 
-    public static function sendViaZeroConfigCloudRelayWithResult(string $toEmail, string $subject, array $agreement, array $recipient, string $tipeNotif): array
+    public static function sendViaZeroConfigCloudRelay(string $toEmail, string $subject, array $agreement, array $recipient, string $tipeNotif): bool
     {
         $docName = !empty($agreement['document_title'])
             ? $agreement['document_title']
             : ($agreement['customer'] ?? '-');
         $stageHeading = ($tipeNotif === 'H-0') ? 'HARI H (H-0)' : $tipeNotif;
 
-        return self::postToFormSubmitRelayWithResult($toEmail, [
+        return self::postToFormSubmitRelay($toEmail, [
             '_subject'        => $subject,
             '_template'       => 'table',
             '_captcha'        => 'false',
@@ -712,11 +373,6 @@ class NotificationService
             'Note'            => ($agreement['note'] ?? '') ?: 'N/A',
             'Created_By'      => $agreement['created_by_log'] ?? '',
         ]);
-    }
-
-    public static function sendViaZeroConfigCloudRelay(string $toEmail, string $subject, array $agreement, array $recipient, string $tipeNotif): bool
-    {
-        return self::sendViaZeroConfigCloudRelayWithResult($toEmail, $subject, $agreement, $recipient, $tipeNotif)['success'];
     }
 
     public static function getRecipientsForAgreement(array $agreement): array
@@ -768,12 +424,7 @@ class NotificationService
         return array_values($targets);
     }
 
-    public static function dispatchAgreementNotification(
-        Agreement $agreementModel,
-        string $tipeNotif,
-        bool $forceSend = false,
-        bool $retryWaiting = false
-    ): array
+    public static function dispatchAgreementNotification(Agreement $agreementModel, string $tipeNotif, bool $forceSend = false): array
     {
         $agreement = $agreementModel->toArray();
         $targets = self::getRecipientsForAgreement($agreement);
@@ -790,23 +441,19 @@ class NotificationService
         $subject = "[MEDQUEST {$stageSubject}] Deadline Reminder ({$expFormatted}) - Dept {$agreement['department']} - {$docLabel}";
 
         $smtpStatus = self::getSmtpStatus();
-        $deliveredStatuses = ['SENT_GMAIL_SMTP', 'SENT_APPS_SCRIPT', 'SENT_ENV_SMTP', 'SENT_SENDMAIL', 'SENT_LARAVEL_MAIL', 'SENT TO GMAIL'];
+        $deliveredStatuses = ['SENT_GMAIL_SMTP', 'SENT_ENV_SMTP', 'SENT_LARAVEL_MAIL', 'SENT TO GMAIL'];
         $existingLogs = EmailNotification::where('agreement_id', $agreement['id'])
             ->where('tipe_notif', $tipeNotif)
-            ->get(['recipient_email', 'status_kirim', 'sent_at']);
+            ->get(['recipient_email', 'status_kirim']);
 
         $alreadyDeliveredEmails = [];
-        $recentWaitingEmails = [];
-        $retryCutoff = time() - 3600;
+        $alreadyWaitingEmails = [];
         foreach ($existingLogs as $log) {
             $em = strtolower(trim((string) $log->recipient_email));
             if (in_array((string) $log->status_kirim, $deliveredStatuses, true)) {
                 $alreadyDeliveredEmails[$em] = true;
             } else {
-                $sentTs = !empty($log->sent_at) ? (strtotime((string) $log->sent_at) ?: 0) : 0;
-                if ($sentTs > $retryCutoff) {
-                    $recentWaitingEmails[$em] = true;
-                }
+                $alreadyWaitingEmails[$em] = true;
             }
         }
 
@@ -823,7 +470,7 @@ class NotificationService
             if (!$forceSend && isset($alreadyDeliveredEmails[$emailKey])) {
                 continue;
             }
-            if (!$forceSend && !$retryWaiting && !$smtpStatus['ready'] && isset($recentWaitingEmails[$emailKey])) {
+            if (!$forceSend && !$smtpStatus['ready'] && isset($alreadyWaitingEmails[$emailKey])) {
                 continue;
             }
 
@@ -833,11 +480,9 @@ class NotificationService
 
             $channel = null;
             $sendErr = null;
-            $relayRes = null;
             $sentOk = self::sendHtmlViaConfiguredMailer($target['email'], $subject, $htmlBody, $channel, $sendErr);
             if (!$sentOk && $channel === 'NEEDS_RELAY') {
-                $relayRes = self::sendViaZeroConfigCloudRelayWithResult($target['email'], $subject, $agreement, $target, $tipeNotif);
-                $sentOk = !empty($relayRes['success']);
+                $sentOk = self::sendViaZeroConfigCloudRelay($target['email'], $subject, $agreement, $target, $tipeNotif);
                 if ($sentOk) {
                     $channel = 'SENT TO GMAIL';
                 }
@@ -847,38 +492,9 @@ class NotificationService
                 $anySuccess = true;
                 $statusKirim = $channel ?: 'SENT_GMAIL_SMTP';
                 $keterangan  = 'Automatically sent to ' . $target['email'];
-                try {
-                    if (Schema::hasTable('notification_recipients') && Schema::hasColumn('notification_recipients', 'is_verified')) {
-                        NotificationRecipient::where('email', $emailKey)->update([
-                            'is_verified' => true,
-                            'last_error'  => 'Active & verified',
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                }
-            } elseif ($relayRes !== null) {
-                if (!empty($relayRes['needs_activation'])) {
-                    $statusKirim = 'AWAITING ACTIVATE CLICK IN GMAIL';
-                } elseif (!empty($relayRes['rate_limited'])) {
-                    $statusKirim = 'FORMSUBMIT_RATE_LIMIT';
-                } else {
-                    $statusKirim = 'FORMSUBMIT_FAILED';
-                }
-                $keterangan = (string) ($relayRes['message'] ?: ('Check Inbox/Spam ' . $target['email'] . ' or configure System SMTP.'));
-                try {
-                    if (Schema::hasTable('notification_recipients') && Schema::hasColumn('notification_recipients', 'last_error')) {
-                        NotificationRecipient::where('email', $emailKey)->update([
-                            'is_verified' => false,
-                            'last_error'  => mb_substr($keterangan, 0, 250),
-                        ]);
-                    }
-                } catch (\Throwable $e) {
-                }
             } else {
-                $statusKirim = ($channel === 'FAILED_APPS_SCRIPT')
-                    ? 'APPS_SCRIPT_FAILED'
-                    : ($sendErr ? 'SMTP_FAILED' : 'AWAITING ACTIVATE CLICK IN GMAIL');
-                $keterangan  = $sendErr ?: ('Check Inbox/Spam ' . $target['email'] . ' or configure Email Gateway.');
+                $statusKirim = $sendErr ? 'SMTP_FAILED' : 'AWAITING ACTIVATE CLICK IN GMAIL';
+                $keterangan  = $sendErr ?: ('Check Inbox/Spam ' . $target['email'] . ' or configure System SMTP.');
             }
 
             EmailNotification::create([
@@ -940,7 +556,7 @@ class NotificationService
         ];
     }
 
-    public static function runAutoExpiryNotifications(bool $force = false, bool $retryWaiting = false): array
+    public static function runAutoExpiryNotifications(bool $force = false): array
     {
         $results = [];
 
@@ -967,7 +583,7 @@ class NotificationService
                 $sisa = get_days_until_expiry($agr->expiry_date);
                 $dueStage = self::resolveDueMilestoneCode($sisa);
                 if ($dueStage !== null) {
-                    $res = self::dispatchAgreementNotification($agr, $dueStage, false, $retryWaiting);
+                    $res = self::dispatchAgreementNotification($agr, $dueStage, false);
                     if (!empty($res['results'])) {
                         foreach ($res['results'] as $item) {
                             if (!empty($item['success'])) {

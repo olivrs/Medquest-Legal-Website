@@ -22,7 +22,6 @@ class SmtpSetting extends Model
         'smtp_password',
         'sender_name',
         'sender_email',
-        'apps_script_url',
         'updated_at',
     ];
 }

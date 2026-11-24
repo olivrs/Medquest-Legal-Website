@@ -202,8 +202,6 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('4', '2026_11_09_0
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('5', '2026_11_12_000001_add_process_status_to_agreements_table', '2');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('6', '2026_11_16_000001_alter_aksi_in_agreement_histories_table', '2');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('7', '2026_11_24_000001_add_h0_and_notification_recipients', '3');
-INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('8', '2026_11_24_000002_add_relay_fields_to_notification_recipients', '4');
-INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('9', '2026_11_24_000003_add_apps_script_to_smtp_settings', '5');
 
 DROP TABLE IF EXISTS `notification_recipients`;
 CREATE TABLE `notification_recipients` (
@@ -211,10 +209,7 @@ CREATE TABLE `notification_recipients` (
   `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ALL',
-  `formsubmit_token` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `is_verified` tinyint(1) NOT NULL DEFAULT '0',
-  `last_error` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `added_by_user_id` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -254,12 +249,11 @@ CREATE TABLE `smtp_settings` (
   `smtp_password` varchar(255) DEFAULT '',
   `sender_name` varchar(150) NOT NULL DEFAULT 'Medquest Agreement Reminder',
   `sender_email` varchar(150) NOT NULL DEFAULT 'noreply@medquest.co.id',
-  `apps_script_url` varchar(500) DEFAULT NULL,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `smtp_settings` (`id`, `smtp_enabled`, `smtp_host`, `smtp_port`, `smtp_encryption`, `smtp_username`, `smtp_password`, `sender_name`, `sender_email`, `apps_script_url`, `updated_at`) VALUES ('1', '0', 'smtp.gmail.com', '587', 'tls', '', '', 'Medquest Agreement Alert (LAC)', 'noreply@medquest.co.id', NULL, '2026-11-04 09:46:50');
+INSERT INTO `smtp_settings` (`id`, `smtp_enabled`, `smtp_host`, `smtp_port`, `smtp_encryption`, `smtp_username`, `smtp_password`, `sender_name`, `sender_email`, `updated_at`) VALUES ('1', '0', 'smtp.gmail.com', '587', 'tls', '', '', 'Medquest Agreement Alert (LAC)', 'noreply@medquest.co.id', '2026-11-04 09:46:50');
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
