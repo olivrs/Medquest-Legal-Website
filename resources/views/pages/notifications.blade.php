@@ -118,15 +118,17 @@
                                             <?= !empty($rec['is_active']) ? 'Pause' : 'Activate' ?>
                                         </button>
                                     </form>
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger px-2 py-1 rounded-0 d-inline-flex align-items-center justify-content-center"
-                                            style="font-size:0.74rem;min-width:34px;"
-                                            title="Remove <?= htmlspecialchars($rec['email'], ENT_QUOTES) ?>"
-                                            data-rec-id="<?= (int) $rec['id'] ?>"
-                                            data-rec-email="<?= htmlspecialchars($rec['email'], ENT_QUOTES) ?>"
-                                            onclick="openDeleteRecipientModal(this)">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                    <form method="POST" action="<?= base_url('?page=notifications') ?>" class="m-0">
+                                        @csrf
+                                        <input type="hidden" name="action" value="delete_recipient">
+                                        <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger px-2 py-1 rounded-0 d-inline-flex align-items-center justify-content-center"
+                                                style="font-size:0.74rem;min-width:34px;"
+                                                title="Remove <?= htmlspecialchars($rec['email'], ENT_QUOTES) ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -207,9 +209,13 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="fw-bold text-dark mb-0">Email Notification History</h6>
         <?php if (!empty($emailLogs)): ?>
-            <button type="button" class="btn btn-outline-danger btn-sm rounded-0" onclick="openClearLogsModal()">
-                Clear History
-            </button>
+            <form method="POST" action="<?= base_url('?page=notifications') ?>" class="m-0">
+                @csrf
+                <input type="hidden" name="action" value="clear_logs">
+                <button type="submit" class="btn btn-outline-danger btn-sm rounded-0 fw-semibold">
+                    Clear History
+                </button>
+            </form>
         <?php endif; ?>
     </div>
     <div class="table-responsive">
@@ -248,8 +254,16 @@
                                 <div class="fw-semibold text-dark"><?= htmlspecialchars($log['subject']) ?></div>
                             </td>
                             <td>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                    <?= htmlspecialchars($log['status_kirim']) ?>
+                                <?php
+                                    $logStatus = (string) ($log['status_kirim'] ?? '');
+                                    $isSentOk = str_starts_with($logStatus, 'SENT_') || $logStatus === 'SENT TO GMAIL';
+                                    $isWaiting = str_contains($logStatus, 'AWAITING');
+                                    $statusBadge = $isSentOk
+                                        ? 'bg-success-subtle text-success-emphasis border-success-subtle'
+                                        : ($isWaiting ? 'bg-warning-subtle text-warning-emphasis border-warning' : 'bg-danger-subtle text-danger border-danger-subtle');
+                                ?>
+                                <span class="badge border rounded-0 <?= $statusBadge ?>">
+                                    <?= htmlspecialchars($logStatus) ?>
                                 </span>
                             </td>
                             <td class="text-end">
@@ -282,51 +296,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalConfirmDeleteRecipient" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content rounded-0 border-0 shadow">
-            <div class="modal-header bg-danger text-white py-2">
-                <h6 class="modal-title fw-bold mb-0"><i class="fas fa-trash-alt me-1"></i> Remove Recipient</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="<?= base_url('?page=notifications') ?>" id="deleteRecipientForm">
-                @csrf
-                <input type="hidden" name="action" value="delete_recipient">
-                <input type="hidden" name="recipient_id" id="deleteRecipientIdInput" value="">
-                <div class="modal-body small">
-                    Remove email <strong id="deleteRecipientEmailText"></strong> from Auto Reminder recipients?
-                </div>
-                <div class="modal-footer py-2 border-top bg-light">
-                    <button type="button" class="btn btn-sm btn-light border rounded-0" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-danger fw-bold rounded-0">Yes, Delete</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalConfirmClearLogs" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content rounded-0 border-0 shadow">
-            <div class="modal-header bg-danger text-white py-2">
-                <h6 class="modal-title fw-bold mb-0"><i class="fas fa-trash-alt me-1"></i> Clear History</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="POST" action="<?= base_url('?page=notifications') ?>">
-                @csrf
-                <input type="hidden" name="action" value="clear_logs">
-                <div class="modal-body small">
-                    Clear all email notification log history?
-                </div>
-                <div class="modal-footer py-2 border-top bg-light">
-                    <button type="button" class="btn btn-sm btn-light border rounded-0" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-danger fw-bold rounded-0">Yes, Clear</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
 function showEmailPreview(logId) {
     const tpl = document.getElementById('emailTpl_' + logId);
@@ -340,28 +309,6 @@ function showEmailPreview(logId) {
         doc.write(tpl.innerHTML);
         doc.close();
     }, 100);
-}
-
-function openDeleteRecipientModal(btn) {
-    const recId = btn.getAttribute('data-rec-id') || '';
-    const recEmail = btn.getAttribute('data-rec-email') || '';
-    const idInput = document.getElementById('deleteRecipientIdInput');
-    const emailEl = document.getElementById('deleteRecipientEmailText');
-    if (idInput) idInput.value = recId;
-    if (emailEl) emailEl.textContent = recEmail;
-    const modalEl = document.getElementById('modalConfirmDeleteRecipient');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    } else if (idInput && idInput.form) {
-        idInput.form.submit();
-    }
-}
-
-function openClearLogsModal() {
-    const modalEl = document.getElementById('modalConfirmClearLogs');
-    if (modalEl && typeof bootstrap !== 'undefined') {
-        bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    }
 }
 </script>
 @endsection

@@ -680,7 +680,8 @@ class MedquestSystemTest extends TestCase
         $notifView->assertDontSee('Auto Reminder Email Recipients (H-90');
         $notifView->assertSee('legal.pic1@medquest.co.id');
         $notifView->assertSee('legal.pic2@medquest.co.id');
-        $notifView->assertSee('openDeleteRecipientModal');
+        $notifView->assertSee('value="delete_recipient"', false);
+        $notifView->assertSee('value="clear_logs"', false);
 
         $pic2 = \App\Models\NotificationRecipient::where('email', 'legal.pic2@medquest.co.id')->first();
         $this->assertNotNull($pic2);
@@ -689,6 +690,11 @@ class MedquestSystemTest extends TestCase
             'recipient_id' => $pic2->id,
         ])->assertRedirect();
         $this->assertDatabaseMissing('notification_recipients', ['id' => $pic2->id]);
+
+        $this->post('/notifications', [
+            'action' => 'clear_logs',
+        ])->assertRedirect();
+        $this->assertSame(0, \App\Models\EmailNotification::count());
 
         $pendingUser = \App\Models\User::create([
             'nama_lengkap'       => 'Staff Baru LAC',
