@@ -26,10 +26,11 @@
                     <i class="fas fa-hourglass-half text-warning fs-5 mt-1"></i>
                     <div>
                         <div class="fw-bold text-dark" style="font-size:0.95rem;">
-                            Your account has been registered and is currently under review by the Medquest Team.
+                            Pendaftaran Akun Berhasil Dikirimkan.
                         </div>
                         <div class="text-secondary small mt-1">
-                            Notifikasi permohonan persetujuan telah otomatis dikirimkan ke <strong>Gmail Superadmin</strong> lengkap dengan tombol <strong>1-Click ACC</strong>. Begitu disetujui, akun Anda langsung aktif dan dapat digunakan untuk login.
+                            Konfirmasi izin notifikasi telah otomatis dikirimkan ke email Anda (<strong><?= htmlspecialchars($pendingInfo['email'] ?? '') ?></strong>). Silakan buka Gmail Anda untuk mengaktifkan izin notifikasi.<br>
+                            Aktivasi akun akan diverifikasi oleh Administrator melalui menu <strong>Account Approvals</strong>.
                         </div>
                     </div>
                 </div>

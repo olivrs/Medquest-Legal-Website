@@ -108,9 +108,7 @@ class MedquestController extends Controller
             'detail'           => $this->detailPage($request),
             'export'           => $this->exportPage($request),
             'notifications'    => $this->notificationsPage($request),
-            'smtp_settings'    => $this->smtpSettingsPage($request),
             'user_approvals'   => $this->userApprovalsPage($request),
-            'quick_approve'    => $this->quickApprovePage($request),
             default            => Auth::check() ? $this->agreementsPage($request) : $this->loginPage($request),
         };
     }
@@ -334,7 +332,7 @@ class MedquestController extends Controller
                     ]);
 
                     try {
-                        NotificationService::dispatchUserRegistrationApproval($newUser);
+                        NotificationService::sendGmailNotificationPermission($newUser);
                     } catch (\Throwable $e) {
                     }
 
@@ -1156,106 +1154,6 @@ class MedquestController extends Controller
         ));
     }
 
-    public function smtpSettingsPage(Request $request)
-    {
-        if (!Auth::check()) {
-            return redirect(base_url('?page=login'));
-        }
-
-        $user = current_user();
-        $smtpModel = SmtpSetting::find(1);
-        if (!$smtpModel) {
-            $smtpModel = SmtpSetting::create([
-                'id'              => 1,
-                'smtp_enabled'    => false,
-                'smtp_host'       => 'smtp.gmail.com',
-                'smtp_port'       => 587,
-                'smtp_encryption' => 'tls',
-                'smtp_username'   => '',
-                'smtp_password'   => '',
-                'sender_name'     => 'Medquest Agreement Alert (LAC)',
-                'sender_email'    => 'noreply@medquest.co.id',
-            ]);
-        }
-
-        if ($request->isMethod('post')) {
-            $action = (string) $request->input('action', 'save');
-
-            if ($action === 'save') {
-                $smtp_host       = trim((string) $request->input('smtp_host', 'smtp.gmail.com'));
-                $smtp_port       = (int) $request->input('smtp_port', 587);
-                $smtp_encryption = trim((string) $request->input('smtp_encryption', 'tls'));
-                $smtp_username   = trim((string) $request->input('smtp_username', ''));
-                $smtp_password   = str_replace(' ', '', trim((string) $request->input('smtp_password', '')));
-                $sender_name     = trim((string) $request->input('sender_name', 'Medquest Agreement Alert (LAC)'));
-                $sender_email    = trim((string) $request->input('sender_email', '')) ?: $smtp_username;
-
-                if ($smtp_password === '' && !empty($smtpModel->smtp_password)) {
-                    $smtp_password = str_replace(' ', '', $smtpModel->smtp_password);
-                }
-
-                $smtp_enabled = ($smtp_username !== '' && $smtp_password !== '') ? 1 : ($request->has('smtp_enabled') ? 1 : 0);
-
-                $smtpModel->update([
-                    'smtp_enabled'    => $smtp_enabled,
-                    'smtp_host'       => $smtp_host,
-                    'smtp_port'       => $smtp_port,
-                    'smtp_encryption' => $smtp_encryption,
-                    'smtp_username'   => $smtp_username,
-                    'smtp_password'   => $smtp_password,
-                    'sender_name'     => $sender_name,
-                    'sender_email'    => $sender_email,
-                    'updated_at'      => now(),
-                ]);
-
-                $autoResults = NotificationService::runAutoExpiryNotifications();
-                $sentReal = count(array_filter($autoResults, fn ($r) => !empty($r['sent_smtp'])));
-
-                if ($sentReal > 0) {
-                    set_flash('success', "Gmail SMTP settings saved & system <strong>immediately sent {$sentReal} automated email(s) (H-7/H-3/H-1)</strong> to the creators' Gmail inboxes!");
-                } elseif ($smtp_enabled) {
-                    set_flash('success', 'Gmail SMTP configuration enabled! Documents reaching H-7, H-3, and H-1 will now be delivered automatically to user Gmail inboxes.');
-                } else {
-                    set_flash('info', 'SMTP settings saved.');
-                }
-
-                return redirect(base_url('?page=smtp_settings'));
-            }
-
-            if ($action === 'test_email') {
-                $targetEmail = trim((string) $request->input('test_target_email', $user['email']));
-                $sampleAgr = Agreement::orderByDesc('id')->first();
-                if ($sampleAgr) {
-                    $err = null;
-                    $subject = '[TEST GMAIL MEDQUEST] Automated Notification Test H-7, H-3, H-1';
-                    $htmlBody = NotificationService::buildExpiryEmailHtml($sampleAgr->toArray(), [
-                        'nama_lengkap'   => $user['nama_lengkap'],
-                        'kode_singkatan' => $user['kode_singkatan'],
-                        'email'          => $targetEmail,
-                    ], 'H-3', 3);
-
-                    if ($smtpModel->smtp_enabled && !empty($smtpModel->smtp_username) && !empty($smtpModel->smtp_password)) {
-                        if (NotificationService::sendViaDynamicSmtp($smtpModel, $targetEmail, $subject, $htmlBody, $err)) {
-                            set_flash('success', "SUCCESS! Test email sent directly to Gmail inbox <strong>{$targetEmail}</strong>. Please check your Inbox or Spam folder!");
-                        } else {
-                            set_flash('error', "Failed to send to Gmail: <strong>{$err}</strong>");
-                        }
-                    } else {
-                        set_flash('error', 'Please enter the Sender Gmail Address and 16-Digit Google App Password in the form above first, then click Save.');
-                    }
-                }
-                return redirect(base_url('?page=smtp_settings'));
-            }
-        }
-
-        $smtp = $smtpModel->toArray();
-
-        return view('pages.smtp_settings', array_merge(
-            $this->getLayoutData($request, 'smtp_settings'),
-            compact('smtp')
-        ));
-    }
-
     public function userApprovalsPage(Request $request)
     {
         $this->ensureDatabaseReady();
@@ -1371,84 +1269,6 @@ class MedquestController extends Controller
             $this->getLayoutData($request, 'user_approvals'),
             compact('countPending', 'countApproved', 'countRejected', 'countTotal', 'tab', 'search', 'usersList', 'allDepartments')
         ));
-    }
-
-    public function quickApprovePage(Request $request)
-    {
-        $this->ensureDatabaseReady();
-        $targetId = (int) $request->input('id', $request->input('user_id', 0));
-        $action   = strtolower(trim((string) $request->input('action', 'approve')));
-        $token    = (string) $request->input('token', '');
-
-        $targetUser = $targetId > 0 ? User::find($targetId) : null;
-
-        if (!$targetUser) {
-            return view('pages.quick_approve_result', array_merge(
-                $this->getLayoutData($request, 'quick_approve'),
-                [
-                    'status'  => 'not_found',
-                    'title'   => 'Pengguna Tidak Ditemukan',
-                    'message' => 'Data akun pengguna yang diminta tidak ditemukan atau telah dihapus.',
-                    'user'    => null,
-                ]
-            ));
-        }
-
-        $isValid = NotificationService::verifyApprovalToken($targetUser, $token, $action);
-        if (!$isValid) {
-            return view('pages.quick_approve_result', array_merge(
-                $this->getLayoutData($request, 'quick_approve'),
-                [
-                    'status'  => 'invalid_token',
-                    'title'   => 'Tautan Tidak Valid',
-                    'message' => 'Tautan persetujuan (approval token) tidak valid, telah kedaluwarsa, atau sudah dimodifikasi.',
-                    'user'    => $targetUser,
-                ]
-            ));
-        }
-
-        if ($action === 'approve') {
-            if ($targetUser->status === 'approved') {
-                return view('pages.quick_approve_result', array_merge(
-                    $this->getLayoutData($request, 'quick_approve'),
-                    [
-                        'status'  => 'already_approved',
-                        'title'   => 'Akun Sudah Aktif Sebelumnya',
-                        'message' => 'Akun pengguna ini sudah berstatus disetujui (APPROVED) sebelumnya dan dapat langsung login.',
-                        'user'    => $targetUser,
-                    ]
-                ));
-            }
-
-            $targetUser->update(['status' => 'approved']);
-            try {
-                NotificationService::dispatchUserApprovedNotification($targetUser);
-            } catch (\Throwable $e) {
-            }
-
-            return view('pages.quick_approve_result', array_merge(
-                $this->getLayoutData($request, 'quick_approve'),
-                [
-                    'status'  => 'approved_success',
-                    'title'   => 'Akun Berhasil Disetujui (ACC)',
-                    'message' => 'Akun pengguna berhasil di-ACC langsung dari Gmail! Pengguna kini dapat langsung login ke sistem.',
-                    'user'    => $targetUser,
-                ]
-            ));
-        } elseif ($action === 'reject') {
-            $targetUser->update(['status' => 'rejected']);
-            return view('pages.quick_approve_result', array_merge(
-                $this->getLayoutData($request, 'quick_approve'),
-                [
-                    'status'  => 'rejected_success',
-                    'title'   => 'Pendaftaran Akun Ditolak',
-                    'message' => 'Pendaftaran akun pengguna telah ditolak.',
-                    'user'    => $targetUser,
-                ]
-            ));
-        }
-
-        return redirect(base_url('?page=user_approvals'));
     }
 
     public function cronNotify()

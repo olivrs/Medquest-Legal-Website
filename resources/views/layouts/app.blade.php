@@ -218,10 +218,6 @@
                 </a>
                 <?php endif; ?>
 
-                <a href="<?= base_url('?page=smtp_settings') ?>" class="topbar-icon-btn" title="Automated Email Settings (SMTP)">
-                    <i class="fas fa-envelope-open-text"></i>
-                </a>
-
                 <a href="<?= base_url('?page=notifications') ?>" class="topbar-icon-btn" title="Deadline Email Notifications">
                     <i class="far fa-bell"></i>
                     <?php if ($alertHCount > 0): ?>
