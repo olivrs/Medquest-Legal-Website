@@ -12,7 +12,10 @@
     <div class="d-flex flex-wrap align-items-center gap-2">
         <?php if (!empty($smtpStatus['ready'])): ?>
             <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-2" style="font-size:0.74rem;">
-                <i class="fas fa-check-circle me-1"></i> Direct SMTP Active (<?= htmlspecialchars($smtpStatus['sender_email']) ?>)
+                <i class="fas fa-check-circle me-1"></i>
+                <?= ($smtpStatus['source'] ?? '') === 'apps_script'
+                    ? 'Google Apps Script Active (No App Password)'
+                    : 'Direct SMTP Active (' . htmlspecialchars($smtpStatus['sender_email']) . ')' ?>
             </span>
         <?php else: ?>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-2" style="font-size:0.74rem;">
@@ -29,7 +32,7 @@
                 </button>
             </form>
             <a href="<?= base_url('?page=smtp_settings') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
-                <i class="fas fa-cog me-1"></i> SMTP Gateway (Optional)
+                <i class="fas fa-cog me-1"></i> Email Gateway Settings
             </a>
         <?php endif; ?>
     </div>
@@ -49,11 +52,17 @@
     </div>
 
     <?php if (empty($smtpStatus['ready'])): ?>
-        <div class="alert alert-info border border-info-subtle rounded-0 py-2 px-3 small mb-3" style="background:#f0f9ff;">
-            <i class="fas fa-info-circle text-primary me-1"></i>
-            <strong>Zero-Config Mode (Tanpa SMTP/App Password):</strong>
-            Setelah <strong>Add Email</strong>, cek Inbox / folder <strong>Spam</strong> untuk klik <strong>"Activate Form" (1x saja)</strong>.
-            <strong>Jika email aktivasi belum masuk atau server terkena limit FormSubmit:</strong> klik tombol <span class="badge bg-warning text-dark">Aktivasi via Browser</span> di baris email Anda agar browser Anda langsung membuka FormSubmit dan mengirimkan email aktivasi ke Gmail. Setelah diklik, (opsional) tempel kode token FormSubmit lalu tekan <strong>Test / Retry</strong>.
+        <div class="alert alert-info border border-info-subtle rounded-0 py-2 px-3 small mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2" style="background:#f0f9ff;">
+            <div>
+                <i class="fas fa-info-circle text-primary me-1"></i>
+                <strong>Ingin bebas FormSubmit HTTP 429 &amp; tanpa klik Activate Form?</strong>
+                Hubungkan <strong>Google Apps Script Email Bridge</strong> (gratis, tanpa App Password, kuota 100-1.500 email/hari langsung ke Gmail Inbox). Atau jika tetap memakai FormSubmit, klik <strong>Aktivasi via Browser</strong> di baris email Anda.
+            </div>
+            <?php if (is_superadmin()): ?>
+                <a href="<?= base_url('?page=smtp_settings') ?>" class="btn btn-sm btn-success fw-bold px-3 text-nowrap">
+                    <i class="fas fa-bolt me-1"></i> Setup Google Apps Script (1 Menit)
+                </a>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
@@ -134,7 +143,7 @@
                             <td class="text-end">
                                 <div class="d-inline-flex flex-wrap justify-content-end gap-1 align-items-center">
                                     <?php if (empty($smtpStatus['ready']) && empty($rec['is_verified'])): ?>
-                                        <form method="POST" action="https://formsubmit.co/<?= rawurlencode($rec['email']) ?>" target="_blank" class="d-inline m-0">
+                                        <form method="POST" action="https://formsubmit.co/<?= htmlspecialchars($rec['email'], ENT_QUOTES) ?>" target="_blank" class="d-inline m-0">
                                             <input type="hidden" name="name" value="PT Medquest Jaya Global">
                                             <input type="hidden" name="email" value="noreply@medquest.co.id">
                                             <input type="hidden" name="department" value="<?= htmlspecialchars($rec['department']) ?>">

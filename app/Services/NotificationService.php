@@ -13,6 +13,26 @@ use Illuminate\Support\Facades\Schema;
 
 class NotificationService
 {
+    public static function getAppsScriptWebhookUrl(): string
+    {
+        try {
+            if (Schema::hasTable('smtp_settings') && Schema::hasColumn('smtp_settings', 'apps_script_url')) {
+                $dbUrl = trim((string) SmtpSetting::where('id', 1)->value('apps_script_url'));
+                if ($dbUrl !== '' && stripos($dbUrl, 'https://script.google.com/') === 0) {
+                    return $dbUrl;
+                }
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $envUrl = trim((string) config('mail.apps_script_url', ''));
+        if ($envUrl !== '' && stripos($envUrl, 'https://script.google.com/') === 0) {
+            return $envUrl;
+        }
+
+        return '';
+    }
+
     public static function getSmtpStatus(): array
     {
         try {
@@ -28,6 +48,16 @@ class NotificationService
                 }
             }
         } catch (\Throwable $e) {
+        }
+
+        $appsScriptUrl = self::getAppsScriptWebhookUrl();
+        if ($appsScriptUrl !== '') {
+            return [
+                'ready'        => true,
+                'source'       => 'apps_script',
+                'sender_email' => 'Google Apps Script (Free Gmail Bridge)',
+                'host'         => 'script.google.com',
+            ];
         }
 
         $mailer = (string) config('mail.default', 'log');
@@ -260,6 +290,110 @@ class NotificationService
         }
     }
 
+    public static function sendViaAppsScript(
+        string $webhookUrl,
+        string $toEmail,
+        string $subject,
+        string $htmlBody,
+        string $senderName = '',
+        ?string &$errorMsg = null
+    ): bool {
+        $webhookUrl = trim($webhookUrl);
+        if (
+            !filter_var($webhookUrl, FILTER_VALIDATE_URL)
+            || stripos($webhookUrl, 'https://script.google.com/') !== 0
+        ) {
+            $errorMsg = 'Google Apps Script Webhook URL is invalid.';
+            return false;
+        }
+
+        $plainText = trim(preg_replace("/\n{3,}/", "\n\n", strip_tags(str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</tr>'], "\n", $htmlBody))));
+        $payload = json_encode([
+            'to'          => $toEmail,
+            'subject'     => $subject,
+            'html'        => $htmlBody,
+            'text'        => $plainText !== '' ? $plainText : $subject,
+            'sender_name' => $senderName !== '' ? $senderName : 'Medquest Agreement Alert (LAC)',
+        ]);
+
+        $httpCode = 0;
+        $resp = false;
+        $transportErr = '';
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init($webhookUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS      => 5,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'Accept: application/json',
+                ],
+                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+            ]);
+            $resp = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if ($resp === false) {
+                $transportErr = (string) curl_error($ch);
+            }
+            curl_close($ch);
+        } else {
+            $opts = [
+                'http' => [
+                    'method'          => 'POST',
+                    'header'          => "Content-Type: application/json\r\nAccept: application/json\r\n",
+                    'content'         => $payload,
+                    'timeout'         => 20,
+                    'ignore_errors'   => true,
+                    'follow_location' => 1,
+                    'max_redirects'   => 5,
+                ],
+                'ssl' => [
+                    'verify_peer'      => false,
+                    'verify_peer_name' => false,
+                ],
+            ];
+            $ctx = stream_context_create($opts);
+            $resp = @file_get_contents($webhookUrl, false, $ctx);
+            if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', (string) $http_response_header[0], $m)) {
+                $httpCode = (int) $m[1];
+            }
+        }
+
+        if ($resp === false || $httpCode === 0) {
+            $errorMsg = 'Tidak dapat terhubung ke Google Apps Script' . ($transportErr !== '' ? " ({$transportErr})" : '.');
+            return false;
+        }
+
+        $decoded = @json_decode((string) $resp, true);
+        if (is_array($decoded) && !empty($decoded['ok'])) {
+            return true;
+        }
+
+        if (is_array($decoded) && !empty($decoded['error'])) {
+            $errorMsg = 'Apps Script Error: ' . (string) $decoded['error'];
+            return false;
+        }
+
+        $rawStr = (string) $resp;
+        if (stripos($rawStr, 'accounts.google.com') !== false || stripos($rawStr, 'ServiceLogin') !== false) {
+            $errorMsg = 'Google Apps Script meminta login Google. Pastikan saat Deploy -> Web App memilih Who has access: Anyone.';
+            return false;
+        }
+        if (stripos($rawStr, 'Script function not found') !== false || stripos($rawStr, 'doPost') !== false) {
+            $errorMsg = 'Fungsi doPost(e) belum ditemukan di Google Apps Script. Pastikan sudah Save dan Deploy Web App versi terbaru.';
+            return false;
+        }
+
+        $errorMsg = "Google Apps Script HTTP {$httpCode}: respons tidak dikenali.";
+        return false;
+    }
+
     public static function sendHtmlViaConfiguredMailer(
         string $toEmail,
         string $subject,
@@ -286,6 +420,7 @@ class NotificationService
             }
         }
 
+        $smtp = null;
         try {
             if (Schema::hasTable('smtp_settings')) {
                 $smtp = SmtpSetting::find(1);
@@ -299,6 +434,19 @@ class NotificationService
             }
         } catch (\Throwable $e) {
             $errorMsg = $e->getMessage();
+        }
+
+        $appsScriptUrl = self::getAppsScriptWebhookUrl();
+        if ($appsScriptUrl !== '') {
+            $senderName = ($smtp && !empty($smtp->sender_name)) ? (string) $smtp->sender_name : 'Medquest Agreement Alert (LAC)';
+            $gasErr = null;
+            if (self::sendViaAppsScript($appsScriptUrl, $toEmail, $subject, $htmlBody, $senderName, $gasErr)) {
+                $channel = 'SENT_APPS_SCRIPT';
+                return true;
+            }
+            $channel = 'FAILED_APPS_SCRIPT';
+            $errorMsg = $gasErr ?: $errorMsg;
+            return false;
         }
 
         $status = self::getSmtpStatus();
@@ -642,7 +790,7 @@ class NotificationService
         $subject = "[MEDQUEST {$stageSubject}] Deadline Reminder ({$expFormatted}) - Dept {$agreement['department']} - {$docLabel}";
 
         $smtpStatus = self::getSmtpStatus();
-        $deliveredStatuses = ['SENT_GMAIL_SMTP', 'SENT_ENV_SMTP', 'SENT_SENDMAIL', 'SENT_LARAVEL_MAIL', 'SENT TO GMAIL'];
+        $deliveredStatuses = ['SENT_GMAIL_SMTP', 'SENT_APPS_SCRIPT', 'SENT_ENV_SMTP', 'SENT_SENDMAIL', 'SENT_LARAVEL_MAIL', 'SENT TO GMAIL'];
         $existingLogs = EmailNotification::where('agreement_id', $agreement['id'])
             ->where('tipe_notif', $tipeNotif)
             ->get(['recipient_email', 'status_kirim', 'sent_at']);
@@ -727,8 +875,10 @@ class NotificationService
                 } catch (\Throwable $e) {
                 }
             } else {
-                $statusKirim = $sendErr ? 'SMTP_FAILED' : 'AWAITING ACTIVATE CLICK IN GMAIL';
-                $keterangan  = $sendErr ?: ('Check Inbox/Spam ' . $target['email'] . ' or configure System SMTP.');
+                $statusKirim = ($channel === 'FAILED_APPS_SCRIPT')
+                    ? 'APPS_SCRIPT_FAILED'
+                    : ($sendErr ? 'SMTP_FAILED' : 'AWAITING ACTIVATE CLICK IN GMAIL');
+                $keterangan  = $sendErr ?: ('Check Inbox/Spam ' . $target['email'] . ' or configure Email Gateway.');
             }
 
             EmailNotification::create([

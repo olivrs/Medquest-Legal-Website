@@ -22,7 +22,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-24-v25-formsubmit-browser-activation-diagnostics';
+            $currentRev = '2026-11-24-v26-apps-script-email-bridge';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -98,6 +98,11 @@ class MedquestController extends Controller
                             $table->string('last_error', 255)->nullable()->after('is_verified');
                         });
                     }
+                }
+                if (\Illuminate\Support\Facades\Schema::hasTable('smtp_settings') && !\Illuminate\Support\Facades\Schema::hasColumn('smtp_settings', 'apps_script_url')) {
+                    \Illuminate\Support\Facades\Schema::table('smtp_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->string('apps_script_url', 500)->nullable()->after('sender_email');
+                    });
                 }
             }
         } catch (\Throwable $e) {
@@ -1413,6 +1418,38 @@ class MedquestController extends Controller
         if ($request->isMethod('post')) {
             $action = (string) $request->input('action', 'save');
 
+            if ($action === 'save_apps_script') {
+                $gasUrl = trim((string) $request->input('apps_script_url', ''));
+                if ($gasUrl === '') {
+                    $smtpModel->update([
+                        'apps_script_url' => null,
+                        'updated_at'      => now(),
+                    ]);
+                    set_flash('success', 'Google Apps Script Webhook URL dinonaktifkan.');
+                    return redirect(base_url('?page=smtp_settings'));
+                }
+
+                if (
+                    !filter_var($gasUrl, FILTER_VALIDATE_URL)
+                    || stripos($gasUrl, 'https://script.google.com/') !== 0
+                ) {
+                    set_flash('error', 'URL tidak valid. Harus berupa URL deployment Web App resmi Google Apps Script yang diawali https://script.google.com/macros/s/...');
+                    return redirect(base_url('?page=smtp_settings'));
+                }
+
+                if (str_ends_with(strtolower(strtok($gasUrl, '?')), '/edit')) {
+                    set_flash('error', 'Itu link editor Apps Script (/edit). Klik tombol Deploy -> New deployment -> Web App di Google Apps Script lalu salin URL Web App (.../exec).');
+                    return redirect(base_url('?page=smtp_settings'));
+                }
+
+                $smtpModel->update([
+                    'apps_script_url' => $gasUrl,
+                    'updated_at'      => now(),
+                ]);
+                set_flash('success', 'Google Apps Script Webhook berhasil disimpan! Sekarang silakan uji dengan <strong>Test Deliver Email Now</strong> di kanan.');
+                return redirect(base_url('?page=smtp_settings'));
+            }
+
             if ($action === 'save') {
                 $smtpEnabled    = $request->boolean('smtp_enabled');
                 $smtpHost       = trim((string) $request->input('smtp_host', 'smtp.gmail.com'));
@@ -1463,7 +1500,7 @@ class MedquestController extends Controller
                 if ($ok) {
                     set_flash('success', 'Test email successfully sent to <strong>' . e($testTo) . '</strong> via <strong>' . e($channel) . '</strong>.');
                 } else {
-                    set_flash('error', 'Test email failed: ' . e($err ?: 'SMTP is not enabled or credentials are invalid.'));
+                    set_flash('error', 'Test email failed: ' . e($err ?: 'Email Gateway belum dikonfigurasi (isi Google Apps Script URL atau aktifkan SMTP).'));
                 }
                 return redirect(base_url('?page=smtp_settings'));
             }

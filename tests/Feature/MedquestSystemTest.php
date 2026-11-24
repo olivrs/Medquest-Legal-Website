@@ -744,5 +744,30 @@ class MedquestSystemTest extends TestCase
         $this->assertNotNull($savedSmtp);
         $this->assertSame(1, (int) $savedSmtp->smtp_enabled);
         $this->assertSame('abcdefghijklmnop', $savedSmtp->smtp_password);
+
+        $this->get('/smtp-settings')->assertStatus(200)
+            ->assertSee('Google Apps Script')
+            ->assertSee('doPost(e)');
+
+        $this->post('/smtp-settings', [
+            'action'          => 'save_apps_script',
+            'apps_script_url' => 'http://invalid.example.com/hook',
+        ])->assertRedirect();
+        $this->assertNull($savedSmtp->fresh()->apps_script_url);
+
+        $this->post('/smtp-settings', [
+            'action'          => 'save_apps_script',
+            'apps_script_url' => 'https://script.google.com/macros/s/AKfycbTestBridge123/exec',
+        ])->assertRedirect();
+
+        $savedSmtp->update(['smtp_enabled' => false]);
+        $this->assertSame('https://script.google.com/macros/s/AKfycbTestBridge123/exec', $savedSmtp->fresh()->apps_script_url);
+        $statusGas = \App\Services\NotificationService::getSmtpStatus();
+        $this->assertTrue($statusGas['ready']);
+        $this->assertSame('apps_script', $statusGas['source']);
+
+        $gasNotifView = $this->get('/notifications');
+        $gasNotifView->assertStatus(200);
+        $gasNotifView->assertSee('Google Apps Script Active (No App Password)');
     }
 }
