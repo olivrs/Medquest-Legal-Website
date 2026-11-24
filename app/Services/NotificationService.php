@@ -320,10 +320,10 @@ class NotificationService
         return $origin;
     }
 
-    protected static function postToFormSubmitRelay(string $toEmail, array $payload): bool
+    protected static function postToFormSubmitRelayWithResult(string $toEmail, array $payload): array
     {
         if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-            return false;
+            return ['success' => false, 'needs_activation' => false, 'message' => 'Invalid email address.'];
         }
 
         $origin = self::resolveOriginUrl();
@@ -345,10 +345,69 @@ class NotificationService
         $ctx = stream_context_create($opts);
         $resp = @file_get_contents($url, false, $ctx);
         if ($resp === false) {
-            return false;
+            return ['success' => false, 'needs_activation' => true, 'message' => 'Could not reach FormSubmit relay server.'];
         }
         $decoded = @json_decode($resp, true);
-        return isset($decoded['success']) && ($decoded['success'] === true || $decoded['success'] === 'true');
+        $ok = isset($decoded['success']) && ($decoded['success'] === true || $decoded['success'] === 'true');
+        $msg = (string) ($decoded['message'] ?? '');
+        $needsAct = !$ok && (stripos($msg, 'activat') !== false || $msg === '');
+
+        return [
+            'success'          => $ok,
+            'needs_activation' => $needsAct,
+            'message'          => $msg !== '' ? $msg : ($ok ? 'Delivered via FormSubmit.' : 'Activation required in Inbox/Spam.'),
+        ];
+    }
+
+    protected static function postToFormSubmitRelay(string $toEmail, array $payload): bool
+    {
+        return self::postToFormSubmitRelayWithResult($toEmail, $payload)['success'];
+    }
+
+    public static function sendRecipientActivationOrTest(string $toEmail, string $label = '', string $department = 'ALL'): array
+    {
+        $toEmail = strtolower(trim($toEmail));
+        if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+            return ['sent' => false, 'needs_activation' => false, 'channel' => 'INVALID', 'message' => 'Invalid email address.'];
+        }
+
+        $displayLabel = $label !== '' ? $label : $toEmail;
+        $subject = '[MEDQUEST] Auto Deadline Reminder Subscription Active (' . $department . ')';
+        $html = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;">'
+            . '<div style="max-width:560px;margin:auto;background:#ffffff;border:1px solid #cbd5e1;padding:24px;">'
+            . '<h2 style="margin-top:0;color:#1e3a8a;">PT Medquest Jaya Global</h2>'
+            . '<p>Halo <strong>' . e($displayLabel) . '</strong>,</p>'
+            . '<p>Email <strong>' . e($toEmail) . '</strong> terdaftar untuk menerima pengingat otomatis dokumen legal (<strong>H-90, H-60, H-30, H-14, H-7, H-3, dan Hari H</strong>) pada departemen <strong>' . e($department) . '</strong>.</p>'
+            . '</div></body></html>';
+
+        $channel = null;
+        $err = null;
+        if (self::sendHtmlViaConfiguredMailer($toEmail, $subject, $html, $channel, $err)) {
+            return [
+                'sent'             => true,
+                'needs_activation' => false,
+                'channel'          => $channel ?: 'SMTP',
+                'message'          => 'Confirmation email delivered directly.',
+            ];
+        }
+
+        $res = self::postToFormSubmitRelayWithResult($toEmail, [
+            '_subject'   => $subject,
+            '_template'  => 'table',
+            '_captcha'   => 'false',
+            'Recipient'  => $displayLabel,
+            'Email'      => $toEmail,
+            'Department' => $department,
+            'Reminders'  => 'H-90, H-60, H-30, H-14, H-7, H-3, dan HARI H (H-0)',
+            'Status'     => 'Jika baru pertama kali mendaftar, klik Activate Form di email ini 1 kali saja.',
+        ]);
+
+        return [
+            'sent'             => $res['success'],
+            'needs_activation' => $res['needs_activation'],
+            'channel'          => $res['success'] ? 'FORMSUBMIT_ACTIVE' : 'FORMSUBMIT_PENDING',
+            'message'          => $res['message'],
+        ];
     }
 
     public static function sendViaZeroConfigCloudRelay(string $toEmail, string $subject, array $agreement, array $recipient, string $tipeNotif): bool
@@ -424,7 +483,12 @@ class NotificationService
         return array_values($targets);
     }
 
-    public static function dispatchAgreementNotification(Agreement $agreementModel, string $tipeNotif, bool $forceSend = false): array
+    public static function dispatchAgreementNotification(
+        Agreement $agreementModel,
+        string $tipeNotif,
+        bool $forceSend = false,
+        bool $retryWaiting = false
+    ): array
     {
         $agreement = $agreementModel->toArray();
         $targets = self::getRecipientsForAgreement($agreement);
@@ -444,16 +508,20 @@ class NotificationService
         $deliveredStatuses = ['SENT_GMAIL_SMTP', 'SENT_ENV_SMTP', 'SENT_LARAVEL_MAIL', 'SENT TO GMAIL'];
         $existingLogs = EmailNotification::where('agreement_id', $agreement['id'])
             ->where('tipe_notif', $tipeNotif)
-            ->get(['recipient_email', 'status_kirim']);
+            ->get(['recipient_email', 'status_kirim', 'sent_at']);
 
         $alreadyDeliveredEmails = [];
-        $alreadyWaitingEmails = [];
+        $recentWaitingEmails = [];
+        $retryCutoff = time() - 3600;
         foreach ($existingLogs as $log) {
             $em = strtolower(trim((string) $log->recipient_email));
             if (in_array((string) $log->status_kirim, $deliveredStatuses, true)) {
                 $alreadyDeliveredEmails[$em] = true;
             } else {
-                $alreadyWaitingEmails[$em] = true;
+                $sentTs = !empty($log->sent_at) ? (strtotime((string) $log->sent_at) ?: 0) : 0;
+                if ($sentTs > $retryCutoff) {
+                    $recentWaitingEmails[$em] = true;
+                }
             }
         }
 
@@ -470,7 +538,7 @@ class NotificationService
             if (!$forceSend && isset($alreadyDeliveredEmails[$emailKey])) {
                 continue;
             }
-            if (!$forceSend && !$smtpStatus['ready'] && isset($alreadyWaitingEmails[$emailKey])) {
+            if (!$forceSend && !$retryWaiting && !$smtpStatus['ready'] && isset($recentWaitingEmails[$emailKey])) {
                 continue;
             }
 
@@ -556,7 +624,7 @@ class NotificationService
         ];
     }
 
-    public static function runAutoExpiryNotifications(bool $force = false): array
+    public static function runAutoExpiryNotifications(bool $force = false, bool $retryWaiting = false): array
     {
         $results = [];
 
@@ -583,7 +651,7 @@ class NotificationService
                 $sisa = get_days_until_expiry($agr->expiry_date);
                 $dueStage = self::resolveDueMilestoneCode($sisa);
                 if ($dueStage !== null) {
-                    $res = self::dispatchAgreementNotification($agr, $dueStage, false);
+                    $res = self::dispatchAgreementNotification($agr, $dueStage, false, $retryWaiting);
                     if (!empty($res['results'])) {
                         foreach ($res['results'] as $item) {
                             if (!empty($item['success'])) {

@@ -678,6 +678,14 @@ class MedquestSystemTest extends TestCase
         $notifView->assertSee('HARI H (H-0)');
         $notifView->assertSee('legal.pic1@medquest.co.id');
         $notifView->assertSee('legal.pic2@medquest.co.id');
+        $notifView->assertSee('Test / Retry');
+
+        $pic1 = \App\Models\NotificationRecipient::where('email', 'legal.pic1@medquest.co.id')->first();
+        $this->assertNotNull($pic1);
+        $this->post('/notifications', [
+            'action'       => 'test_recipient',
+            'recipient_id' => $pic1->id,
+        ])->assertRedirect();
 
         $pendingUser = \App\Models\User::create([
             'nama_lengkap'       => 'Staff Baru LAC',

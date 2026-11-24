@@ -15,8 +15,8 @@
                 <i class="fas fa-check-circle me-1"></i> Direct SMTP Active (<?= htmlspecialchars($smtpStatus['sender_email']) ?>)
             </span>
         <?php else: ?>
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-2" style="font-size:0.74rem;">
-                <i class="fas fa-exclamation-triangle me-1"></i> FormSubmit Relay Fallback
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-2" style="font-size:0.74rem;">
+                <i class="fas fa-bolt me-1"></i> Zero-Config Relay Mode (No SMTP Required)
             </span>
         <?php endif; ?>
 
@@ -29,7 +29,7 @@
                 </button>
             </form>
             <a href="<?= base_url('?page=smtp_settings') ?>" class="btn btn-sm btn-light border fw-semibold px-3 py-1">
-                <i class="fas fa-cog me-1"></i> System SMTP Gateway
+                <i class="fas fa-cog me-1"></i> SMTP Gateway (Optional)
             </a>
         <?php endif; ?>
     </div>
@@ -42,11 +42,18 @@
                 <i class="fas fa-envelope-open-text text-primary me-1"></i> Auto Reminder Email Recipients (H-90, H-60, H-30, H-14, H-7, H-3, Hari H)
             </h6>
             <div class="small text-muted">
-                Add an email once below to immediately receive deadline alerts for active documents in the selected department.
+                Add an email once below to receive deadline alerts for active documents in the selected department.
             </div>
         </div>
         <span class="badge bg-light text-dark border px-3 py-1"><?= count($recipients ?? []) ?> Recipient(s)</span>
     </div>
+
+    <?php if (empty($smtpStatus['ready'])): ?>
+        <div class="alert alert-info border border-info-subtle rounded-0 py-2 px-3 small mb-3" style="background:#f0f9ff;">
+            <i class="fas fa-info-circle text-primary me-1"></i>
+            <strong>Zero-Config Mode (Tanpa SMTP/App Password):</strong> Setelah menekan <strong>Add Email</strong>, cek Inbox/folder <strong>Spam</strong> Gmail email tersebut lalu klik <strong>"Activate Form" (1 kali saja)</strong>. Setelah aktif, klik <strong>Test / Retry</strong> atau tunggu pengingat otomatis H-90 sampai Hari H masuk ke Gmail.
+        </div>
+    <?php endif; ?>
 
     <form method="POST" action="<?= base_url('?page=notifications') ?>" class="row g-2 align-items-end p-2 bg-light border mb-3 mt-2">
         @csrf
@@ -109,6 +116,14 @@
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
+                                <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="action" value="test_recipient">
+                                    <input type="hidden" name="recipient_id" value="<?= (int) $rec['id'] ?>">
+                                    <button type="submit" class="btn btn-xs btn-outline-primary px-2 py-1 fw-semibold" style="font-size:0.72rem;" title="Verify activation & send pending reminders">
+                                        Test / Retry
+                                    </button>
+                                </form>
                                 <form method="POST" action="<?= base_url('?page=notifications') ?>" class="d-inline">
                                     @csrf
                                     <input type="hidden" name="action" value="toggle_recipient">

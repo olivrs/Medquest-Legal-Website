@@ -22,7 +22,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-24-v23-email-recipients-h0';
+            $currentRev = '2026-11-24-v24-zeroconfig-formsubmit-flow';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -1185,23 +1185,51 @@ class MedquestController extends Controller
                     ]
                 );
 
+                $actRes = NotificationService::sendRecipientActivationOrTest($recEmail, $recLabel, $recDept);
+
                 cache()->forget('medquest_last_auto_notify');
-                $dispatched = NotificationService::runAutoExpiryNotifications(true);
+                $dispatched = NotificationService::runAutoExpiryNotifications(true, true);
                 $sentForNew = count(array_filter(
                     $dispatched,
                     fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === $recEmail
                 ));
-                $smtpStatus = NotificationService::getSmtpStatus();
-                $gatewayNote = $smtpStatus['ready']
-                    ? ''
-                    : ' Note: System SMTP is not active yet — configure System SMTP or check Inbox/Spam for FormSubmit activation link.';
 
-                set_flash(
-                    'success',
-                    'Notification email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') saved! '
-                    . ($sentForNew > 0 ? "<strong>{$sentForNew}</strong> due deadline reminder(s) dispatched immediately." : 'Ready to receive H-90 to Hari H reminders.')
-                    . $gatewayNote
-                );
+                if (!empty($actRes['needs_activation'])) {
+                    set_flash(
+                        'warning',
+                        'Email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') berhasil ditambahkan! '
+                        . '<strong>Langkah wajib (1x saja):</strong> buka Gmail Inbox / folder <strong>Spam</strong> Anda lalu klik tombol <strong>Activate Form</strong> dari FormSubmit. Setelah diklik, tekan tombol <strong>Test / Retry</strong>.'
+                    );
+                } else {
+                    set_flash(
+                        'success',
+                        'Email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') aktif &amp; siap menerima pengingat! '
+                        . ($sentForNew > 0 ? "<strong>{$sentForNew}</strong> notifikasi deadline (H-90 s/d Hari H) langsung dikirim." : 'Konfirmasi berhasil dikirim ke inbox.')
+                    );
+                }
+                return redirect(base_url('?page=notifications'));
+            }
+
+            if ($action === 'test_recipient') {
+                $recId = (int) $request->input('recipient_id', 0);
+                $rec = NotificationRecipient::find($recId);
+                if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
+                    $actRes = NotificationService::sendRecipientActivationOrTest($rec->email, (string) ($rec->label ?? ''), (string) $rec->department);
+                    cache()->forget('medquest_last_auto_notify');
+                    $dispatched = NotificationService::runAutoExpiryNotifications(true, true);
+                    $sentCount = count(array_filter(
+                        $dispatched,
+                        fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === strtolower($rec->email)
+                    ));
+
+                    if (!empty($actRes['sent'])) {
+                        set_flash('success', 'Email <strong>' . e($rec->email) . '</strong> sudah <strong>AKTIF</strong>! Test email terkirim' . ($sentCount > 0 ? " + {$sentCount} pengingat deadline tertunda ikut dikirim." : '.'));
+                    } elseif (!empty($actRes['needs_activation'])) {
+                        set_flash('warning', 'Email <strong>' . e($rec->email) . '</strong> masih menunggu klik <strong>Activate Form</strong> di Inbox/Spam Gmail Anda. Cek email dari FormSubmit lalu klik link aktivasinya.');
+                    } else {
+                        set_flash('error', 'Gagal memverifikasi ' . e($rec->email) . ': ' . e($actRes['message'] ?? 'Unknown error'));
+                    }
+                }
                 return redirect(base_url('?page=notifications'));
             }
 
@@ -1228,7 +1256,7 @@ class MedquestController extends Controller
 
             if ($action === 'run_now' && is_superadmin()) {
                 cache()->forget('medquest_last_auto_notify');
-                $results = NotificationService::runAutoExpiryNotifications(true);
+                $results = NotificationService::runAutoExpiryNotifications(true, true);
                 $countSent = count($results);
                 set_flash('success', "Deadline reminder scan completed: <strong>{$countSent}</strong> reminder email(s) dispatched.");
                 return redirect(base_url('?page=notifications'));
