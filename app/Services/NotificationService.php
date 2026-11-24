@@ -349,4 +349,239 @@ class NotificationService
 
         return $results;
     }
+
+    public static function generateApprovalToken(User $user, string $action = 'approve'): string
+    {
+        $secret = config('app.key') ?: 'medquest-legal-secret-key-2026';
+        return hash_hmac('sha256', $user->id . '|' . $user->email . '|' . $action . '|' . $user->created_at, $secret);
+    }
+
+    public static function verifyApprovalToken(User $user, string $token, string $action = 'approve'): bool
+    {
+        if (empty($token)) {
+            return false;
+        }
+        $expected = self::generateApprovalToken($user, $action);
+        return hash_equals($expected, $token);
+    }
+
+    public static function buildUserApprovalEmailHtml(User $user): string
+    {
+        $approveUrl = base_url('quick-approve?action=approve&id=' . $user->id . '&token=' . self::generateApprovalToken($user, 'approve'));
+        $rejectUrl = base_url('quick-approve?action=reject&id=' . $user->id . '&token=' . self::generateApprovalToken($user, 'reject'));
+        $dashboardUrl = base_url('?page=user_approvals');
+        $regTime = $user->created_at ? $user->created_at->format('d/m/Y H:i') : date('d/m/Y H:i');
+
+        return '
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Persetujuan Registrasi Pengguna Baru - Medquest Legal</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Open Sans,Helvetica,Arial,sans-serif;color:#282828;">
+  <div style="max-width:620px;margin:24px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #e2e8f0;">
+    <div style="background:linear-gradient(135deg,#101399 0%,#0059fb 70%,#2ea3f2 100%);padding:22px 28px;color:#ffffff;">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.9;font-weight:600;">PT MEDQUEST JAYA GLOBAL &bull; LEGAL &amp; AGREEMENT SYSTEM</div>
+      <h2 style="margin:8px 0 0;font-size:20px;font-weight:700;">PERMOHONAN REGISTRASI AKUN BARU</h2>
+    </div>
+
+    <div style="background:#fef3c7;color:#92400e;padding:12px 28px;font-weight:700;font-size:13.5px;border-bottom:1px solid #fde68a;">
+      &#9203; Menunggu Persetujuan (Approval) Superadmin
+    </div>
+
+    <div style="padding:28px;">
+      <p style="margin-top:0;font-size:15px;line-height:1.6;color:#334155;">
+        Halo <strong>Superadmin Medquest</strong>,
+      </p>
+      <p style="font-size:14px;line-height:1.6;color:#475569;">
+        Seorang pengguna baru telah mendaftarkan akun di <strong>Sistem Monitoring Dokumen Legal Medquest</strong> dan memerlukan verifikasi serta persetujuan Anda:
+      </p>
+
+      <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:13.5px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+        <tr style="background:#f8fafc;">
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;width:35%;color:#475569;">Nama Lengkap</td>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;color:#0f172a;">' . e($user->nama_lengkap) . '</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Inisial / Kode User</td>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;color:#0059fb;"><span style="background:#eff6ff;padding:2px 8px;border-radius:4px;border:1px solid #bfdbfe;">' . e($user->kode_singkatan) . '</span></td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Departemen / Divisi</td>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:600;color:#0f172a;">' . e($user->departemen_default) . '</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Alamat Email</td>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;color:#0f172a;">' . e($user->email) . '</td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Waktu Mendaftar</td>
+          <td style="padding:10px 14px;border:1px solid #e2e8f0;color:#64748b;">' . $regTime . ' WIB</td>
+        </tr>
+      </table>
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:18px 20px;margin:24px 0 20px;text-align:center;">
+        <div style="font-weight:700;font-size:14.5px;color:#166534;margin-bottom:12px;">
+          Persetujuan Cepat Langsung Dari Gmail (1-Click ACC):
+        </div>
+        <div style="margin-bottom:8px;">
+          <a href="' . e($approveUrl) . '" style="background:#16a34a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:700;font-size:14px;display:inline-block;box-shadow:0 3px 6px rgba(22,163,74,0.3);margin:4px;">
+            &#10004; SETUJUI / ACC AKUN INI
+          </a>
+          <a href="' . e($rejectUrl) . '" style="background:#fee2e2;color:#dc2626;border:1px solid #f87171;text-decoration:none;padding:11px 20px;border-radius:6px;font-weight:600;font-size:13px;display:inline-block;margin:4px;">
+            &#10006; Tolak
+          </a>
+        </div>
+        <div style="font-size:12px;color:#15803d;margin-top:8px;">
+          Cukup klik tombol hijau di atas untuk langsung mengaktifkan akun pendaftar tanpa perlu login web.
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:16px;">
+        <a href="' . e($dashboardUrl) . '" style="color:#0059fb;text-decoration:none;font-size:13px;font-weight:600;">
+          Atau kelola lewat Menu User Approvals di Web &rarr;
+        </a>
+      </div>
+    </div>
+
+    <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 28px;font-size:12px;color:#64748b;text-align:center;">
+      Email otomatis dari Sistem Monitoring Dokumen Legal PT Medquest Jaya Global.<br>
+      Jika tombol di atas tidak dapat diklik, salin dan buka tautan berikut:<br>
+      <span style="color:#0059fb;word-break:break-all;font-size:11px;">' . e($approveUrl) . '</span>
+    </div>
+  </div>
+</body>
+</html>';
+    }
+
+    public static function buildUserApprovedEmailHtml(User $user): string
+    {
+        $loginUrl = base_url('?page=login');
+
+        return '
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Akun Medquest Disetujui</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Open Sans,Helvetica,Arial,sans-serif;color:#282828;">
+  <div style="max-width:600px;margin:24px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #e2e8f0;">
+    <div style="background:linear-gradient(135deg,#101399 0%,#0059fb 70%,#2ea3f2 100%);padding:22px 28px;color:#ffffff;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:0.9;">PT Medquest Jaya Global</div>
+      <h2 style="margin:6px 0 0;font-size:20px;font-weight:700;">AKUN ANDA TELAH DISETUJUI (APPROVED)</h2>
+    </div>
+    <div style="background:#16a34a;color:#ffffff;padding:10px 28px;font-weight:700;font-size:13.5px;">
+      &#10004; Akun Telah Aktif dan Siap Digunakan
+    </div>
+    <div style="padding:28px;">
+      <p style="margin-top:0;font-size:15px;line-height:1.6;color:#334155;">
+        Halo <strong>' . e($user->nama_lengkap) . ' (' . e($user->kode_singkatan) . ')</strong>,
+      </p>
+      <p style="font-size:14px;line-height:1.6;color:#475569;">
+        Kabar baik! Pendaftaran akun Anda di <strong>Sistem Monitoring Dokumen Legal Medquest</strong> telah <strong>disetujui (ACC)</strong> oleh Administrator.
+      </p>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin:18px 0;font-size:13.5px;">
+        <div style="margin-bottom:6px;"><strong>Departemen:</strong> ' . e($user->departemen_default) . '</div>
+        <div style="margin-bottom:6px;"><strong>Email:</strong> ' . e($user->email) . '</div>
+        <div><strong>Status:</strong> <span style="color:#16a34a;font-weight:bold;">Aktif (Approved)</span></div>
+      </div>
+      <div style="text-align:center;margin:24px 0 10px;">
+        <a href="' . e($loginUrl) . '" style="background:#0059fb;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:700;font-size:14px;display:inline-block;box-shadow:0 3px 6px rgba(0,89,251,0.3);">
+          Login ke Sistem Sekarang &rarr;
+        </a>
+      </div>
+    </div>
+    <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:12px 28px;font-size:11.5px;color:#64748b;text-align:center;">
+      PT Medquest Jaya Global &bull; Legal and Compliance Department
+    </div>
+  </div>
+</body>
+</html>';
+    }
+
+    public static function dispatchUserRegistrationApproval(User $user): array
+    {
+        $admins = User::whereIn('role', ['superadmin', 'admin'])
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get();
+
+        $adminEmails = [];
+        foreach ($admins as $adm) {
+            if (filter_var($adm->email, FILTER_VALIDATE_EMAIL)) {
+                $adminEmails[] = $adm->email;
+            }
+        }
+
+        $smtp = SmtpSetting::find(1);
+        if ($smtp && !empty($smtp->sender_email) && filter_var($smtp->sender_email, FILTER_VALIDATE_EMAIL)) {
+            $adminEmails[] = $smtp->sender_email;
+        }
+
+        if (empty($adminEmails)) {
+            $adminEmails[] = 'fjr.medquest@gmail.com';
+        }
+        $adminEmails = array_values(array_unique($adminEmails));
+
+        $subject = "[ACTION REQUIRED] Permohonan Registrasi Akun: " . $user->nama_lengkap . " (" . $user->kode_singkatan . ") - Dept " . $user->departemen_default;
+        $htmlBody = self::buildUserApprovalEmailHtml($user);
+
+        // Always save a copy in mail outbox for reference & offline testing
+        $outboxDir = storage_path('app/mail_outbox');
+        if (!is_dir($outboxDir)) {
+            @mkdir($outboxDir, 0775, true);
+        }
+        $safeFile = 'approval_user_' . $user->id . '_' . date('Ymd_His') . '.html';
+        @file_put_contents($outboxDir . '/' . $safeFile, $htmlBody);
+
+        $sentCount = 0;
+        foreach ($adminEmails as $email) {
+            $err = null;
+            $ok = false;
+            if ($smtp && $smtp->smtp_enabled && !empty($smtp->smtp_username) && !empty($smtp->smtp_password)) {
+                $ok = self::sendViaDynamicSmtp($smtp, $email, $subject, $htmlBody, $err);
+            }
+            if ($ok) {
+                $sentCount++;
+            }
+        }
+
+        return [
+            'success'   => $sentCount > 0,
+            'recipients'=> $adminEmails,
+            'outbox'    => $safeFile,
+        ];
+    }
+
+    public static function dispatchUserApprovedNotification(User $user): array
+    {
+        if (empty($user->email) || !filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'User does not have a valid email.'];
+        }
+
+        $subject = "[MEDQUEST] Akun Anda Telah Disetujui (Approved) - Silakan Login";
+        $htmlBody = self::buildUserApprovedEmailHtml($user);
+
+        $outboxDir = storage_path('app/mail_outbox');
+        if (!is_dir($outboxDir)) {
+            @mkdir($outboxDir, 0775, true);
+        }
+        $safeFile = 'approved_notify_user_' . $user->id . '_' . date('Ymd_His') . '.html';
+        @file_put_contents($outboxDir . '/' . $safeFile, $htmlBody);
+
+        $smtp = SmtpSetting::find(1);
+        $ok = false;
+        $err = null;
+        if ($smtp && $smtp->smtp_enabled && !empty($smtp->smtp_username) && !empty($smtp->smtp_password)) {
+            $ok = self::sendViaDynamicSmtp($smtp, $user->email, $subject, $htmlBody, $err);
+        }
+
+        return [
+            'success' => $ok,
+            'email'   => $user->email,
+            'outbox'  => $safeFile,
+        ];
+    }
 }

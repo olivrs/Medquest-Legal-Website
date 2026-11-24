@@ -3,11 +3,18 @@
 @section('content')
 <div class="row justify-content-center">
     <div class="col-lg-9">
-        <div class="cp-header-row mb-4">
-            <h1 class="cp-page-title">Email SMTP Settings</h1>
+        <div class="cp-header-row mb-3">
+            <h1 class="cp-page-title">Email SMTP Settings (System Sender Gateway)</h1>
             <a href="<?= base_url('?page=notifications') ?>" class="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2">
                 Email Logs
             </a>
+        </div>
+
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 p-3 rounded-0" style="background:#e0f2fe; border-left: 4px solid #0284c7 !important;">
+            <i class="fas fa-info-circle fa-2x me-3 text-primary"></i>
+            <div class="small" style="line-height:1.55;">
+                <strong class="text-dark">PENTING (Untuk IT / Superadmin):</strong> Halaman ini adalah pengaturan <u>Akun Kurir Pengirim Email (Sender Gateway)</u> milik kantor. Cukup disetel <strong>1 kali saja</strong> oleh Superadmin/IT. Pengguna atau karyawan yang mendaftar akun <strong>TIDAK PERLU</strong> mengisi halaman ini. Begitu disimpan, setiap ada pendaftaran user baru, sistem akan langsung mengirim email notifikasi ke Gmail Superadmin lengkap dengan tombol <strong>[1-Click ACC]</strong>.
+            </div>
         </div>
 
         <div class="card border-primary border-2 shadow-sm rounded-0 mb-4">

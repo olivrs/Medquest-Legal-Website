@@ -110,6 +110,7 @@ class MedquestController extends Controller
             'notifications'    => $this->notificationsPage($request),
             'smtp_settings'    => $this->smtpSettingsPage($request),
             'user_approvals'   => $this->userApprovalsPage($request),
+            'quick_approve'    => $this->quickApprovePage($request),
             default            => Auth::check() ? $this->agreementsPage($request) : $this->loginPage($request),
         };
     }
@@ -322,7 +323,7 @@ class MedquestController extends Controller
                         set_flash('error', 'Initial code <strong>' . e($kode_singkatan) . '</strong> is already in use by another user.');
                     }
                 } else {
-                    User::create([
+                    $newUser = User::create([
                         'nama_lengkap'       => $nama_lengkap,
                         'kode_singkatan'     => $kode_singkatan,
                         'email'              => $email,
@@ -331,6 +332,11 @@ class MedquestController extends Controller
                         'role'               => 'user',
                         'status'             => 'pending',
                     ]);
+
+                    try {
+                        NotificationService::dispatchUserRegistrationApproval($newUser);
+                    } catch (\Throwable $e) {
+                    }
 
                     session([
                         'registered_pending' => [
@@ -1277,7 +1283,11 @@ class MedquestController extends Controller
 
                     if ($action === 'approve') {
                         $targetUser->update(['status' => 'approved']);
-                        set_flash('success', "<i class='fas fa-check-circle me-1'></i> Account <strong>{$targetName} ({$targetCode})</strong> has been <strong>APPROVED</strong>! The user can now sign in.");
+                        try {
+                            NotificationService::dispatchUserApprovedNotification($targetUser);
+                        } catch (\Throwable $e) {
+                        }
+                        set_flash('success', "<i class='fas fa-check-circle me-1'></i> Account <strong>{$targetName} ({$targetCode})</strong> has been <strong>APPROVED</strong>! Notification email dispatched. The user can now sign in.");
                     } elseif ($action === 'reject') {
                         $targetUser->update(['status' => 'rejected']);
                         set_flash('error', "<i class='fas fa-times-circle me-1'></i> Account registration for <strong>{$targetName} ({$targetCode})</strong> has been <strong>REJECTED</strong>.");
@@ -1361,6 +1371,84 @@ class MedquestController extends Controller
             $this->getLayoutData($request, 'user_approvals'),
             compact('countPending', 'countApproved', 'countRejected', 'countTotal', 'tab', 'search', 'usersList', 'allDepartments')
         ));
+    }
+
+    public function quickApprovePage(Request $request)
+    {
+        $this->ensureDatabaseReady();
+        $targetId = (int) $request->input('id', $request->input('user_id', 0));
+        $action   = strtolower(trim((string) $request->input('action', 'approve')));
+        $token    = (string) $request->input('token', '');
+
+        $targetUser = $targetId > 0 ? User::find($targetId) : null;
+
+        if (!$targetUser) {
+            return view('pages.quick_approve_result', array_merge(
+                $this->getLayoutData($request, 'quick_approve'),
+                [
+                    'status'  => 'not_found',
+                    'title'   => 'Pengguna Tidak Ditemukan',
+                    'message' => 'Data akun pengguna yang diminta tidak ditemukan atau telah dihapus.',
+                    'user'    => null,
+                ]
+            ));
+        }
+
+        $isValid = NotificationService::verifyApprovalToken($targetUser, $token, $action);
+        if (!$isValid) {
+            return view('pages.quick_approve_result', array_merge(
+                $this->getLayoutData($request, 'quick_approve'),
+                [
+                    'status'  => 'invalid_token',
+                    'title'   => 'Tautan Tidak Valid',
+                    'message' => 'Tautan persetujuan (approval token) tidak valid, telah kedaluwarsa, atau sudah dimodifikasi.',
+                    'user'    => $targetUser,
+                ]
+            ));
+        }
+
+        if ($action === 'approve') {
+            if ($targetUser->status === 'approved') {
+                return view('pages.quick_approve_result', array_merge(
+                    $this->getLayoutData($request, 'quick_approve'),
+                    [
+                        'status'  => 'already_approved',
+                        'title'   => 'Akun Sudah Aktif Sebelumnya',
+                        'message' => 'Akun pengguna ini sudah berstatus disetujui (APPROVED) sebelumnya dan dapat langsung login.',
+                        'user'    => $targetUser,
+                    ]
+                ));
+            }
+
+            $targetUser->update(['status' => 'approved']);
+            try {
+                NotificationService::dispatchUserApprovedNotification($targetUser);
+            } catch (\Throwable $e) {
+            }
+
+            return view('pages.quick_approve_result', array_merge(
+                $this->getLayoutData($request, 'quick_approve'),
+                [
+                    'status'  => 'approved_success',
+                    'title'   => 'Akun Berhasil Disetujui (ACC)',
+                    'message' => 'Akun pengguna berhasil di-ACC langsung dari Gmail! Pengguna kini dapat langsung login ke sistem.',
+                    'user'    => $targetUser,
+                ]
+            ));
+        } elseif ($action === 'reject') {
+            $targetUser->update(['status' => 'rejected']);
+            return view('pages.quick_approve_result', array_merge(
+                $this->getLayoutData($request, 'quick_approve'),
+                [
+                    'status'  => 'rejected_success',
+                    'title'   => 'Pendaftaran Akun Ditolak',
+                    'message' => 'Pendaftaran akun pengguna telah ditolak.',
+                    'user'    => $targetUser,
+                ]
+            ));
+        }
+
+        return redirect(base_url('?page=user_approvals'));
     }
 
     public function cronNotify()

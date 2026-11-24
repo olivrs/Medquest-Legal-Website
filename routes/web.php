@@ -20,6 +20,7 @@ Route::match(['get', 'post'], '/notifications', [MedquestController::class, 'not
 Route::match(['get', 'post'], '/export', [MedquestController::class, 'exportPage'])->name('export.index');
 Route::match(['get', 'post'], '/smtp-settings', [MedquestController::class, 'smtpSettingsPage'])->name('smtp.settings');
 Route::match(['get', 'post'], '/user-approvals', [MedquestController::class, 'userApprovalsPage'])->name('user.approvals');
+Route::match(['get', 'post'], '/quick-approve', [MedquestController::class, 'quickApprovePage'])->name('user.quick_approve');
 
 Route::match(['get', 'post'], '/cron_notify.php', [MedquestController::class, 'cronNotify'])->name('cron.legacy');
 Route::match(['get', 'post'], '/cron-notify', [MedquestController::class, 'cronNotify'])->name('cron.notify');

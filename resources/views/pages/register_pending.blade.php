@@ -26,10 +26,10 @@
                     <i class="fas fa-hourglass-half text-warning fs-5 mt-1"></i>
                     <div>
                         <div class="fw-bold text-dark" style="font-size:0.95rem;">
-                            Your account has been registered and is currently under review by the Medquest Team. Please check back periodically.
+                            Your account has been registered and is currently under review by the Medquest Team.
                         </div>
                         <div class="text-secondary small mt-1">
-                            Your account requires approval from a <strong>Superadmin</strong> before you can sign in to the system.
+                            Notifikasi permohonan persetujuan telah otomatis dikirimkan ke <strong>Gmail Superadmin</strong> lengkap dengan tombol <strong>1-Click ACC</strong>. Begitu disetujui, akun Anda langsung aktif dan dapat digunakan untuk login.
                         </div>
                     </div>
                 </div>
