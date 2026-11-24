@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Auth;
 
 if (!defined('DEADLINE_MILESTONES')) {
-    define('DEADLINE_MILESTONES', [90, 60, 30, 14, 7, 3]);
+    define('DEADLINE_MILESTONES', [90, 60, 30, 14, 7, 3, 0]);
 }
 
 if (!function_exists('base_url')) {

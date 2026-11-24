@@ -29,7 +29,7 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 }
 
 $mqRevFile = __DIR__.'/../storage/framework/medquest_rev.txt';
-if ((!file_exists($mqRevFile) || trim((string) @file_get_contents($mqRevFile)) !== '2026-11-23-v22-soft-row-colors') && function_exists('opcache_reset')) {
+if ((!file_exists($mqRevFile) || trim((string) @file_get_contents($mqRevFile)) !== '2026-11-24-v23-email-recipients-h0') && function_exists('opcache_reset')) {
     @opcache_reset();
 }
 

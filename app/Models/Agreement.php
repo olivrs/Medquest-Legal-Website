@@ -39,6 +39,7 @@ class Agreement extends Model
         'notif_h7_sent_at',
         'notif_h3_sent_at',
         'notif_h1_sent_at',
+        'notif_h0_sent_at',
     ];
 
     public function creator(): BelongsTo

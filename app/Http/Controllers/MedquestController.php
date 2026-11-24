@@ -6,6 +6,7 @@ use App\Models\Agreement;
 use App\Models\AgreementHistory;
 use App\Models\Department;
 use App\Models\EmailNotification;
+use App\Models\NotificationRecipient;
 use App\Models\SmtpSetting;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -21,7 +22,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-23-v22-soft-row-colors';
+            $currentRev = '2026-11-24-v23-email-recipients-h0';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -61,6 +62,23 @@ class MedquestController extends Controller
                             $table->date('tanggal_selesai')->nullable()->index();
                         });
                     }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('agreements', 'notif_h0_sent_at')) {
+                        \Illuminate\Support\Facades\Schema::table('agreements', function (\Illuminate\Database\Schema\Blueprint $table) {
+                            $table->dateTime('notif_h0_sent_at')->nullable();
+                        });
+                    }
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasTable('notification_recipients')) {
+                    \Illuminate\Support\Facades\Schema::create('notification_recipients', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->id();
+                        $table->string('email', 150);
+                        $table->string('label', 120)->nullable();
+                        $table->string('department', 30)->default('ALL');
+                        $table->boolean('is_active')->default(true);
+                        $table->unsignedBigInteger('added_by_user_id')->nullable();
+                        $table->timestamps();
+                        $table->unique(['email', 'department']);
+                    });
                 }
             }
         } catch (\Throwable $e) {
@@ -108,6 +126,7 @@ class MedquestController extends Controller
             'detail'           => $this->detailPage($request),
             'export'           => $this->exportPage($request),
             'notifications'    => $this->notificationsPage($request),
+            'smtp_settings'    => $this->smtpSettingsPage($request),
             'user_approvals'   => $this->userApprovalsPage($request),
             default            => Auth::check() ? $this->agreementsPage($request) : $this->loginPage($request),
         };
@@ -811,10 +830,15 @@ class MedquestController extends Controller
                 ]);
 
                 $extraMsg = '';
-                if (!$expiry_date_na && $expiry_date) {
-                    $autoEmails = NotificationService::runAutoExpiryNotifications();
-                    if (!empty($autoEmails)) {
-                        $extraMsg = ' Because the date falls within a reminder milestone (H-90/60/30/14/7/3), an automatic notification email was queued for <strong>' . e($user['email']) . '</strong>!';
+                if (!$expiry_date_na && $expiry_date && $status_proses !== 'SELESAI') {
+                    $sisaDays = get_days_until_expiry($expiry_date);
+                    $dueStage = NotificationService::resolveDueMilestoneCode($sisaDays);
+                    if ($dueStage !== null) {
+                        $disp = NotificationService::dispatchAgreementNotification($newAgr, $dueStage, false);
+                        if (!empty($disp['success'])) {
+                            $stageLabel = $dueStage === 'H-0' ? 'Hari H (H-0)' : $dueStage;
+                            $extraMsg = ' Because the expiry date enters milestone <strong>' . e($stageLabel) . '</strong>, reminder email(s) were automatically dispatched to registered recipients.';
+                        }
                     }
                 }
 
@@ -935,7 +959,7 @@ class MedquestController extends Controller
             ];
 
             if ($expiry_date !== $agr['expiry_date']) {
-                $updatePayload = array_merge($updatePayload, [
+                $resetCols = [
                     'notif_h90_sent_at' => null,
                     'notif_h60_sent_at' => null,
                     'notif_h30_sent_at' => null,
@@ -943,7 +967,12 @@ class MedquestController extends Controller
                     'notif_h7_sent_at'  => null,
                     'notif_h3_sent_at'  => null,
                     'notif_h1_sent_at'  => null,
-                ]);
+                ];
+                if (\Illuminate\Support\Facades\Schema::hasColumn('agreements', 'notif_h0_sent_at')) {
+                    $resetCols['notif_h0_sent_at'] = null;
+                }
+                $updatePayload = array_merge($updatePayload, $resetCols);
+                EmailNotification::where('agreement_id', $id)->delete();
             }
 
             $agrModel->update($updatePayload);
@@ -960,8 +989,12 @@ class MedquestController extends Controller
             }
 
             try {
-                if (!$expiry_date_na && $expiry_date) {
-                    NotificationService::runAutoExpiryNotifications();
+                if (!$expiry_date_na && $expiry_date && $status_proses !== 'SELESAI') {
+                    $sisaDays = get_days_until_expiry($expiry_date);
+                    $dueStage = NotificationService::resolveDueMilestoneCode($sisaDays);
+                    if ($dueStage !== null) {
+                        NotificationService::dispatchAgreementNotification($agrModel->fresh(), $dueStage, false);
+                    }
                 }
             } catch (\Throwable $e) {
             }
@@ -1097,6 +1130,7 @@ class MedquestController extends Controller
 
     public function notificationsPage(Request $request)
     {
+        $this->ensureDatabaseReady();
         if (!Auth::check()) {
             return redirect(base_url('?page=login'));
         }
@@ -1104,32 +1138,144 @@ class MedquestController extends Controller
         $user  = current_user();
         $uId   = (int) $user['id'];
         $uCode = strtoupper($user['kode_singkatan']);
+        $allowedDepts = get_user_allowed_departments($user);
+
+        if ($request->isMethod('post')) {
+            $action = (string) $request->input('action', '');
+
+            if ($action === 'clear_logs') {
+                if (is_superadmin()) {
+                    EmailNotification::query()->delete();
+                } else {
+                    EmailNotification::where('user_id', $uId)
+                        ->orWhere('recipient_code', $uCode)
+                        ->delete();
+                }
+                set_flash('success', 'Email log history cleared successfully.');
+                return redirect(base_url('?page=notifications'));
+            }
+
+            if ($action === 'add_recipient') {
+                $recEmail = strtolower(trim((string) $request->input('email', '')));
+                $recLabel = trim((string) $request->input('label', ''));
+                $recDept  = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) $request->input('department', 'ALL')))) ?: 'ALL';
+
+                if (!filter_var($recEmail, FILTER_VALIDATE_EMAIL)) {
+                    set_flash('error', 'Please enter a valid email address.');
+                    return redirect(base_url('?page=notifications'));
+                }
+
+                if (!is_superadmin() && !in_array('ALL', $allowedDepts, true)) {
+                    if ($recDept === 'ALL' || !in_array($recDept, $allowedDepts, true)) {
+                        if (!empty($allowedDepts)) {
+                            $recDept = $allowedDepts[0];
+                        } else {
+                            set_flash('error', 'Your account does not have department scope to add alert recipients.');
+                            return redirect(base_url('?page=notifications'));
+                        }
+                    }
+                }
+
+                NotificationRecipient::updateOrCreate(
+                    ['email' => $recEmail, 'department' => $recDept],
+                    [
+                        'label'            => $recLabel !== '' ? $recLabel : null,
+                        'is_active'        => true,
+                        'added_by_user_id' => $uId,
+                    ]
+                );
+
+                cache()->forget('medquest_last_auto_notify');
+                $dispatched = NotificationService::runAutoExpiryNotifications(true);
+                $sentForNew = count(array_filter(
+                    $dispatched,
+                    fn ($item) => strtolower((string) ($item['recipient'] ?? '')) === $recEmail
+                ));
+                $smtpStatus = NotificationService::getSmtpStatus();
+                $gatewayNote = $smtpStatus['ready']
+                    ? ''
+                    : ' Note: System SMTP is not active yet — configure System SMTP or check Inbox/Spam for FormSubmit activation link.';
+
+                set_flash(
+                    'success',
+                    'Notification email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') saved! '
+                    . ($sentForNew > 0 ? "<strong>{$sentForNew}</strong> due deadline reminder(s) dispatched immediately." : 'Ready to receive H-90 to Hari H reminders.')
+                    . $gatewayNote
+                );
+                return redirect(base_url('?page=notifications'));
+            }
+
+            if ($action === 'toggle_recipient') {
+                $recId = (int) $request->input('recipient_id', 0);
+                $rec = NotificationRecipient::find($recId);
+                if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
+                    $rec->update(['is_active' => !$rec->is_active]);
+                    set_flash('success', 'Recipient <strong>' . e($rec->email) . '</strong> is now ' . ($rec->is_active ? 'Active' : 'Paused') . '.');
+                }
+                return redirect(base_url('?page=notifications'));
+            }
+
+            if ($action === 'delete_recipient') {
+                $recId = (int) $request->input('recipient_id', 0);
+                $rec = NotificationRecipient::find($recId);
+                if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
+                    $em = $rec->email;
+                    $rec->delete();
+                    set_flash('success', 'Recipient <strong>' . e($em) . '</strong> removed.');
+                }
+                return redirect(base_url('?page=notifications'));
+            }
+
+            if ($action === 'run_now' && is_superadmin()) {
+                cache()->forget('medquest_last_auto_notify');
+                $results = NotificationService::runAutoExpiryNotifications(true);
+                $countSent = count($results);
+                set_flash('success', "Deadline reminder scan completed: <strong>{$countSent}</strong> reminder email(s) dispatched.");
+                return redirect(base_url('?page=notifications'));
+            }
+        }
 
         try {
             NotificationService::runAutoExpiryNotifications();
         } catch (\Throwable $e) {
         }
 
-        if ($request->isMethod('post') && $request->input('action') === 'clear_logs') {
-            if (is_superadmin()) {
-                EmailNotification::query()->delete();
-            } else {
-                EmailNotification::where('user_id', $uId)
-                    ->orWhere('recipient_code', $uCode)
-                    ->delete();
-            }
-            set_flash('success', 'Email log history cleared successfully.');
-            return redirect(base_url('?page=notifications'));
+        $upcomingH = $this->getUpcomingDeadlineItems();
+
+        $recipientsQuery = NotificationRecipient::query()->orderBy('department')->orderBy('email');
+        if (!is_superadmin()) {
+            $userEmail = strtolower((string) ($user['email'] ?? ''));
+            $recipientsQuery->where(function ($q) use ($uId, $userEmail, $allowedDepts) {
+                $q->where('added_by_user_id', $uId);
+                if ($userEmail !== '') {
+                    $q->orWhere('email', $userEmail);
+                }
+                if (in_array('ALL', $allowedDepts, true)) {
+                    $q->orWhere('department', 'ALL');
+                } elseif (!empty($allowedDepts)) {
+                    $q->orWhereIn('department', $allowedDepts);
+                }
+            });
+        }
+        $recipients = $recipientsQuery->get()->map->toArray()->all();
+
+        $allDepts = Department::orderBy('kode_dept', 'asc')->get()->map->toArray()->all();
+        if (is_superadmin() || in_array('ALL', $allowedDepts, true)) {
+            $recipientDepts = $allDepts;
+        } else {
+            $recipientDepts = array_values(array_filter(
+                $allDepts,
+                fn ($d) => in_array(strtoupper((string) ($d['kode_dept'] ?? '')), $allowedDepts, true)
+            ));
         }
 
-        $upcomingH = $this->getUpcomingDeadlineItems();
+        $smtpStatus = NotificationService::getSmtpStatus();
 
         $emailLogsQuery = DB::table('email_notifications as e')
             ->leftJoin('agreements as a', 'e.agreement_id', '=', 'a.id')
-            ->select('e.*', 'a.department', 'a.customer', 'a.document_number', 'a.expiry_date');
+            ->select('e.*', 'a.department', 'a.customer', 'a.document_title', 'a.document_number', 'a.expiry_date');
 
         if (!is_superadmin()) {
-            $allowedDepts = get_user_allowed_departments($user);
             if (!in_array('ALL', $allowedDepts, true)) {
                 $emailLogsQuery->where(function ($q) use ($uId, $uCode, $allowedDepts) {
                     $q->where('e.user_id', $uId)
@@ -1150,7 +1296,101 @@ class MedquestController extends Controller
 
         return view('pages.notifications', array_merge(
             $this->getLayoutData($request, 'notifications'),
-            compact('upcomingH', 'emailLogs')
+            compact('upcomingH', 'emailLogs', 'recipients', 'recipientDepts', 'smtpStatus')
+        ));
+    }
+
+    public function smtpSettingsPage(Request $request)
+    {
+        $this->ensureDatabaseReady();
+        if (!Auth::check()) {
+            return redirect(base_url('?page=login'));
+        }
+        if (!is_superadmin()) {
+            set_flash('error', 'Access denied. System SMTP configuration is restricted to Superadmin.');
+            return redirect(base_url('?page=notifications'));
+        }
+
+        $smtpModel = SmtpSetting::find(1);
+        if (!$smtpModel) {
+            $smtpModel = SmtpSetting::create([
+                'id'              => 1,
+                'smtp_enabled'    => false,
+                'smtp_host'       => 'smtp.gmail.com',
+                'smtp_port'       => 587,
+                'smtp_encryption' => 'tls',
+                'smtp_username'   => '',
+                'smtp_password'   => '',
+                'sender_name'     => 'Medquest Agreement Alert (LAC)',
+                'sender_email'    => 'noreply@medquest.co.id',
+            ]);
+        }
+
+        if ($request->isMethod('post')) {
+            $action = (string) $request->input('action', 'save');
+
+            if ($action === 'save') {
+                $smtpEnabled    = $request->boolean('smtp_enabled');
+                $smtpHost       = trim((string) $request->input('smtp_host', 'smtp.gmail.com'));
+                $smtpPort       = max(1, (int) $request->input('smtp_port', 587));
+                $smtpEncryption = strtolower(trim((string) $request->input('smtp_encryption', 'tls')));
+                if (!in_array($smtpEncryption, ['tls', 'ssl', ''], true)) {
+                    $smtpEncryption = 'tls';
+                }
+                $smtpUsername = trim((string) $request->input('smtp_username', ''));
+                $rawPass      = str_replace(' ', '', trim((string) $request->input('smtp_password', '')));
+                $smtpPassword = $rawPass !== '' ? $rawPass : (string) $smtpModel->smtp_password;
+                $senderName   = trim((string) $request->input('sender_name', 'Medquest Agreement Alert (LAC)'));
+                $senderEmail  = trim((string) $request->input('sender_email', $smtpUsername ?: 'noreply@medquest.co.id'));
+
+                $smtpModel->update([
+                    'smtp_enabled'    => $smtpEnabled ? 1 : 0,
+                    'smtp_host'       => $smtpHost ?: 'smtp.gmail.com',
+                    'smtp_port'       => $smtpPort,
+                    'smtp_encryption' => $smtpEncryption,
+                    'smtp_username'   => $smtpUsername,
+                    'smtp_password'   => $smtpPassword,
+                    'sender_name'     => $senderName ?: 'Medquest Agreement Alert (LAC)',
+                    'sender_email'    => $senderEmail ?: $smtpUsername,
+                    'updated_at'      => now(),
+                ]);
+
+                set_flash('success', 'System SMTP configuration saved successfully.');
+                return redirect(base_url('?page=smtp_settings'));
+            }
+
+            if ($action === 'test_email') {
+                $testTo = trim((string) $request->input('test_to_email', ''));
+                if (!filter_var($testTo, FILTER_VALIDATE_EMAIL)) {
+                    set_flash('error', 'Please provide a valid test recipient email address.');
+                    return redirect(base_url('?page=smtp_settings'));
+                }
+
+                $channel = null;
+                $err = null;
+                $ok = NotificationService::sendHtmlViaConfiguredMailer(
+                    $testTo,
+                    '[MEDQUEST TEST] Email Gateway Verification',
+                    '<p>Hello,</p><p>Your Medquest Legal Document Monitoring email gateway is active and ready to send automated H-90 to Hari H reminders.</p>',
+                    $channel,
+                    $err
+                );
+
+                if ($ok) {
+                    set_flash('success', 'Test email successfully sent to <strong>' . e($testTo) . '</strong> via <strong>' . e($channel) . '</strong>.');
+                } else {
+                    set_flash('error', 'Test email failed: ' . e($err ?: 'SMTP is not enabled or credentials are invalid.'));
+                }
+                return redirect(base_url('?page=smtp_settings'));
+            }
+        }
+
+        $smtp = $smtpModel->fresh()->toArray();
+        $smtpStatus = NotificationService::getSmtpStatus();
+
+        return view('pages.smtp_settings', array_merge(
+            $this->getLayoutData($request, 'smtp_settings'),
+            compact('smtp', 'smtpStatus')
         ));
     }
 
@@ -1182,7 +1422,20 @@ class MedquestController extends Controller
                     if ($action === 'approve') {
                         $targetUser->update(['status' => 'approved']);
                         try {
+                            if (!empty($targetUser->email) && filter_var($targetUser->email, FILTER_VALIDATE_EMAIL)) {
+                                $uDept = strtoupper(trim((string) ($targetUser->departemen_default ?: 'ALL'))) ?: 'ALL';
+                                NotificationRecipient::firstOrCreate(
+                                    ['email' => strtolower(trim($targetUser->email)), 'department' => $uDept],
+                                    [
+                                        'label'            => $targetUser->nama_lengkap . ' (' . $targetUser->kode_singkatan . ')',
+                                        'is_active'        => true,
+                                        'added_by_user_id' => (int) ($currentUser['id'] ?? $targetUser->id),
+                                    ]
+                                );
+                            }
                             NotificationService::dispatchUserApprovedNotification($targetUser);
+                            cache()->forget('medquest_last_auto_notify');
+                            NotificationService::runAutoExpiryNotifications(true);
                         } catch (\Throwable $e) {
                         }
                         set_flash('success', "<i class='fas fa-check-circle me-1'></i> Account <strong>{$targetName} ({$targetCode})</strong> has been <strong>APPROVED</strong>! Notification email dispatched. The user can now sign in.");

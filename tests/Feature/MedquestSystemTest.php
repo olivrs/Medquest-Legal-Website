@@ -574,4 +574,147 @@ class MedquestSystemTest extends TestCase
         $dashColorResp->assertSee('class="row-warning"', false);
         $dashColorResp->assertSee('class="row-active"', false);
     }
+
+    public function test_notification_recipients_hari_h_and_smtp_gateway_work(): void
+    {
+        $this->assertSame([90, 60, 30, 14, 7, 3, 0], DEADLINE_MILESTONES);
+        $this->assertSame('H-0', \App\Services\NotificationService::resolveDueMilestoneCode(0));
+        $this->assertSame('H-3', \App\Services\NotificationService::resolveDueMilestoneCode(2));
+        $this->assertSame('H-90', \App\Services\NotificationService::resolveDueMilestoneCode(90));
+        $this->assertNull(\App\Services\NotificationService::resolveDueMilestoneCode(-1));
+
+        $superadmin = \App\Models\User::where('kode_singkatan', 'FJR')->first();
+        $this->assertNotNull($superadmin);
+        $this->actingAs($superadmin);
+
+        \App\Models\Agreement::where('expiry_date_na', 0)->update(['status_proses' => 'SELESAI']);
+        \App\Models\EmailNotification::query()->delete();
+
+        $agrToday = \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 950,
+            'department'          => 'LAC',
+            'document_number'     => 'H0-TEST-950',
+            'customer'            => 'Hospital Hari H Due',
+            'product_description' => 'Critical Analyzer',
+            'serial_number'       => 'SN-H0',
+            'effective_date'      => date('Y-m-d', strtotime('-1 year')),
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d'),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'BERJALAN',
+            'note'                => 'Hari H check',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 24 NOV 2026',
+        ]);
+
+        $agrCompleted = \App\Models\Agreement::create([
+            'doc_type'            => 'COOPERATION',
+            'no_urut_dokumen'     => 951,
+            'department'          => 'LAC',
+            'document_number'     => 'H0-DONE-951',
+            'customer'            => 'Hospital Already Completed',
+            'product_description' => 'Done Analyzer',
+            'serial_number'       => 'SN-DONE',
+            'effective_date'      => date('Y-m-d', strtotime('-1 year')),
+            'effective_date_na'   => false,
+            'expiry_date'         => date('Y-m-d'),
+            'expiry_date_na'      => false,
+            'status_proses'       => 'SELESAI',
+            'tanggal_selesai'     => date('Y-m-d'),
+            'note'                => 'Already done',
+            'created_by_user_id'  => $superadmin->id,
+            'created_by_code'     => 'FJR',
+            'created_by_log'      => 'FJR, 24 NOV 2026',
+        ]);
+
+        $addResp1 = $this->post('/notifications', [
+            'action'     => 'add_recipient',
+            'email'      => 'legal.pic1@medquest.co.id',
+            'label'      => 'Legal Officer 1',
+            'department' => 'LAC',
+        ]);
+        $addResp1->assertRedirect();
+
+        $this->assertDatabaseHas('notification_recipients', [
+            'email'      => 'legal.pic1@medquest.co.id',
+            'department' => 'LAC',
+            'is_active'  => 1,
+        ]);
+
+        $this->assertNotNull($agrToday->fresh()->notif_h0_sent_at);
+        $this->assertNull($agrCompleted->fresh()->notif_h0_sent_at);
+
+        $this->assertSame(1, \App\Models\EmailNotification::where('agreement_id', $agrToday->id)
+            ->where('tipe_notif', 'H-0')
+            ->where('recipient_email', 'legal.pic1@medquest.co.id')
+            ->count());
+        $this->assertSame(1, \App\Models\EmailNotification::where('agreement_id', $agrToday->id)
+            ->where('tipe_notif', 'H-0')
+            ->where('recipient_email', 'fjr.medquest@gmail.com')
+            ->count());
+        $this->assertSame(0, \App\Models\EmailNotification::where('agreement_id', $agrCompleted->id)->count());
+
+        $addResp2 = $this->post('/notifications', [
+            'action'     => 'add_recipient',
+            'email'      => 'legal.pic2@medquest.co.id',
+            'label'      => 'Legal Officer 2',
+            'department' => 'ALL',
+        ]);
+        $addResp2->assertRedirect();
+
+        $this->assertSame(1, \App\Models\EmailNotification::where('agreement_id', $agrToday->id)
+            ->where('tipe_notif', 'H-0')
+            ->where('recipient_email', 'legal.pic2@medquest.co.id')
+            ->count());
+        $this->assertSame(1, \App\Models\EmailNotification::where('agreement_id', $agrToday->id)
+            ->where('tipe_notif', 'H-0')
+            ->where('recipient_email', 'legal.pic1@medquest.co.id')
+            ->count());
+
+        $notifView = $this->get('/notifications');
+        $notifView->assertStatus(200);
+        $notifView->assertSee('HARI H (H-0)');
+        $notifView->assertSee('legal.pic1@medquest.co.id');
+        $notifView->assertSee('legal.pic2@medquest.co.id');
+
+        $pendingUser = \App\Models\User::create([
+            'nama_lengkap'       => 'Staff Baru LAC',
+            'kode_singkatan'     => 'SBL',
+            'email'              => 'staff.baru@medquest.co.id',
+            'password'           => \Illuminate\Support\Facades\Hash::make('password123'),
+            'departemen_default' => 'LAC',
+            'role'               => 'user',
+            'status'             => 'pending',
+        ]);
+
+        $this->post('/user-approvals', [
+            'action'  => 'approve',
+            'user_id' => $pendingUser->id,
+        ])->assertRedirect();
+
+        $this->assertSame('approved', $pendingUser->fresh()->status);
+        $this->assertDatabaseHas('notification_recipients', [
+            'email'      => 'staff.baru@medquest.co.id',
+            'department' => 'LAC',
+        ]);
+
+        $this->post('/smtp-settings', [
+            'action'          => 'save',
+            'smtp_enabled'    => '1',
+            'smtp_host'       => 'smtp.gmail.com',
+            'smtp_port'       => '587',
+            'smtp_encryption' => 'tls',
+            'smtp_username'   => 'alert@medquest.co.id',
+            'smtp_password'   => 'abcd efgh ijkl mnop',
+            'sender_name'     => 'Medquest Alert',
+            'sender_email'    => 'alert@medquest.co.id',
+        ])->assertRedirect();
+
+        $savedSmtp = \App\Models\SmtpSetting::find(1);
+        $this->assertNotNull($savedSmtp);
+        $this->assertSame(1, (int) $savedSmtp->smtp_enabled);
+        $this->assertSame('abcdefghijklmnop', $savedSmtp->smtp_password);
+    }
 }

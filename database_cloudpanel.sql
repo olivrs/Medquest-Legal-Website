@@ -64,6 +64,7 @@ CREATE TABLE `agreements` (
   `notif_h7_sent_at` datetime DEFAULT NULL,
   `notif_h3_sent_at` datetime DEFAULT NULL,
   `notif_h1_sent_at` datetime DEFAULT NULL,
+  `notif_h0_sent_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -192,7 +193,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('1', '0001_01_01_000000_create_users_table', '1');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('2', '0001_01_01_000001_create_cache_table', '1');
@@ -200,6 +201,21 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('3', '0001_01_01_0
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('4', '2026_11_09_000001_create_medquest_tables', '1');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('5', '2026_11_12_000001_add_process_status_to_agreements_table', '2');
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('6', '2026_11_16_000001_alter_aksi_in_agreement_histories_table', '2');
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES ('7', '2026_11_24_000001_add_h0_and_notification_recipients', '3');
+
+DROP TABLE IF EXISTS `notification_recipients`;
+CREATE TABLE `notification_recipients` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `department` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ALL',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `added_by_user_id` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `notification_recipients_email_department_unique` (`email`,`department`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `password_reset_tokens`;
 CREATE TABLE `password_reset_tokens` (
