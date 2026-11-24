@@ -228,7 +228,7 @@
         </header>
 
         <main class="app-content">
-            <div id="autoEmailToastContainer" class="no-print" style="position:fixed;bottom:20px;right:20px;z-index:9999;max-width:420px;"></div>
+            <div id="autoEmailToastContainer" class="no-print" style="position:fixed;bottom:20px;right:20px;z-index:9999;max-width:420px;pointer-events:none;"></div>
 
             <?php
             $flash = get_flash();
@@ -428,6 +428,7 @@ function checkAndSendAutoExpiryEmails() {
                 data.details.forEach(item => {
                     const toastEl = document.createElement('div');
                     toastEl.className = 'alert alert-success shadow-lg border-success mb-2 p-3';
+                    toastEl.style.pointerEvents = 'auto';
                     toastEl.innerHTML = `
                         <div class="d-flex justify-content-between align-items-start">
                             <div>

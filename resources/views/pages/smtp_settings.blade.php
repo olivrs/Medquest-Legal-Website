@@ -10,12 +10,12 @@
     </div>
     <div>
         <?php if (!empty($smtpStatus['ready'])): ?>
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-2 rounded-0">
                 <i class="fas fa-check-circle me-1"></i> Active via <?= strtoupper(htmlspecialchars($smtpStatus['source'])) ?> (<?= htmlspecialchars($smtpStatus['sender_email']) ?>)
             </span>
         <?php else: ?>
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2">
-                <i class="fas fa-exclamation-triangle me-1"></i> Direct SMTP Not Enabled (Using FormSubmit Relay)
+            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-3 py-2 rounded-0">
+                <i class="fas fa-exclamation-triangle me-1"></i> Direct SMTP Not Enabled
             </span>
         <?php endif; ?>
     </div>

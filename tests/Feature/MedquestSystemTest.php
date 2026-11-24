@@ -676,8 +676,19 @@ class MedquestSystemTest extends TestCase
         $notifView = $this->get('/notifications');
         $notifView->assertStatus(200);
         $notifView->assertSee('HARI H (H-0)');
+        $notifView->assertSee('Auto Reminder Email Recipients');
+        $notifView->assertDontSee('Auto Reminder Email Recipients (H-90');
         $notifView->assertSee('legal.pic1@medquest.co.id');
         $notifView->assertSee('legal.pic2@medquest.co.id');
+        $notifView->assertSee('openDeleteRecipientModal');
+
+        $pic2 = \App\Models\NotificationRecipient::where('email', 'legal.pic2@medquest.co.id')->first();
+        $this->assertNotNull($pic2);
+        $this->post('/notifications', [
+            'action'       => 'delete_recipient',
+            'recipient_id' => $pic2->id,
+        ])->assertRedirect();
+        $this->assertDatabaseMissing('notification_recipients', ['id' => $pic2->id]);
 
         $pendingUser = \App\Models\User::create([
             'nama_lengkap'       => 'Staff Baru LAC',

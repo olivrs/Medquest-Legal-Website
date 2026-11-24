@@ -22,7 +22,7 @@ class MedquestController extends Controller
     {
         try {
             $revMarker = storage_path('framework/medquest_rev.txt');
-            $currentRev = '2026-11-24-v27-clean-smtp-reset';
+            $currentRev = '2026-11-24-v28-clean-notifications-ui';
             if (!@file_exists($revMarker) || trim((string) @file_get_contents($revMarker)) !== $currentRev) {
                 \Illuminate\Support\Facades\Artisan::call('view:clear');
                 if (function_exists('opcache_invalidate')) {
@@ -1194,12 +1194,12 @@ class MedquestController extends Controller
                 $smtpStatus = NotificationService::getSmtpStatus();
                 $gatewayNote = $smtpStatus['ready']
                     ? ''
-                    : ' Note: System SMTP is not active yet — configure System SMTP or check Inbox/Spam for FormSubmit activation link.';
+                    : ' Note: System SMTP is not active yet — configure System SMTP Gateway to send emails directly.';
 
                 set_flash(
                     'success',
                     'Notification email <strong>' . e($recEmail) . '</strong> (' . e($recDept) . ') saved! '
-                    . ($sentForNew > 0 ? "<strong>{$sentForNew}</strong> due deadline reminder(s) dispatched immediately." : 'Ready to receive H-90 to Hari H reminders.')
+                    . ($sentForNew > 0 ? "<strong>{$sentForNew}</strong> due deadline reminder(s) dispatched immediately." : 'Ready to receive automated deadline reminders.')
                     . $gatewayNote
                 );
                 return redirect(base_url('?page=notifications'));
@@ -1208,9 +1208,20 @@ class MedquestController extends Controller
             if ($action === 'toggle_recipient') {
                 $recId = (int) $request->input('recipient_id', 0);
                 $rec = NotificationRecipient::find($recId);
-                if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
+                $canManageRec = $rec && (
+                    is_superadmin()
+                    || in_array('ALL', $allowedDepts, true)
+                    || in_array(strtoupper((string) $rec->department), $allowedDepts, true)
+                    || (int) $rec->added_by_user_id === $uId
+                    || strtolower($rec->email) === strtolower((string) $user['email'])
+                );
+                if ($canManageRec) {
                     $rec->update(['is_active' => !$rec->is_active]);
                     set_flash('success', 'Recipient <strong>' . e($rec->email) . '</strong> is now ' . ($rec->is_active ? 'Active' : 'Paused') . '.');
+                } elseif ($rec) {
+                    set_flash('error', 'You do not have permission to update this recipient.');
+                } else {
+                    set_flash('error', 'Recipient record not found.');
                 }
                 return redirect(base_url('?page=notifications'));
             }
@@ -1218,10 +1229,21 @@ class MedquestController extends Controller
             if ($action === 'delete_recipient') {
                 $recId = (int) $request->input('recipient_id', 0);
                 $rec = NotificationRecipient::find($recId);
-                if ($rec && (is_superadmin() || (int) $rec->added_by_user_id === $uId || strtolower($rec->email) === strtolower((string) $user['email']))) {
+                $canManageRec = $rec && (
+                    is_superadmin()
+                    || in_array('ALL', $allowedDepts, true)
+                    || in_array(strtoupper((string) $rec->department), $allowedDepts, true)
+                    || (int) $rec->added_by_user_id === $uId
+                    || strtolower($rec->email) === strtolower((string) $user['email'])
+                );
+                if ($canManageRec) {
                     $em = $rec->email;
                     $rec->delete();
                     set_flash('success', 'Recipient <strong>' . e($em) . '</strong> removed.');
+                } elseif ($rec) {
+                    set_flash('error', 'You do not have permission to remove this recipient.');
+                } else {
+                    set_flash('error', 'Recipient record not found.');
                 }
                 return redirect(base_url('?page=notifications'));
             }
